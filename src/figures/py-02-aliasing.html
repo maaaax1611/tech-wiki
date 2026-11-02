@@ -1,0 +1,28 @@
+<!-- title: Verkleinern und Aliasing
+     lib: bv, py -->
+<figure class="fig">
+  <canvas id="cv-al" class="c-bv-3" role="img" aria-label="Eine Zonenplatte, verkleinert ohne und mit vorheriger Glättung. Ohne Glättung entstehen falsche Ringmuster."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="al-f">Verkleinerung</label><output id="al-f-o"></output></div><input id="al-f" type="range" min="2" max="4" step="1" value="2" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="al-s">σ der Glättung</label><output id="al-s-o"></output></div><input id="al-s" type="range" min="0" max="3" step="0.1" value="1" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="al-read"></div>
+  <figcaption><b>Abb.</b> Eine Zonenplatte: Ringe, deren Frequenz von der Mitte nach außen linear bis zur Nyquist-Grenze steigt. Nimmt man nur jedes zweite Pixel, kann das kleinere Bild nur noch halb so hohe Frequenzen darstellen. Alles darüber erscheint als falsches, gröberes Muster (Aliasing, hier als zusätzliche Ringzentren). Glättet man vorher, werden diese Frequenzen entfernt, bevor sie Schaden anrichten, die äußeren Ringe werden grau statt falsch. Die verkleinerten Bilder sind zum Vergleich wieder auf volle Größe gezogen.</figcaption>
+</figure>
+<script>
+/* ---------- Aliasing ---------- */
+(() => {
+  const c = $('#cv-al'), iff = $('#al-f'), is = $('#al-s'), n = BV_N, Z = zonePlate(n);
+  const m = reg({ el: c, draw() {
+    const f = +iff.value, s = +is.value; $('#al-f-o').textContent = `1 : ${f}`; $('#al-s-o').textContent = nf(s, 1) + ' px';
+    const A = decimate(Z, n, f), Bs = decimate(gaussBlur(Z, n, s), n, f);
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    drawImg(ctx, Z, n, L[0].x, L[0].y, L[0].size, { title: `Original ${n} × ${n}` });
+    drawImg(ctx, A.I, A.n, L[1].x, L[1].y, L[1].size, { title: `jedes ${f}. Pixel` });
+    drawImg(ctx, Bs.I, Bs.n, L[2].x, L[2].y, L[2].size, { title: `erst glätten, dann jedes ${f}.` });
+    const ny = 0.5 / f, keep = Math.exp(-2 * (Math.PI * s * ny) ** 2);
+    $('#al-read').innerHTML = `<span class="k">Neue Nyquist-Grenze:</span> ${nf(ny, 3)} Perioden pro Originalpixel  <span class="k">·</span>  <span class="k">Gauß mit σ = ${nf(s, 1)} lässt bei dieser Frequenz</span> <b>${nf(keep * 100, 0)} %</b> <span class="k">durch</span>` + (keep > 0.6 ? '  ·  zu wenig geglättet' : keep < 0.05 ? '  ·  stärker als nötig geglättet' : '');
+  } });
+  [iff, is].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

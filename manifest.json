@@ -218,8 +218,7 @@
     "DoG",
     "Wavelets",
     "Multiskalen"
-   ],
-   "status": "geplant"
+   ]
   },
   {
    "id": "entrauschen",
@@ -392,6 +391,62 @@
    "slug": "bv-08-bilateral",
    "page": "filter",
    "title": "Bilateralfilter",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-01-skalenraum",
+   "page": "pyramiden",
+   "title": "Gauß-Skalenraum",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-02-aliasing",
+   "page": "pyramiden",
+   "title": "Verkleinern und Aliasing",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-03-gauss-pyramide",
+   "page": "pyramiden",
+   "title": "Gaußsche Pyramide",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-04-laplace-pyramide",
+   "page": "pyramiden",
+   "title": "Laplace-Pyramide und Rekonstruktion",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-05-blobs",
+   "page": "pyramiden",
+   "title": "Blobs auf ihrer Skala finden",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-06-kontrast",
+   "page": "pyramiden",
+   "title": "Multiskalen-Kontrastanhebung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-07-blending",
+   "page": "pyramiden",
+   "title": "Blending mit Pyramiden",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "py-08-haar",
+   "page": "pyramiden",
+   "title": "Haar-Wavelet-Zerlegung",
    "interactive": true,
    "height": 640
   },

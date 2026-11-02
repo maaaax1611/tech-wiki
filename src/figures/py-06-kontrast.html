@@ -1,0 +1,51 @@
+<!-- title: Multiskalen-Kontrastanhebung
+     lib: bv, py -->
+<figure class="fig">
+  <canvas id="cv-mk" class="c-bv" role="img" aria-label="Verrauschtes Testbild und das Ergebnis nach Gewichtung der Laplace-Ebenen, daneben ein Profil und die Gewichte pro Ebene."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="mk-0">L0 (fein)</label><output id="mk-0-o"></output></div><input id="mk-0" type="range" min="0" max="3" step="0.1" value="0.4" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="mk-1">L1</label><output id="mk-1-o"></output></div><input id="mk-1" type="range" min="0" max="3" step="0.1" value="1.8" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="mk-2">L2</label><output id="mk-2-o"></output></div><input id="mk-2" type="range" min="0" max="3" step="0.1" value="1.5" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="mk-3">L3 (grob)</label><output id="mk-3-o"></output></div><input id="mk-3" type="range" min="0" max="3" step="0.1" value="1.0" autocomplete="off"></div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="mk-c">Kompression großer Details</label><output id="mk-c-o"></output></div><input id="mk-c" type="range" min="0" max="1" step="0.05" value="0.3" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="mk-n">Rauschen</label><output id="mk-n-o"></output></div><input id="mk-n" type="range" min="0" max="0.08" step="0.005" value="0.025" autocomplete="off"></div>
+    <button class="btn" type="button" id="mk-r">Neutral (alle 1)</button>
+  </div>
+  <div class="readout" id="mk-read"></div>
+  <figcaption><b>Abb.</b> Das leicht verrauschte Testbild wird in eine Laplace-Pyramide zerlegt, jede Detailebene mit ihrem eigenen Faktor gewichtet und wieder zusammengesetzt. Mittlere Ebenen stärker gewichten hebt Strukturen mittlerer Größe hervor. Die feinste Ebene enthält vor allem Rauschen und wird hier abgeschwächt. Die Kompression wirkt oberhalb des Rauschniveaus: Mittelgroße Detailamplituden werden stärker angehoben als große, so werden schwache Strukturen sichtbar, ohne dass starke Kanten überschießen. Amplituden in der Größe des Rauschens bleiben linear, sonst würde das Rauschen mitverstärkt. Rechts das Profil entlang der gestrichelten Zeile.</figcaption>
+</figure>
+<script>
+/* ---------- Multiskalen-Kontrast ---------- */
+(() => {
+  const c = $('#cv-mk'), ig = [0, 1, 2, 3].map(k => $('#mk-' + k)), ic = $('#mk-c'), inz = $('#mk-n'), n = BV_N, row = Math.round(0.22 * (n - 1));
+  let key = '', P = null, N = null;
+  const m = reg({ el: c, draw() {
+    const g = ig.map(e => +e.value), cp = +ic.value, a = +inz.value;
+    ig.forEach((e, k) => $(`#mk-${k}-o`).textContent = nf(g[k], 1)); $('#mk-c-o').textContent = nf(cp * 100, 0) + ' %'; $('#mk-n-o').textContent = nf(a, 3);
+    if (key !== String(a)) { key = String(a); N = addNoise(BV_PH, a); P = lapPyr(N, n, 5); }
+    // nichtlineare Gewichtung: v ↦ g · sign(v)·|v|^(1−cp)·M^cp (M = Maximum der Ebene)
+    // Kennlinie: linear bis zur Rauschschwelle T, darüber komprimiert; feinste Ebene nur linear (dort steckt vor allem Rauschen)
+    const Q = P.map((p, k) => { if (k === 4) return p; const M = maxAbs(p.I), T = Math.max(3 * a, 0.02);
+      const curve = x => x <= T ? x : T + (M - T) * Math.pow((x - T) / (M - T), 1 - cp) * (1 - cp * 0.3);
+      return { n: p.n, I: p.I.map(v => g[k] * Math.sign(v) * (k === 0 ? Math.abs(v) : curve(Math.abs(v)))) }; });
+    const R = lapRecon(Q);
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.55, 2) : imgLayout(w * 0.6, h, 2);
+    drawImg(ctx, N, n, L[0].x, L[0].y, L[0].size, { title: 'Eingang' });
+    drawImg(ctx, R, n, L[1].x, L[1].y, L[1].size, { title: 'Ergebnis' });
+    L.forEach(l => { const y = l.y + (row + 0.5) * l.size / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(l.x, y); ctx.lineTo(l.x + l.size, y); ctx.stroke(); ctx.setLineDash([]); });
+    const px = narrow ? 0 : w * 0.6 + 18, py = narrow ? h * 0.58 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const p0 = rowProfile(N, n, row), p1 = rowProfile(R, n, row);
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: n - 1, y0: Math.min(-0.1, ...p1), y1: Math.max(1.1, ...p1), xt: [0, 64, 127], yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'x (Pixel)', l: 34, b: 30, t: 24 });
+    [[p0, tok('--muted'), 1.4], [p1, tok('--accent'), 2]].forEach(([p, col, lw]) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); p.forEach((v, x) => x ? ctx.lineTo(f.X(x), f.Y(v)) : ctx.moveTo(f.X(x), f.Y(v))); ctx.stroke(); });
+    ctx.font = `12px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--muted'); ctx.fillText('— Eingang', f.bx, f.by - 8); ctx.fillStyle = tok('--accent'); ctx.fillText('— Ergebnis', f.bx + 76, f.by - 8);
+    const sd = A => { const mu = A.reduce((s, v) => s + v, 0) / A.length; return Math.sqrt(A.reduce((s, v) => s + (v - mu) ** 2, 0) / A.length); };
+    // Rauschen in einer flachen Fläche (Rechteckinneres) messen
+    const patch = (I) => { const v = []; for (let y = 18; y < 40; y++) for (let x = 18; x < 48; x++) v.push(I[y * n + x]); return v; };
+    $('#mk-read').innerHTML = `<span class="k">Ergebnis = Σ gₖ·Lₖ + G4 mit g =</span> (${g.map(v => nf(v, 1)).join('; ')})  <span class="k">·</span>  <span class="k">Rauschen in der Fläche des Rechtecks:</span> ${nf(sd(patch(N)), 3)} → <b>${nf(sd(patch(R)), 3)}</b>`;
+  } });
+  [...ig, ic, inz].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#mk-r').addEventListener('click', () => { ig.forEach(e => e.value = 1); ic.value = 0; m.draw(); });
+})();
+</script>

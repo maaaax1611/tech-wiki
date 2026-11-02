@@ -1,0 +1,41 @@
+<!-- title: Gauß-Skalenraum
+     lib: bv, py -->
+<figure class="fig">
+  <canvas id="cv-ss" class="c-bv" tabindex="0" role="img" aria-label="Links das Testbild, mit σ geglättet. Rechts das Helligkeitsprofil einer Bildzeile über alle Skalen: waagrecht der Ort, senkrecht σ."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="ss-s">σ</label><output id="ss-s-o"></output></div><input id="ss-s" type="range" min="0" max="1" step="0.01" value="0.35" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="ss-read"></div>
+  <figcaption><b>Abb.</b> Links das Testbild nach Glättung mit σ. Rechts der Skalenraum der gestrichelten Bildzeile: Jede Zeile des rechten Bildes ist das Profil dieser Bildzeile bei einem anderen σ, unten fein, oben grob (logarithmische Achse). Kleine Strukturen wie die Punkte und das feine Gitter verschwinden zuerst, große wie das Rechteck halten lange durch. Strukturen verschmelzen und verschwinden, aber beim Hochgehen tauchen keine neuen auf. Ein Klick rechts wählt σ.</figcaption>
+</figure>
+<script>
+/* ---------- Skalenraum ---------- */
+(() => {
+  const c = $('#cv-ss'), is = $('#ss-s'), n = BV_N, row = Math.round(0.79 * (n - 1)), NS = 48, SMIN = 0.3, SMAX = 32;
+  const sig = t => SMIN * Math.pow(SMAX / SMIN, t);
+  // Profil der Zeile über alle Skalen (1D-Glättung der Zeile genügt nicht: Zeile aus dem 2D-geglätteten Bild)
+  const SS = []; for (let k = 0; k < NS; k++) { const s = sig(k / (NS - 1)), B = gaussBlur(BV_PH, n, s); SS.push(rowProfile(B, n, row)); }
+  let key = -1, B = null, geo = null;
+  const m = reg({ el: c, draw() {
+    const t = +is.value, s = sig(t); $('#ss-s-o').textContent = nf(s, s < 10 ? 2 : 1) + ' px';
+    if (key !== t) { key = t; B = gaussBlur(BV_PH, n, s); }
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.5, 1) : imgLayout(w * 0.42, h, 1);
+    drawImg(ctx, B, n, L[0].x, L[0].y, L[0].size, { title: `geglättet, σ = ${nf(s, s < 10 ? 2 : 1)}` });
+    const yr = L[0].y + (row + 0.5) * L[0].size / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(L[0].x, yr); ctx.lineTo(L[0].x + L[0].size, yr); ctx.stroke(); ctx.setLineDash([]);
+    const px = narrow ? 0 : w * 0.42 + 24, py = narrow ? h * 0.52 + 20 : 22, pw = narrow ? w - 40 : w - px - 40, ph = narrow ? h - py - 30 : h - py - 30;
+    const off = document.createElement('canvas'); off.width = n; off.height = NS; const oc = off.getContext('2d'), id = oc.createImageData(n, NS);
+    for (let k = 0; k < NS; k++) for (let x = 0; x < n; x++) { const v = Math.round(Math.max(0, Math.min(1, SS[k][x])) * 255), q = 4 * ((NS - 1 - k) * n + x); id.data[q] = id.data[q + 1] = id.data[q + 2] = v; id.data[q + 3] = 255; }
+    oc.putImageData(id, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(off, px, py, pw, ph);
+    ctx.strokeStyle = tok('--rule'); ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
+    const yS = py + ph * (1 - t); ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, yS); ctx.lineTo(px + pw, yS); ctx.stroke();
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillText('Skalenraum der Zeile', px, py - 6);
+    ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`;
+    [0.3, 1, 3, 10, 30].forEach(v => { const yy = py + ph * (1 - Math.log(v / SMIN) / Math.log(SMAX / SMIN)); ctx.fillText(`σ ${nf(v, v < 1 ? 1 : 0)}`, px + pw + 4, yy + 4); });
+    ctx.textAlign = 'center'; ctx.fillText('x (Pixel)', px + pw / 2, py + ph + 16);
+    geo = { px, py, pw, ph };
+    $('#ss-read').innerHTML = `<span class="k">σ =</span> ${nf(s, 2)} px  <span class="k">·</span>  <span class="k">Strukturen kleiner als etwa 2σ = ${nf(2 * s, 1)} px sind weitgehend verschwunden</span>  <span class="k">·</span>  <span class="k">zwei Schritte σ₁ = σ₂ = ${nf(s / Math.SQRT2, 2)} ergeben zusammen dasselbe σ</span>`;
+  } });
+  c.addEventListener('click', e => { if (!geo) return; const [x, y] = mouse(c, e); const { px, py, pw, ph } = geo; if (x >= px && x <= px + pw && y >= py && y <= py + ph) { is.value = 1 - (y - py) / ph; m.draw(); } });
+  is.addEventListener('input', rafDebounce(() => m.draw()));
+})();
+</script>

@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skalenraum und Pyramiden</title>
+<!-- Erzeugt von build.py aus src/pages/bildverarbeitung/pyramiden.md. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Inhalt">
+    <div class="eyebrow">Inhalt</div>
+    <ol>
+      <li class="lv">Grundidee</li>
+      <li><a href="#groesse"><span class="n">1</span><span>Strukturen haben eine Größe</span></a></li>
+      <li><a href="#skalenraum"><span class="n">2</span><span>Gauß-Skalenraum</span></a></li>
+      <li class="lv">Pyramiden</li>
+      <li><a href="#aliasing"><span class="n">3</span><span>Verkleinern und Aliasing</span></a></li>
+      <li><a href="#gausspyramide"><span class="n">4</span><span>Gaußsche Pyramide</span></a></li>
+      <li><a href="#laplacepyramide"><span class="n">5</span><span>Laplace-Pyramide</span></a></li>
+      <li><a href="#dog"><span class="n">6</span><span>DoG und Blobs</span></a></li>
+      <li class="lv">Anwendungen</li>
+      <li><a href="#kontrast"><span class="n">7</span><span>Multiskalen-Kontrast</span></a></li>
+      <li><a href="#blending"><span class="n">8</span><span>Blending</span></a></li>
+      <li><a href="#wavelets"><span class="n">9</span><span>Wavelets (Ausblick)</span></a></li>
+      <li class="lv">Anhang</li>
+      <li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li>
+      <li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li>
+    </ol>
+  </nav>
+  <main>
+    <header id="ueberblick">
+      <p class="backlink"><a href="../index.html">← Wiki</a> · <a href="../index.html#bildverarbeitung">Bildverarbeitung und Computer Vision</a></p>
+      <div class="topbar"><div class="eyebrow">Bildverarbeitung · Multiskalen</div>
+        <div class="theme" role="group" aria-label="Darstellung"><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button><button type="button" data-t="system">System</button></div></div>
+      <h1>Skalenraum und Pyramiden</h1>
+      <p class="lede">Wie man ein Bild in Strukturen verschiedener Größe zerlegt. Vom Gauß-Skalenraum über das Verkleinern ohne Aliasing zur Gaußschen und Laplace-Pyramide, weiter zu Blob-Erkennung mit Difference of Gaussians und zu den Anwendungen: Multiskalen-Kontrastanhebung, nahtloses Überblenden und Wavelets.</p>
+      <details class="toc-mobile"><summary>Inhalt</summary><ol><li><a href="#groesse">Strukturen haben eine Größe</a></li><li><a href="#skalenraum">Gauß-Skalenraum</a></li><li><a href="#aliasing">Verkleinern und Aliasing</a></li><li><a href="#gausspyramide">Gaußsche Pyramide</a></li><li><a href="#laplacepyramide">Laplace-Pyramide</a></li><li><a href="#dog">DoG und Blobs</a></li><li><a href="#kontrast">Multiskalen-Kontrast</a></li><li><a href="#blending">Blending</a></li><li><a href="#wavelets">Wavelets (Ausblick)</a></li><li><a href="#formeln">Formeln</a></li><li><a href="#befehle">Befehle</a></li></ol></details>
+    </header>
+<section id="groesse">
+<div class="step"><b>1</b><span class="eyebrow">Grundidee</span></div>
+<h2>Strukturen haben eine Größe</h2>
+<p>Ein Röntgenbild enthält feine Kalkablagerungen, Gefäße, Organe und den Umriss des ganzen Körpers. Ein Filter mit fester Größe kann nicht alle gleichzeitig richtig behandeln: Ein Kantendetektor mit kleinem σ findet feine Kanten, aber auch jedes Rauschkorn; mit großem σ sieht er nur noch die groben Umrisse. Welche Größe richtig ist, weiß man vorher meist nicht.</p>
+<p>Die Lösung ist, das Bild auf <strong>vielen Skalen</strong> gleichzeitig zu betrachten. Das hat drei Vorteile:</p>
+<ul class="tight">
+<li><strong>Suchen:</strong> Ein Objekt unbekannter Größe findet man, indem man auf allen Skalen sucht und die nimmt, auf der es am stärksten antwortet (Abschnitt 6).</li>
+<li><strong>Trennen:</strong> Feine Details, mittlere Strukturen und grobe Helligkeitsverläufe lassen sich getrennt bearbeiten, etwa verstärken oder dämpfen (Abschnitt 7).</li>
+<li><strong>Rechenzeit:</strong> Grobe Strukturen braucht man nicht in voller Auflösung zu verarbeiten. Auf einem halb so großen Bild ist jeder Schritt viermal schneller, und ein großer Filter wird zu einem kleinen.</li>
+</ul>
+</section>
+<section id="skalenraum">
+<div class="step"><b>2</b><span class="eyebrow">Grundidee</span></div>
+<h2>Gauß-Skalenraum</h2>
+<p>Der <strong>Skalenraum</strong> eines Bildes ist die Familie aller seiner Gauß-geglätteten Versionen, mit σ als zusätzlicher Koordinate:</p>
+<div class="eq">\[
+L(x, y, \sigma) = G_\sigma * f
+\]</div>
+<p>Für <span class="arithmatex">\(\sigma = 0\)</span> ist das das Original, mit wachsendem σ verschwinden immer größere Strukturen. Dass man dafür gerade den Gaußfilter nimmt, ist kein Zufall. Er ist der einzige lineare Filter mit einer Reihe von Eigenschaften, die man von „Herauszoomen“ erwartet:</p>
+<ul class="tight">
+<li><strong>Kaskade:</strong> Zweimal hintereinander glätten ist wieder Gauß, <span class="arithmatex">\(G_{\sigma_1} * G_{\sigma_2} = G_{\sqrt{\sigma_1^2 + \sigma_2^2}}\)</span>. Feinere Skalen lassen sich schrittweise in gröbere überführen.</li>
+<li><strong>Keine neuen Strukturen:</strong> Beim Glätten verschwinden Strukturen nur, es entstehen keine neuen. In 1D nimmt die Zahl der lokalen Extrema und Nulldurchgänge mit σ nie zu. In 2D gilt das in etwas schwächerer Form.</li>
+<li><strong>Symmetrie:</strong> Er ist rotationssymmetrisch und behandelt alle Orte gleich.</li>
+</ul>
+<p>Physikalisch ist der Gauß-Skalenraum die Lösung der Wärmeleitungsgleichung <span class="arithmatex">\(\partial L/\partial t = \tfrac12\nabla^2 L\)</span> mit <span class="arithmatex">\(t = \sigma^2\)</span>: Das Bild „zerfließt“ wie eine Temperaturverteilung.</p>
+<figure class="fig">
+<canvas aria-label="Links das Testbild, mit σ geglättet. Rechts das Helligkeitsprofil einer Bildzeile über alle Skalen: waagrecht der Ort, senkrecht σ." class="c-bv" id="cv-ss" role="img" tabindex="0"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="ss-s">σ</label><output id="ss-s-o"></output></div><input autocomplete="off" id="ss-s" max="1" min="0" step="0.01" type="range" value="0.35"/></div>
+</div>
+<div class="readout" id="ss-read"></div>
+<figcaption><b>Abb. 1</b> Links das Testbild nach Glättung mit σ. Rechts der Skalenraum der gestrichelten Bildzeile: Jede Zeile des rechten Bildes ist das Profil dieser Bildzeile bei einem anderen σ, unten fein, oben grob (logarithmische Achse). Kleine Strukturen wie die Punkte und das feine Gitter verschwinden zuerst, große wie das Rechteck halten lange durch. Strukturen verschmelzen und verschwinden, aber beim Hochgehen tauchen keine neuen auf. Ein Klick rechts wählt σ.</figcaption>
+</figure>
+<div class="merke">
+<div class="eyebrow">Merke</div>
+<ul>
+<li>Skalenraum <span class="arithmatex">\(L(x, y, \sigma) = G_\sigma * f\)</span>: das Bild auf allen Glättungsstufen.</li>
+<li>Gauß: Kaskade <span class="arithmatex">\(\sigma = \sqrt{\sigma_1^2 + \sigma_2^2}\)</span>, keine neuen Strukturen beim Glätten.</li>
+</ul>
+</div>
+</section>
+<section id="aliasing">
+<div class="step"><b>3</b><span class="eyebrow">Pyramiden</span></div>
+<h2>Verkleinern und Aliasing</h2>
+<p>Im Skalenraum hat jede Ebene die volle Auflösung. Das ist verschwenderisch, denn nach dem Glätten mit großem σ enthält das Bild keine feinen Details mehr, die man mit vielen Pixeln darstellen müsste. Man kann es verkleinern.</p>
+<p>Verkleinern heißt <strong>Unterabtasten</strong>: Man behält nur jedes zweite Pixel. Ein Bild mit Pixelabstand 1 kann Frequenzen bis 0,5 Perioden pro Pixel darstellen (Nyquist-Grenze). Nach dem Halbieren liegt die Grenze bei 0,25 Perioden pro Originalpixel. Alles, was darüber liegt, verschwindet nicht einfach, sondern wird auf eine falsche, tiefere Frequenz gefaltet: <strong>Aliasing</strong>. Feine Gitter erscheinen als grobe Moiré-Muster, schräge Kanten als Treppen.</p>
+<p>Deshalb gilt: <strong>erst glätten, dann unterabtasten.</strong> Der Tiefpass soll alles oberhalb der neuen Nyquist-Grenze entfernen und darunter möglichst viel stehen lassen. Ein idealer Tiefpass ist nicht realisierbar, ein Gaußfilter mit <span class="arithmatex">\(\sigma \approx 1\)</span> Pixel ist für das Halbieren ein guter Kompromiss.</p>
+<figure class="fig">
+<canvas aria-label="Eine Zonenplatte, verkleinert ohne und mit vorheriger Glättung. Ohne Glättung entstehen falsche Ringmuster." class="c-bv-3" id="cv-al" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="al-f">Verkleinerung</label><output id="al-f-o"></output></div><input autocomplete="off" id="al-f" max="4" min="2" step="1" type="range" value="2"/></div>
+<div class="ctrl"><div class="lab"><label for="al-s">σ der Glättung</label><output id="al-s-o"></output></div><input autocomplete="off" id="al-s" max="3" min="0" step="0.1" type="range" value="1"/></div>
+</div>
+<div class="readout" id="al-read"></div>
+<figcaption><b>Abb. 2</b> Eine Zonenplatte: Ringe, deren Frequenz von der Mitte nach außen linear bis zur Nyquist-Grenze steigt. Nimmt man nur jedes zweite Pixel, kann das kleinere Bild nur noch halb so hohe Frequenzen darstellen. Alles darüber erscheint als falsches, gröberes Muster (Aliasing, hier als zusätzliche Ringzentren). Glättet man vorher, werden diese Frequenzen entfernt, bevor sie Schaden anrichten, die äußeren Ringe werden grau statt falsch. Die verkleinerten Bilder sind zum Vergleich wieder auf volle Größe gezogen.</figcaption>
+</figure>
+</section>
+<section id="gausspyramide">
+<div class="step"><b>4</b><span class="eyebrow">Pyramiden</span></div>
+<h2>Gaußsche Pyramide</h2>
+<p>Die <strong>Gaußsche Pyramide</strong> wiederholt „glätten und halbieren“ mehrmals. Aus dem Original <span class="arithmatex">\(G_0\)</span> entsteht jede weitere Ebene mit der Operation <strong>REDUCE</strong>:</p>
+<div class="eq">\[
+G_{k+1} = \operatorname{REDUCE}(G_k) = \big(w * G_k\big)\!\downarrow_2, \qquad w = \tfrac1{16}\,[1,\ 4,\ 6,\ 4,\ 1]
+\]</div>
+<p><span class="arithmatex">\(\downarrow_2\)</span> heißt: jedes zweite Pixel in jeder Richtung. Der Kern <span class="arithmatex">\(w\)</span> ist eine Binomialnäherung an einen Gauß mit <span class="arithmatex">\(\sigma = 1\)</span>, separierbar in Zeilen und Spalten. Weil jede Ebene im Maßstab der vorigen geglättet wird, entspricht Ebene <span class="arithmatex">\(k\)</span> ungefähr dem Skalenraum bei <span class="arithmatex">\(\sigma \approx 2^k\)</span> Originalpixeln.</p>
+<p>Ein 512 × 512-Bild ergibt Ebenen mit 256, 128, 64, … Pixeln Kantenlänge. Jede Ebene hat ein Viertel der Pixel der vorigen, alle zusammen also</p>
+<div class="eq">\[
+N\left(1 + \tfrac14 + \tfrac1{16} + \dots\right) = \tfrac43\,N
+\]</div>
+<p>Die ganze Pyramide braucht nur ein Drittel mehr Speicher als das Original.</p>
+<figure class="fig">
+<canvas aria-label="Die Ebenen der Gaußschen Pyramide des Testbilds, jede halb so groß wie die vorige." class="c-bv-wide" id="cv-gp" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="gp-k">Ebenen</label><output id="gp-k-o"></output></div><input autocomplete="off" id="gp-k" max="5" min="1" step="1" type="range" value="5"/></div>
+<label class="chk"><input autocomplete="off" id="gp-u" type="checkbox"/> auf gleiche Größe ziehen</label>
+</div>
+<div class="readout" id="gp-read"></div>
+<figcaption><b>Abb. 3</b> Die Gaußsche Pyramide des Testbilds. Jede Ebene entsteht aus der vorigen durch REDUCE: mit \([1, 4, 6, 4, 1]/16\) in beiden Richtungen glätten und jedes zweite Pixel behalten. Zieht man die Ebenen auf gleiche Größe, sieht man, dass jede Ebene eine stärker geglättete Version des Originals ist, wie im Skalenraum, nur mit jeweils halbierter Auflösung. Zusammen brauchen alle Ebenen nur etwa ein Drittel mehr Speicher als das Original.</figcaption>
+</figure>
+<pre><code class="language-python">import numpy as np, cv2
+from scipy import ndimage
+
+def reduce(f):
+    w = np.array([1, 4, 6, 4, 1]) / 16
+    g = ndimage.correlate1d(ndimage.correlate1d(f, w, axis=0), w, axis=1)
+    return g[::2, ::2]
+
+G = [f]
+for _ in range(4):
+    G.append(reduce(G[-1]))          # oder: G.append(cv2.pyrDown(G[-1]))
+</code></pre>
+</section>
+<section id="laplacepyramide">
+<div class="step"><b>5</b><span class="eyebrow">Pyramiden</span></div>
+<h2>Laplace-Pyramide</h2>
+<p>Die Gaußsche Pyramide sagt, wie das Bild auf jeder Skala aussieht. Oft interessiert aber, was auf jeder Skala <strong>dazukommt</strong>: die Details, die beim Verkleinern verloren gehen. Dafür braucht man die Gegenoperation <strong>EXPAND</strong>: Zwischen die Pixel Nullen einfügen und mit demselben Kern glätten, mal 4, weil nur ein Viertel der Werte nicht null ist:</p>
+<div class="eq">\[
+\operatorname{EXPAND}(G_{k+1}) = 4\,w * \big(G_{k+1}\!\uparrow_2\big)
+\]</div>
+<p>Die <strong>Laplace-Pyramide</strong> (Burt und Adelson, 1983) speichert in jeder Ebene die Differenz zwischen einer Gauß-Ebene und der vergrößerten nächsten:</p>
+<div class="eq">\[
+L_k = G_k - \operatorname{EXPAND}(G_{k+1}), \qquad k = 0, \dots, K - 1, \qquad L_K = G_K
+\]</div>
+<p>Jede Ebene ist ein <strong>Bandpass</strong>: Sie enthält die Strukturen, die zu groß für die vorige und zu klein für die nächste Ebene sind. Der Name kommt daher, dass die Differenz zweier Gaußfilter dem Laplacian of Gaussian ähnelt (Abschnitt 6). Weil jede Ebene genau die fehlenden Details enthält, lässt sich das Original <strong>exakt</strong> zurückgewinnen, von oben nach unten:</p>
+<div class="eq">\[
+G_k = L_k + \operatorname{EXPAND}(G_{k+1})
+\]</div>
+<p>Das gilt unabhängig davon, wie gut REDUCE und EXPAND sind, denn jeder Fehler beim Vergrößern steckt ja in <span class="arithmatex">\(L_k\)</span>. Die Laplace-Pyramide ist <strong>übervollständig</strong>, sie hat wie die Gaußsche <span class="arithmatex">\(\tfrac43 N\)</span> Werte. Dafür sind die meisten Detailwerte nahe null, was sie gut komprimierbar macht. Das war die ursprüngliche Motivation der Erfinder.</p>
+<figure class="fig">
+<canvas aria-label="Die vier Detailebenen der Laplace-Pyramide und die oberste Gauß-Ebene, darunter die Rekonstruktion aus den gewählten Ebenen." class="c-bv-wide" id="cv-lp" role="img"></canvas>
+<div class="ctrls">
+<span style="font-family:var(--font-display);font-size:14px;color:var(--muted)">Ebenen in der Rekonstruktion:</span>
+<label class="chk"><input autocomplete="off" checked="" id="lp-0" type="checkbox"/> L0</label>
+<label class="chk"><input autocomplete="off" checked="" id="lp-1" type="checkbox"/> L1</label>
+<label class="chk"><input autocomplete="off" checked="" id="lp-2" type="checkbox"/> L2</label>
+<label class="chk"><input autocomplete="off" checked="" id="lp-3" type="checkbox"/> L3</label>
+<label class="chk"><input autocomplete="off" checked="" id="lp-4" type="checkbox"/> G4</label>
+</div>
+<div class="readout" id="lp-read"></div>
+<figcaption><b>Abb. 4</b> Oben die Laplace-Pyramide des Testbilds: Jede Ebene \(L_k\) ist die Differenz zwischen einer Gauß-Ebene und der vergrößerten nächsten, also genau die Details, die beim Verkleinern verloren gehen (blau positiv, rot negativ). \(L_0\) enthält die feinsten Kanten und das Gitter, \(L_3\) nur noch grobe Flächen. Ganz rechts die kleinste Gauß-Ebene als Rest. Unten die Rekonstruktion: von oben vergrößern und Ebene für Ebene addieren. Mit allen Ebenen ist sie exakt, bis auf Rundungsfehler. Lässt man Ebenen weg, fehlt genau deren Frequenzband.</figcaption>
+</figure>
+<pre><code class="language-python">def expand(g, shape):
+    w = np.array([1, 4, 6, 4, 1]) / 16
+    u = np.zeros(shape); u[::2, ::2] = g
+    return 4 * ndimage.correlate1d(ndimage.correlate1d(u, w, axis=0), w, axis=1)
+
+L = [G[k] - expand(G[k + 1], G[k].shape) for k in range(len(G) - 1)] + [G[-1]]
+# OpenCV: L_k = G[k] - cv2.pyrUp(G[k + 1], dstsize=G[k].shape[::-1])
+
+r = L[-1]                                  # Rekonstruktion
+for k in reversed(range(len(L) - 1)):
+    r = L[k] + expand(r, L[k].shape)
+</code></pre>
+<div class="merke">
+<div class="eyebrow">Merke</div>
+<ul>
+<li>REDUCE: mit <span class="arithmatex">\(\tfrac1{16}[1, 4, 6, 4, 1]\)</span> glätten, jedes zweite Pixel. EXPAND: Nullen einfügen, mit <span class="arithmatex">\(4w\)</span> glätten.</li>
+<li><span class="arithmatex">\(L_k = G_k - \operatorname{EXPAND}(G_{k+1})\)</span>: Bandpass-Details. Rekonstruktion exakt, <span class="arithmatex">\(\tfrac43 N\)</span> Werte.</li>
+</ul>
+</div>
+</section>
+<section id="dog">
+<div class="step"><b>6</b><span class="eyebrow">Pyramiden</span></div>
+<h2>Difference of Gaussians und Blobs</h2>
+<p>Die Differenz zweier Gauß-geglätteter Bilder mit benachbartem σ, die <strong>Difference of Gaussians</strong> (DoG), ist eine gute Näherung an den skalierten Laplacian of Gaussian:</p>
+<div class="eq">\[
+G_{k\sigma} * f - G_\sigma * f \;\approx\; (k - 1)\,\sigma^2\,\nabla^2 G_\sigma * f
+\]</div>
+<p>Sie folgt aus der Wärmeleitungsgleichung, denn <span class="arithmatex">\(\partial G/\partial\sigma = \sigma\nabla^2 G\)</span>. Die Laplace-Pyramide ist im Kern eine DoG-Pyramide mit <span class="arithmatex">\(k = 2\)</span>.</p>
+<p>Der LoG antwortet am stärksten auf runde Flecken, <strong>Blobs</strong>, und zwar auf der Skala, die zu ihrer Größe passt: Eine Scheibe mit Radius <span class="arithmatex">\(r\)</span> liefert die stärkste Antwort bei <span class="arithmatex">\(\sigma = r/\sqrt2\)</span>. Damit man Antworten verschiedener Skalen vergleichen kann, muss man sie <strong>skalennormieren</strong>, also mit <span class="arithmatex">\(\sigma^2\)</span> multiplizieren. Sonst wird jede Antwort mit wachsendem σ kleiner, weil stärker geglättete Bilder flachere Krümmungen haben. Blobs sind dann die Punkte, an denen <span class="arithmatex">\(|\sigma^2\nabla^2 L|\)</span> größer ist als bei allen 26 Nachbarn in Ort und Skala.</p>
+<figure class="fig">
+<canvas aria-label="Flecken verschiedener Größe mit den gefundenen Blobs als Kreise, daneben die skalennormierte LoG-Antwort und ihre Stärke über σ für jeden Fleck." class="c-bv" id="cv-bb" role="img" tabindex="0"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="bb-s">σ der Anzeige</label><output id="bb-s-o"></output></div><input autocomplete="off" id="bb-s" max="13" min="0" step="1" type="range" value="5"/></div>
+<div class="ctrl"><div class="lab"><label for="bb-t">Schwelle</label><output id="bb-t-o"></output></div><input autocomplete="off" id="bb-t" max="0.6" min="0.05" step="0.01" type="range" value="0.2"/></div>
+<label class="chk"><input autocomplete="off" checked="" id="bb-n" type="checkbox"/> mit σ² normieren</label>
+</div>
+<div class="readout" id="bb-read"></div>
+<figcaption><b>Abb. 5</b> Fünf helle Scheiben mit Radien von 2 bis 14 Pixeln. Für 14 Skalen von σ = 1 bis 16 wird der Laplacian of Gaussian berechnet und mit σ² multipliziert (Mitte, für das gewählte σ). Ein Blob ist ein Punkt, an dem die Antwort größer ist als bei allen Nachbarn im Ort und in der Skala. Die gefundenen Blobs sind links als Kreise mit Radius \(\sqrt2\,\sigma\) eingezeichnet. Rechts die Antwort im Mittelpunkt jeder Scheibe über σ: Jede Kurve hat ihr Maximum bei \(\sigma \approx r/\sqrt2\). Ohne die Normierung mit σ² fällt die Antwort mit wachsendem σ immer weiter ab, große Blobs würden nie gefunden.</figcaption>
+</figure>
+<p>Genau so findet <strong>SIFT</strong> (Lowe, 2004) seine Merkmalspunkte. Es baut den Skalenraum in <strong>Oktaven</strong> auf: Innerhalb einer Oktave wird σ in <span class="arithmatex">\(s\)</span> Schritten um den Faktor <span class="arithmatex">\(k = 2^{1/s}\)</span> erhöht (Lowe verwendet <span class="arithmatex">\(s = 3\)</span> und <span class="arithmatex">\(\sigma_0 = 1{,}6\)</span>), dann wird das Bild halbiert und die nächste Oktave beginnt. Die DoG zwischen benachbarten Stufen liefert die Kandidaten. Mehr dazu auf der Seite <em>Merkmale und Matching</em>.</p>
+<pre><code class="language-python">from skimage.feature import blob_log, blob_dog
+blobs = blob_log(f, min_sigma=1, max_sigma=16, num_sigma=14, threshold=0.1)   # Zeilen: y, x, σ
+dog = ndimage.gaussian_filter(f, 1.6 * s) - ndimage.gaussian_filter(f, s)
+</code></pre>
+<div class="merke">
+<div class="eyebrow">Merke</div>
+<ul>
+<li>DoG ≈ skalierter LoG. Skalennormierte Antwort <span class="arithmatex">\(\sigma^2\nabla^2 L\)</span> ist über die Skalen vergleichbar.</li>
+<li>Blob mit Radius <span class="arithmatex">\(r\)</span> antwortet am stärksten bei <span class="arithmatex">\(\sigma = r/\sqrt2\)</span>. Grundlage von SIFT.</li>
+</ul>
+</div>
+</section>
+<section id="kontrast">
+<div class="step"><b>7</b><span class="eyebrow">Anwendungen</span></div>
+<h2>Multiskalen-Kontrastanhebung</h2>
+<p>Die Laplace-Pyramide trennt ein Bild in Bänder, die man einzeln bearbeiten kann. Gewichtet man jede Detailebene mit einem eigenen Faktor <span class="arithmatex">\(g_k\)</span> und setzt das Bild wieder zusammen, erhält man eine <strong>frequenzabhängige Kontrastanhebung</strong>:</p>
+<div class="eq">\[
+f' = \operatorname{Rekonstruktion}\big(g_0 L_0,\ g_1 L_1,\ \dots,\ g_{K-1} L_{K-1},\ L_K\big)
+\]</div>
+<p>Mit allen <span class="arithmatex">\(g_k = 1\)</span> kommt das Original heraus. Typische Einstellungen: Die feinste Ebene, die vor allem Rauschen enthält, wird leicht gedämpft (<span class="arithmatex">\(g_0 &lt; 1\)</span>). Mittlere Ebenen mit den diagnostisch interessanten Strukturen werden verstärkt. Die grobe Restebene bleibt, sie trägt die Gesamthelligkeit.</p>
+<p>Lineare Faktoren verstärken schwache und starke Details gleich. An starken Kanten entstehen dann Überschwinger, ähnlich wie beim Unsharp Masking (Seite <a href="filter.html#unsharp">Filter und Faltung</a>). Deshalb wendet man meist eine <strong>nichtlineare</strong> Kennlinie auf die Detailwerte an, die kleine Amplituden stärker anhebt als große, etwa <span class="arithmatex">\(v \mapsto \operatorname{sign}(v)\,|v|^{p}\)</span> mit <span class="arithmatex">\(p &lt; 1\)</span>. So werden schwache Strukturen sichtbar, ohne dass kräftige Kanten überschießen. Ganz kleine Amplituden in der Größe des Rauschens lässt man dabei linear, sonst würde die Kennlinie gerade das Rauschen am stärksten verstärken. Auf diesem Prinzip beruhen viele Bildverarbeitungsketten in der digitalen Radiographie, bekannt geworden etwa als MUSICA (Multiscale Image Contrast Amplification, Vuylsteke und Schoeters, 1994).</p>
+<figure class="fig">
+<canvas aria-label="Verrauschtes Testbild und das Ergebnis nach Gewichtung der Laplace-Ebenen, daneben ein Profil und die Gewichte pro Ebene." class="c-bv" id="cv-mk" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="mk-0">L0 (fein)</label><output id="mk-0-o"></output></div><input autocomplete="off" id="mk-0" max="3" min="0" step="0.1" type="range" value="0.4"/></div>
+<div class="ctrl"><div class="lab"><label for="mk-1">L1</label><output id="mk-1-o"></output></div><input autocomplete="off" id="mk-1" max="3" min="0" step="0.1" type="range" value="1.8"/></div>
+<div class="ctrl"><div class="lab"><label for="mk-2">L2</label><output id="mk-2-o"></output></div><input autocomplete="off" id="mk-2" max="3" min="0" step="0.1" type="range" value="1.5"/></div>
+<div class="ctrl"><div class="lab"><label for="mk-3">L3 (grob)</label><output id="mk-3-o"></output></div><input autocomplete="off" id="mk-3" max="3" min="0" step="0.1" type="range" value="1.0"/></div>
+</div>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="mk-c">Kompression großer Details</label><output id="mk-c-o"></output></div><input autocomplete="off" id="mk-c" max="1" min="0" step="0.05" type="range" value="0.3"/></div>
+<div class="ctrl"><div class="lab"><label for="mk-n">Rauschen</label><output id="mk-n-o"></output></div><input autocomplete="off" id="mk-n" max="0.08" min="0" step="0.005" type="range" value="0.025"/></div>
+<button class="btn" id="mk-r" type="button">Neutral (alle 1)</button>
+</div>
+<div class="readout" id="mk-read"></div>
+<figcaption><b>Abb. 6</b> Das leicht verrauschte Testbild wird in eine Laplace-Pyramide zerlegt, jede Detailebene mit ihrem eigenen Faktor gewichtet und wieder zusammengesetzt. Mittlere Ebenen stärker gewichten hebt Strukturen mittlerer Größe hervor. Die feinste Ebene enthält vor allem Rauschen und wird hier abgeschwächt. Die Kompression wirkt oberhalb des Rauschniveaus: Mittelgroße Detailamplituden werden stärker angehoben als große, so werden schwache Strukturen sichtbar, ohne dass starke Kanten überschießen. Amplituden in der Größe des Rauschens bleiben linear, sonst würde das Rauschen mitverstärkt. Rechts das Profil entlang der gestrichelten Zeile.</figcaption>
+</figure>
+<pre><code class="language-python">gains = [0.6, 1.8, 1.5, 1.0]
+p = 0.6                                       # &lt; 1: kleine Details stärker anheben
+Lw = [g * np.sign(l) * np.abs(l / np.abs(l).max()) ** p * np.abs(l).max()
+      for g, l in zip(gains, L[:-1])] + [L[-1]]
+r = Lw[-1]
+for k in reversed(range(len(Lw) - 1)):
+    r = Lw[k] + expand(r, Lw[k].shape)
+</code></pre>
+</section>
+<section id="blending">
+<div class="step"><b>8</b><span class="eyebrow">Anwendungen</span></div>
+<h2>Blending</h2>
+<p>Zwei Bilder entlang einer Maske zusammenzusetzen, hinterlässt eine sichtbare Naht, wenn sich Helligkeit oder Textur unterscheiden. Ein weicher Übergang hilft nur bedingt: Ist er schmal, bleibt die Naht sichtbar. Ist er breit, überlagern sich feine Details beider Bilder zu Geisterbildern.</p>
+<p><strong>Pyramiden-Blending</strong> (Burt und Adelson, 1983) mischt jedes Frequenzband mit einer passend breiten Übergangszone. Man zerlegt beide Bilder <span class="arithmatex">\(A\)</span> und <span class="arithmatex">\(B\)</span> in Laplace-Pyramiden, die Maske <span class="arithmatex">\(M\)</span> in eine Gaußsche Pyramide, und mischt Ebene für Ebene:</p>
+<div class="eq">\[
+L_k^{\text{neu}} = G_k(M)\cdot L_k(A) + \big(1 - G_k(M)\big)\cdot L_k(B)
+\]</div>
+<p>Auf groben Ebenen ist die verkleinerte Maske sehr weich, Helligkeitsunterschiede gehen dort über eine breite Zone ineinander über. Auf feinen Ebenen ist sie scharf, Details wechseln abrupt und überlagern sich nicht. Nach der Rekonstruktion ist keine Naht mehr zu sehen. Das berühmte Beispiel der Autoren ist ein halber Apfel, nahtlos an eine halbe Orange gesetzt. Dasselbe Verfahren steckt in Panorama-Programmen und im Belichtungsverschmelzen (Exposure Fusion).</p>
+<figure class="fig">
+<canvas aria-label="Zwei unterschiedliche Bilder, die entlang einer Maske zusammengesetzt werden: mit harter Kante und mit Pyramiden-Blending." class="c-bv-4" id="cv-bd" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="bd-k">Pyramidenebenen</label><output id="bd-k-o"></output></div><input autocomplete="off" id="bd-k" max="6" min="1" step="1" type="range" value="5"/></div>
+<div class="ctrl" style="flex:0 1 180px"><div class="lab"><label for="bd-m">Maske</label></div><select autocomplete="off" id="bd-m"><option value="half">linke Hälfte</option><option value="disk">Kreis</option></select></div>
+</div>
+<div class="readout" id="bd-read"></div>
+<figcaption><b>Abb. 7</b> Zwei Bilder mit verschiedener Helligkeit und Textur sollen entlang einer Maske zusammengesetzt werden. Mit harter Maske entsteht eine sichtbare Naht. Beim Pyramiden-Blending (Burt und Adelson) werden beide Bilder in Laplace-Pyramiden zerlegt und jede Ebene mit der passend verkleinerten Gauß-Pyramide der Maske gemischt. Grobe Ebenen gehen dadurch über eine breite Zone ineinander über, feine Details über eine schmale. Mit nur einer Ebene ist das Ergebnis wieder die harte Naht.</figcaption>
+</figure>
+</section>
+<section id="wavelets">
+<div class="step"><b>9</b><span class="eyebrow">Anwendungen</span></div>
+<h2>Wavelets (Ausblick)</h2>
+<p>Die Laplace-Pyramide hat zwei Schwächen: Sie ist übervollständig (<span class="arithmatex">\(\tfrac43 N\)</span> Werte), und ihre Ebenen unterscheiden nicht nach Richtung. Die <strong>Wavelet-Zerlegung</strong> behebt beides. Die einfachste ist die <strong>Haar-Zerlegung</strong>: Je 2 × 2 Pixel <span class="arithmatex">\(\begin{smallmatrix} a &amp; b \\ c &amp; d \end{smallmatrix}\)</span> werden zu einem Mittelwert und drei Differenzen:</p>
+<div class="eq">\[
+LL = \tfrac{a + b + c + d}{2}, \quad HL = \tfrac{a - b + c - d}{2}, \quad LH = \tfrac{a + b - c - d}{2}, \quad HH = \tfrac{a - b - c + d}{2}
+\]</div>
+<p>Das ist eine orthogonale Transformation (siehe <a href="../grundlagen/lineare-algebra.html#orthogonal">Orthogonalität</a>): vier Werte rein, vier Werte raus, Energie bleibt erhalten, die Umkehrung ist die Transponierte. Die Zerlegung ist damit <strong>kritisch abgetastet</strong>, sie hat genau <span class="arithmatex">\(N\)</span> Werte. <span class="arithmatex">\(LL\)</span> ist ein halb so großes Tiefpassbild, das man in der nächsten Stufe weiter zerlegt. Die drei Detailbänder reagieren auf waagrechte, senkrechte und diagonale Strukturen.</p>
+<figure class="fig">
+<canvas aria-label="Haar-Wavelet-Zerlegung des Testbilds in Tiefpass und drei Richtungsbänder, über mehrere Stufen." class="c-bv-sq" id="cv-hw" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="hw-k">Stufen</label><output id="hw-k-o"></output></div><input autocomplete="off" id="hw-k" max="3" min="1" step="1" type="range" value="2"/></div>
+</div>
+<div class="readout" id="hw-read"></div>
+<figcaption><b>Abb. 8</b> Eine Haar-Stufe fasst je 2 × 2 Pixel zu vier Werten zusammen: dem Mittelwert (LL, oben links) und drei Differenzen. LH reagiert auf waagrechte Kanten, HL auf senkrechte, HH auf diagonale Strukturen (blau positiv, rot negativ). Weitere Stufen zerlegen jeweils wieder das LL-Bild. Anders als die Laplace-Pyramide braucht die Zerlegung genau so viele Werte wie das Bild (kritisch abgetastet) und trennt die Details nach Richtung.</figcaption>
+</figure>
+<p>Haar ist die einfachste Wavelet-Familie, aber ihre Filter sind kurz und kantig, was Blockartefakte begünstigt. Glattere Wavelets (Daubechies, biorthogonale CDF-Wavelets) nutzen längere Filter. JPEG 2000 verwendet CDF 9/7 für verlustbehaftete und CDF 5/3 für verlustfreie Kompression. Beim <strong>Wavelet-Entrauschen</strong> setzt man kleine Detailkoeffizienten auf null oder zieht sie Richtung null (Thresholding), weil Rauschen sich auf viele kleine Koeffizienten verteilt, Strukturen auf wenige große.</p>
+<pre><code class="language-python">import pywt
+cA, (cH, cV, cD) = pywt.dwt2(f, "haar")      # eine Stufe
+coeffs = pywt.wavedec2(f, "db2", level=3)    # mehrere Stufen
+f_rec = pywt.waverec2(coeffs, "db2")
+</code></pre>
+<div class="merke">
+<div class="eyebrow">Merke</div>
+<ul>
+<li>Laplace-Pyramide: übervollständig, richtungsunabhängig. Wavelets: kritisch abgetastet, drei Richtungsbänder.</li>
+<li>Haar: orthogonal, Energie bleibt erhalten. Anwendungen: Kompression (JPEG 2000), Entrauschen durch Schwellwerte.</li>
+</ul>
+</div>
+</section>
+<section id="formeln">
+<div class="eyebrow">Anhang A</div>
+<h2>Formeln</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Thema</th>
+<th>Formel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skalenraum</td>
+<td><span class="arithmatex">\(L(x, y, \sigma) = G_\sigma * f\)</span>, <span class="arithmatex">\(\ G_{\sigma_1} * G_{\sigma_2} = G_{\sqrt{\sigma_1^2 + \sigma_2^2}}\)</span></td>
+</tr>
+<tr>
+<td>Aliasing</td>
+<td>nach <span class="arithmatex">\(\downarrow_2\)</span> Nyquist bei 0,25 Perioden pro Originalpixel, vorher Tiefpass</td>
+</tr>
+<tr>
+<td>Gauß-Übertragung</td>
+<td><span class="arithmatex">\(H(f) = e^{-2\pi^2\sigma^2 f^2}\)</span></td>
+</tr>
+<tr>
+<td>REDUCE</td>
+<td><span class="arithmatex">\(G_{k+1} = (w * G_k)\downarrow_2\)</span>, <span class="arithmatex">\(w = \tfrac1{16}[1, 4, 6, 4, 1]\)</span></td>
+</tr>
+<tr>
+<td>EXPAND</td>
+<td><span class="arithmatex">\(4\,w * (G\uparrow_2)\)</span></td>
+</tr>
+<tr>
+<td>Laplace-Pyramide</td>
+<td><span class="arithmatex">\(L_k = G_k - \operatorname{EXPAND}(G_{k+1})\)</span>, <span class="arithmatex">\(\ G_k = L_k + \operatorname{EXPAND}(G_{k+1})\)</span></td>
+</tr>
+<tr>
+<td>Speicher</td>
+<td><span class="arithmatex">\(N(1 + \tfrac14 + \tfrac1{16} + \dots) = \tfrac43 N\)</span></td>
+</tr>
+<tr>
+<td>Skala von Ebene <span class="arithmatex">\(k\)</span></td>
+<td><span class="arithmatex">\(\sigma \approx 2^k\)</span> Originalpixel</td>
+</tr>
+<tr>
+<td>DoG</td>
+<td><span class="arithmatex">\(G_{k\sigma} - G_\sigma \approx (k - 1)\,\sigma^2\nabla^2 G_\sigma\)</span></td>
+</tr>
+<tr>
+<td>Blob</td>
+<td>Maximum von <span class="arithmatex">\(\lvert\sigma^2\nabla^2 L\rvert\)</span> bei <span class="arithmatex">\(\sigma = r/\sqrt2\)</span></td>
+</tr>
+<tr>
+<td>Blending</td>
+<td><span class="arithmatex">\(L_k^\text{neu} = G_k(M)\,L_k(A) + (1 - G_k(M))\,L_k(B)\)</span></td>
+</tr>
+<tr>
+<td>Haar</td>
+<td><span class="arithmatex">\(LL, HL, LH, HH = \tfrac12(a \pm b \pm c \pm d)\)</span>, orthogonal</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section id="befehle">
+<div class="eyebrow">Anhang B</div>
+<h2>Befehle</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Aufgabe</th>
+<th>NumPy / SciPy / scikit-image / PyWavelets</th>
+<th>OpenCV</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>eine Ebene verkleinern</td>
+<td><code>reduce(f)</code> (oben)</td>
+<td><code>cv2.pyrDown(f)</code></td>
+</tr>
+<tr>
+<td>eine Ebene vergrößern</td>
+<td><code>expand(g, shape)</code> (oben)</td>
+<td><code>cv2.pyrUp(g, dstsize=(w, h))</code></td>
+</tr>
+<tr>
+<td>Gaußsche Pyramide</td>
+<td><code>skimage.transform.pyramid_gaussian(f, max_layer=4)</code></td>
+<td>Schleife über <code>cv2.pyrDown</code></td>
+</tr>
+<tr>
+<td>Laplace-Pyramide</td>
+<td><code>skimage.transform.pyramid_laplacian(f)</code></td>
+<td><code>G[k] - cv2.pyrUp(G[k+1])</code></td>
+</tr>
+<tr>
+<td>Verkleinern mit Glättung</td>
+<td><code>skimage.transform.rescale(f, 0.5, anti_aliasing=True)</code></td>
+<td><code>cv2.resize(f, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)</code></td>
+</tr>
+<tr>
+<td>Blobs</td>
+<td><code>skimage.feature.blob_log</code>, <code>blob_dog</code></td>
+<td>kein LoG-Detektor (<code>SimpleBlobDetector</code> arbeitet mit Schwellwerten)</td>
+</tr>
+<tr>
+<td>Wavelets</td>
+<td><code>pywt.dwt2</code>, <code>pywt.wavedec2</code>, <code>pywt.waverec2</code></td>
+<td>nicht enthalten</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+    <footer>Alle Abbildungen rechnen im Browser auf künstlichen Testbildern mit 128 × 128 Pixeln. Code-Beispiele in NumPy/SciPy, darunter jeweils die übliche OpenCV-Variante.</footer>
+  </main>
+</div>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Skalenraum ---------- */
+(() => {
+  const c = $('#cv-ss'), is = $('#ss-s'), n = BV_N, row = Math.round(0.79 * (n - 1)), NS = 48, SMIN = 0.3, SMAX = 32;
+  const sig = t => SMIN * Math.pow(SMAX / SMIN, t);
+  // Profil der Zeile über alle Skalen (1D-Glättung der Zeile genügt nicht: Zeile aus dem 2D-geglätteten Bild)
+  const SS = []; for (let k = 0; k < NS; k++) { const s = sig(k / (NS - 1)), B = gaussBlur(BV_PH, n, s); SS.push(rowProfile(B, n, row)); }
+  let key = -1, B = null, geo = null;
+  const m = reg({ el: c, draw() {
+    const t = +is.value, s = sig(t); $('#ss-s-o').textContent = nf(s, s < 10 ? 2 : 1) + ' px';
+    if (key !== t) { key = t; B = gaussBlur(BV_PH, n, s); }
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.5, 1) : imgLayout(w * 0.42, h, 1);
+    drawImg(ctx, B, n, L[0].x, L[0].y, L[0].size, { title: `geglättet, σ = ${nf(s, s < 10 ? 2 : 1)}` });
+    const yr = L[0].y + (row + 0.5) * L[0].size / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(L[0].x, yr); ctx.lineTo(L[0].x + L[0].size, yr); ctx.stroke(); ctx.setLineDash([]);
+    const px = narrow ? 0 : w * 0.42 + 24, py = narrow ? h * 0.52 + 20 : 22, pw = narrow ? w - 40 : w - px - 40, ph = narrow ? h - py - 30 : h - py - 30;
+    const off = document.createElement('canvas'); off.width = n; off.height = NS; const oc = off.getContext('2d'), id = oc.createImageData(n, NS);
+    for (let k = 0; k < NS; k++) for (let x = 0; x < n; x++) { const v = Math.round(Math.max(0, Math.min(1, SS[k][x])) * 255), q = 4 * ((NS - 1 - k) * n + x); id.data[q] = id.data[q + 1] = id.data[q + 2] = v; id.data[q + 3] = 255; }
+    oc.putImageData(id, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(off, px, py, pw, ph);
+    ctx.strokeStyle = tok('--rule'); ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
+    const yS = py + ph * (1 - t); ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, yS); ctx.lineTo(px + pw, yS); ctx.stroke();
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillText('Skalenraum der Zeile', px, py - 6);
+    ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`;
+    [0.3, 1, 3, 10, 30].forEach(v => { const yy = py + ph * (1 - Math.log(v / SMIN) / Math.log(SMAX / SMIN)); ctx.fillText(`σ ${nf(v, v < 1 ? 1 : 0)}`, px + pw + 4, yy + 4); });
+    ctx.textAlign = 'center'; ctx.fillText('x (Pixel)', px + pw / 2, py + ph + 16);
+    geo = { px, py, pw, ph };
+    $('#ss-read').innerHTML = `<span class="k">σ =</span> ${nf(s, 2)} px  <span class="k">·</span>  <span class="k">Strukturen kleiner als etwa 2σ = ${nf(2 * s, 1)} px sind weitgehend verschwunden</span>  <span class="k">·</span>  <span class="k">zwei Schritte σ₁ = σ₂ = ${nf(s / Math.SQRT2, 2)} ergeben zusammen dasselbe σ</span>`;
+  } });
+  c.addEventListener('click', e => { if (!geo) return; const [x, y] = mouse(c, e); const { px, py, pw, ph } = geo; if (x >= px && x <= px + pw && y >= py && y <= py + ph) { is.value = 1 - (y - py) / ph; m.draw(); } });
+  is.addEventListener('input', rafDebounce(() => m.draw()));
+})();
+</script>
+<script>
+/* ---------- Aliasing ---------- */
+(() => {
+  const c = $('#cv-al'), iff = $('#al-f'), is = $('#al-s'), n = BV_N, Z = zonePlate(n);
+  const m = reg({ el: c, draw() {
+    const f = +iff.value, s = +is.value; $('#al-f-o').textContent = `1 : ${f}`; $('#al-s-o').textContent = nf(s, 1) + ' px';
+    const A = decimate(Z, n, f), Bs = decimate(gaussBlur(Z, n, s), n, f);
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    drawImg(ctx, Z, n, L[0].x, L[0].y, L[0].size, { title: `Original ${n} × ${n}` });
+    drawImg(ctx, A.I, A.n, L[1].x, L[1].y, L[1].size, { title: `jedes ${f}. Pixel` });
+    drawImg(ctx, Bs.I, Bs.n, L[2].x, L[2].y, L[2].size, { title: `erst glätten, dann jedes ${f}.` });
+    const ny = 0.5 / f, keep = Math.exp(-2 * (Math.PI * s * ny) ** 2);
+    $('#al-read').innerHTML = `<span class="k">Neue Nyquist-Grenze:</span> ${nf(ny, 3)} Perioden pro Originalpixel  <span class="k">·</span>  <span class="k">Gauß mit σ = ${nf(s, 1)} lässt bei dieser Frequenz</span> <b>${nf(keep * 100, 0)} %</b> <span class="k">durch</span>` + (keep > 0.6 ? '  ·  zu wenig geglättet' : keep < 0.05 ? '  ·  stärker als nötig geglättet' : '');
+  } });
+  [iff, is].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Gaußsche Pyramide ---------- */
+(() => {
+  const c = $('#cv-gp'), ik = $('#gp-k'), iu = $('#gp-u'), n = BV_N, G = gaussPyr(BV_PH, n, 5);
+  const m = reg({ el: c, draw() {
+    const K = +ik.value, up = iu.checked; $('#gp-k-o').textContent = K;
+    const { ctx, w, h } = fit(c), gap = 14, top = 22;
+    if (up) { const L = imgLayout(w, h, K); G.slice(0, K).forEach((p, k) => drawImg(ctx, p.I, p.n, L[k].x, L[k].y, L[k].size, { title: `G${k}: ${p.n} × ${p.n}` })); }
+    else { const s0 = Math.min(h - top - 4, (w - gap * 4) / (1 + 1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)); let x = 0;
+      G.slice(0, K).forEach((p, k) => { const sz = s0 / 2 ** k; drawImg(ctx, p.I, p.n, x, top + (s0 - sz), sz, { title: k < 3 ? `G${k}: ${p.n} × ${p.n}` : `G${k}` }); x += sz + gap; }); }
+    const tot = G.slice(0, K).reduce((a, p) => a + p.n * p.n, 0);
+    $('#gp-read').innerHTML = `<span class="k">Pixel in ${K} Ebene${K > 1 ? 'n' : ''}:</span> ${tot.toLocaleString('de-DE')}  <span class="k">·</span>  <span class="k">Verhältnis zum Original:</span> <b>${nf(tot / (n * n), 3)}</b> (Grenzwert 4/3 = 1,333)  <span class="k">·</span>  <span class="k">Glättung von G${K - 1} gegenüber G0:</span> σ ≈ ${nf(Math.sqrt((4 ** (K - 1) - 1) / 3), 2)} px`;
+  } });
+  [ik, iu].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+<script>
+/* ---------- Laplace-Pyramide ---------- */
+(() => {
+  const c = $('#cv-lp'), cks = [0, 1, 2, 3, 4].map(k => $('#lp-' + k)), n = BV_N, L = lapPyr(BV_PH, n, 5);
+  const m = reg({ el: c, draw() {
+    const g = cks.map(e => e.checked ? 1 : 0), R = lapRecon(L, g);
+    let err = 0; for (let q = 0; q < R.length; q++) err = Math.max(err, Math.abs(R[q] - BV_PH[q]));
+    const { ctx, w, h } = fit(c), top = 22, gap = 12;
+    const s = Math.floor(Math.min((w - 6 * gap) / 7, (h - 2 * top - gap) / 2));
+    L.forEach((p, k) => { const x = k * (s + gap); drawImg(ctx, p.I, p.n, x, top, s, k < 4 ? { title: `L${k}`, sym: true, hi: maxAbs(p.I) * 0.6 } : { title: 'G4 (Rest)' });
+      if (!g[k]) { ctx.fillStyle = rgba(tok('--surface'), 0.7); ctx.fillRect(x, top, s, s); } });
+    const big = 2 * s + gap, xr = 5 * (s + gap);
+    drawImg(ctx, R, n, xr, top, Math.min(big, h - top - 4), { title: 'Rekonstruktion' });
+    ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`; ctx.textAlign = 'left';
+    L.forEach((p, k) => ctx.fillText(`${p.n} × ${p.n}`, k * (s + gap), top + s + 14));
+    // Frequenzbänder schematisch
+    const by = top + s + 34, bw = 5 * s + 4 * gap, bh = Math.min(26, h - by - 20);
+    if (bh > 10) { ctx.fillStyle = tok('--muted'); ctx.fillText('Frequenzbänder (logarithmisch, fein → grob)', 0, by - 4);
+      const edges = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.008];
+      for (let k = 0; k < 5; k++) { const x0 = bw * (1 - Math.log2(edges[k] / 0.008) / Math.log2(0.5 / 0.008)), x1 = bw * (1 - Math.log2(edges[k + 1] / 0.008) / Math.log2(0.5 / 0.008));
+        ctx.fillStyle = g[k] ? rgba(tok('--accent'), 0.25 + 0.12 * k) : rgba(tok('--muted'), 0.15); ctx.fillRect(x0, by, x1 - x0 - 2, bh);
+        ctx.fillStyle = tok('--fg'); ctx.textAlign = 'center'; ctx.fillText(k < 4 ? `L${k}` : 'G4', (x0 + x1) / 2, by + bh / 2 + 4); } }
+    const on = g.reduce((a, b) => a + b, 0);
+    $('#lp-read').innerHTML = `<span class="k">Größte Abweichung der Rekonstruktion vom Original:</span> <b>${err < 1e-4 ? ex(err, 1) : nf(err, 3)}</b>${on === 5 ? ' (exakt bis auf Rundung)' : ''}  <span class="k">·</span>  <span class="k">gespeicherte Werte:</span> ${L.reduce((a, p) => a + p.n * p.n, 0).toLocaleString('de-DE')} statt ${(n * n).toLocaleString('de-DE')}`;
+  } });
+  cks.forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Blobs ---------- */
+(() => {
+  const c = $('#cv-bb'), is = $('#bb-s'), it = $('#bb-t'), inr = $('#bb-n'), n = BV_N, I = blobImage(n), LAP = [0, 1, 0, 1, -4, 1, 0, 1, 0];
+  const S = Array.from({ length: 14 }, (_, k) => Math.pow(2, k * 4 / 13)), RAW = S.map(s => correlate(gaussBlur(I, n, s), n, LAP, 3, 3).map(v => -v));
+  const cols = ['--accent', '--bin1', '--bin2', '--hole', '--fg'];
+  const m = reg({ el: c, draw() {
+    const norm = inr.checked, R = RAW.map((A, k) => norm ? A.map(v => v * S[k] * S[k]) : A), gmax = Math.max(...R.map(maxAbs)), thr = +it.value * gmax, k0 = +is.value;
+    $('#bb-s-o').textContent = nf(S[k0], 2) + ' px'; $('#bb-t-o').textContent = nf(+it.value * 100, 0) + ' %';
+    const found = [];
+    for (let k = 1; k < S.length - 1; k++) for (let y = 2; y < n - 2; y++) for (let x = 2; x < n - 2; x++) { const v = R[k][y * n + x]; if (v < thr) continue; let mx = true;
+      for (let dk = -1; dk <= 1 && mx; dk++) for (let dy = -1; dy <= 1 && mx; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dk && !dy && !dx) continue; if (R[k + dk][(y + dy) * n + x + dx] > v) { mx = false; break; } }
+      if (mx) found.push([x, y, S[k]]); }
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.55, 2) : imgLayout(w * 0.62, h, 2);
+    drawImg(ctx, I, n, L[0].x, L[0].y, L[0].size, { title: `gefundene Blobs: ${found.length}` });
+    const sc = L[0].size / n; found.forEach(([x, y, s]) => { ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L[0].x + (x + 0.5) * sc, L[0].y + (y + 0.5) * sc, Math.SQRT2 * s * sc, 0, 7); ctx.stroke(); });
+    drawImg(ctx, R[k0], n, L[1].x, L[1].y, L[1].size, { title: `${norm ? '−σ²·' : '−'}LoG, σ = ${nf(S[k0], 2)}`, sym: true, hi: gmax * 0.8 });
+    const px = narrow ? 0 : w * 0.62 + 16, py = narrow ? h * 0.58 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: 4, y0: Math.min(0, ...PY_BLOBS.map(([bx, by]) => Math.min(...R.map(A => A[by * n + bx])))), y1: gmax * 1.05, xt: [0, 1, 2, 3, 4], xf: v => String(2 ** v), yt: [0], yf: () => '0', xl: 'σ (logarithmisch)', yl: 'Antwort im Zentrum', l: 26, b: 50, t: 8 });
+    PY_BLOBS.forEach(([bx, by, r], i) => { ctx.strokeStyle = tok(cols[i]); ctx.lineWidth = 2; ctx.beginPath(); S.forEach((s, k) => { const X = f.X(Math.log2(s)), Y = f.Y(R[k][by * n + bx]); k ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.stroke();
+      const xs = Math.log2(r / Math.SQRT2); if (xs >= 0 && xs <= 4) { ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(f.X(xs), f.by); ctx.lineTo(f.X(xs), f.by + f.bh); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = tok(cols[i]); ctx.font = `11px ${MONO}`; ctx.textAlign = 'left'; ctx.fillText(`r ${nf(r, 1)}`, f.bx + i * f.bw / 5, f.by + f.bh + 44); });
+    ctx.strokeStyle = tok('--muted'); ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(f.X(Math.log2(S[k0])), f.by); ctx.lineTo(f.X(Math.log2(S[k0])), f.by + f.bh); ctx.stroke(); ctx.setLineDash([]);
+    $('#bb-read').innerHTML = found.length ? `<span class="k">Gefunden (Mitte, σ, Radius √2·σ):</span> ` + found.map(([x, y, s]) => `(${x}, ${y}) σ ${nf(s, 1)} → r ≈ ${nf(Math.SQRT2 * s, 1)}`).join('  ·  ') : '<span class="k">Keine Blobs über der Schwelle.</span>';
+  } });
+  [is, it, inr].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Multiskalen-Kontrast ---------- */
+(() => {
+  const c = $('#cv-mk'), ig = [0, 1, 2, 3].map(k => $('#mk-' + k)), ic = $('#mk-c'), inz = $('#mk-n'), n = BV_N, row = Math.round(0.22 * (n - 1));
+  let key = '', P = null, N = null;
+  const m = reg({ el: c, draw() {
+    const g = ig.map(e => +e.value), cp = +ic.value, a = +inz.value;
+    ig.forEach((e, k) => $(`#mk-${k}-o`).textContent = nf(g[k], 1)); $('#mk-c-o').textContent = nf(cp * 100, 0) + ' %'; $('#mk-n-o').textContent = nf(a, 3);
+    if (key !== String(a)) { key = String(a); N = addNoise(BV_PH, a); P = lapPyr(N, n, 5); }
+    // nichtlineare Gewichtung: v ↦ g · sign(v)·|v|^(1−cp)·M^cp (M = Maximum der Ebene)
+    // Kennlinie: linear bis zur Rauschschwelle T, darüber komprimiert; feinste Ebene nur linear (dort steckt vor allem Rauschen)
+    const Q = P.map((p, k) => { if (k === 4) return p; const M = maxAbs(p.I), T = Math.max(3 * a, 0.02);
+      const curve = x => x <= T ? x : T + (M - T) * Math.pow((x - T) / (M - T), 1 - cp) * (1 - cp * 0.3);
+      return { n: p.n, I: p.I.map(v => g[k] * Math.sign(v) * (k === 0 ? Math.abs(v) : curve(Math.abs(v)))) }; });
+    const R = lapRecon(Q);
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.55, 2) : imgLayout(w * 0.6, h, 2);
+    drawImg(ctx, N, n, L[0].x, L[0].y, L[0].size, { title: 'Eingang' });
+    drawImg(ctx, R, n, L[1].x, L[1].y, L[1].size, { title: 'Ergebnis' });
+    L.forEach(l => { const y = l.y + (row + 0.5) * l.size / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(l.x, y); ctx.lineTo(l.x + l.size, y); ctx.stroke(); ctx.setLineDash([]); });
+    const px = narrow ? 0 : w * 0.6 + 18, py = narrow ? h * 0.58 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const p0 = rowProfile(N, n, row), p1 = rowProfile(R, n, row);
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: n - 1, y0: Math.min(-0.1, ...p1), y1: Math.max(1.1, ...p1), xt: [0, 64, 127], yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'x (Pixel)', l: 34, b: 30, t: 24 });
+    [[p0, tok('--muted'), 1.4], [p1, tok('--accent'), 2]].forEach(([p, col, lw]) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); p.forEach((v, x) => x ? ctx.lineTo(f.X(x), f.Y(v)) : ctx.moveTo(f.X(x), f.Y(v))); ctx.stroke(); });
+    ctx.font = `12px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--muted'); ctx.fillText('— Eingang', f.bx, f.by - 8); ctx.fillStyle = tok('--accent'); ctx.fillText('— Ergebnis', f.bx + 76, f.by - 8);
+    const sd = A => { const mu = A.reduce((s, v) => s + v, 0) / A.length; return Math.sqrt(A.reduce((s, v) => s + (v - mu) ** 2, 0) / A.length); };
+    // Rauschen in einer flachen Fläche (Rechteckinneres) messen
+    const patch = (I) => { const v = []; for (let y = 18; y < 40; y++) for (let x = 18; x < 48; x++) v.push(I[y * n + x]); return v; };
+    $('#mk-read').innerHTML = `<span class="k">Ergebnis = Σ gₖ·Lₖ + G4 mit g =</span> (${g.map(v => nf(v, 1)).join('; ')})  <span class="k">·</span>  <span class="k">Rauschen in der Fläche des Rechtecks:</span> ${nf(sd(patch(N)), 3)} → <b>${nf(sd(patch(R)), 3)}</b>`;
+  } });
+  [...ig, ic, inz].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#mk-r').addEventListener('click', () => { ig.forEach(e => e.value = 1); ic.value = 0; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Blending ---------- */
+(() => {
+  const c = $('#cv-bd'), ik = $('#bd-k'), im = $('#bd-m'), n = BV_N;
+  const A = new Float32Array(n * n), B = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    A[y * n + x] = 0.68 + 0.12 * Math.sin(x * 0.55) * Math.sin(y * 0.55) + 0.1 * (y / n);
+    B[y * n + x] = 0.3 + 0.18 * (((x >> 3) + (y >> 3)) % 2) - 0.08 * (x / n);
+  }
+  const mask = t => { const M = new Float32Array(n * n); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) M[y * n + x] = t === 'half' ? (x < n / 2 ? 1 : 0) : ((x - n / 2) ** 2 + (y - n / 2) ** 2 < (n * 0.3) ** 2 ? 1 : 0); return M; };
+  const m = reg({ el: c, draw() {
+    const K = +ik.value, M = mask(im.value); $('#bd-k-o').textContent = K;
+    const hard = new Float32Array(n * n); for (let q = 0; q < n * n; q++) hard[q] = M[q] * A[q] + (1 - M[q]) * B[q];
+    let R;
+    if (K === 1) R = hard;
+    else { const LA = lapPyr(A, n, K), LB = lapPyr(B, n, K), GM = gaussPyr(M, n, K);
+      const LR = LA.map((p, k) => ({ n: p.n, I: p.I.map((v, q) => GM[k].I[q] * v + (1 - GM[k].I[q]) * LB[k].I[q]) })); R = lapRecon(LR); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 4);
+    drawImg(ctx, A, n, L[0].x, L[0].y, L[0].size, { title: 'Bild A' });
+    drawImg(ctx, B, n, L[1].x, L[1].y, L[1].size, { title: 'Bild B' });
+    drawImg(ctx, hard, n, L[2].x, L[2].y, L[2].size, { title: 'harte Maske' });
+    drawImg(ctx, R, n, L[3].x, L[3].y, L[3].size, { title: K === 1 ? 'Pyramide (1 Ebene = hart)' : `Pyramide, ${K} Ebenen` });
+    const zone = Math.round(2 * Math.sqrt((4 ** (K - 1) - 1) / 3) * 2);
+    $('#bd-read').innerHTML = `<span class="k">Übergangsbreite der gröbsten Ebene:</span> etwa ${K === 1 ? 0 : zone} Pixel  <span class="k">·</span>  <span class="k">feinste Ebene:</span> wenige Pixel, Details bleiben scharf`;
+  } });
+  [ik, im].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Haar ---------- */
+(() => {
+  const c = $('#cv-hw'), ik = $('#hw-k'), n = BV_N;
+  const m = reg({ el: c, draw() {
+    const K = +ik.value; $('#hw-k-o').textContent = K;
+    const { ctx, w, h } = fit(c), top = 20, S = Math.min(h - top - 4, w * 0.62), x0 = 0;
+    let cur = BV_PH, cn = n, size = S, ox = x0, oy = top, energy = [];
+    const tot = BV_PH.reduce((a, v) => a + v * v, 0);
+    for (let k = 0; k < K; k++) {
+      const H = haar(cur, cn), half = size / 2, dmax = Math.max(maxAbs(H.LH), maxAbs(H.HL), maxAbs(H.HH)) * 0.6;
+      drawImg(ctx, H.HL, H.n, ox + half, oy, half, { sym: true, hi: dmax });
+      drawImg(ctx, H.LH, H.n, ox, oy + half, half, { sym: true, hi: dmax });
+      drawImg(ctx, H.HH, H.n, ox + half, oy + half, half, { sym: true, hi: dmax });
+      ctx.fillStyle = tok('--fg'); ctx.font = `600 ${Math.max(10, 13 - 2 * k)}px ${DISP}`; ctx.textAlign = 'left';
+      ctx.fillText(`HL${k + 1}`, ox + half + 4, oy + 14); ctx.fillText(`LH${k + 1}`, ox + 4, oy + half + 14); ctx.fillText(`HH${k + 1}`, ox + half + 4, oy + half + 14);
+      energy.push(['LH', 'HL', 'HH'].map(b => H[b].reduce((a, v) => a + v * v, 0)));
+      cur = H.LL; cn = H.n; size = half;
+      if (k === K - 1) { const llmax = maxAbs(H.LL); drawImg(ctx, H.LL, H.n, ox, oy, half, { lo: 0, hi: llmax }); ctx.fillStyle = tok('--bin2'); ctx.fillText(`LL${k + 1}`, ox + 4, oy + 14); }
+    }
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.fillText('Zerlegung', x0, top - 6);
+    // Energieanteile
+    const bx = S + 30; if (w - bx > 140) { ctx.font = `600 13px ${DISP}`; ctx.fillText('Anteil der Energie', bx, top + 10);
+      const rows = [...energy.flatMap((e, k) => [['LH', e[0]], ['HL', e[1]], ['HH', e[2]]].map(([b, v]) => [`${b}${k + 1}`, v])), [`LL${K}`, cur.reduce((a, v) => a + v * v, 0)]];
+      const bw = w - bx - 70; rows.forEach(([lab, v], i) => { const y = top + 26 + i * 20, frac = v / tot; ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`; ctx.fillText(lab, bx, y + 10);
+        ctx.fillStyle = lab.startsWith('LL') ? tok('--bin2') : tok('--accent'); ctx.fillRect(bx + 40, y, Math.max(1, bw * Math.sqrt(frac)), 13); ctx.fillStyle = tok('--fg'); ctx.fillText(nf(100 * frac, frac < 0.01 ? 2 : 1) + ' %', bx + 46 + bw * Math.sqrt(frac), y + 10); }); }
+    $('#hw-read').innerHTML = `<span class="k">Werte nach ${K} Stufe${K > 1 ? 'n' : ''}:</span> ${(n * n).toLocaleString('de-DE')}, genau so viele wie Pixel  <span class="k">·</span>  <span class="k">Energie im Tiefpass LL${K}:</span> <b>${nf(100 * cur.reduce((a, v) => a + v * v, 0) / tot, 1)} %</b>, der Rest verteilt sich auf wenige große Detailkoeffizienten`;
+  } });
+  ik.addEventListener('input', () => m.draw());
+})();
+</script>
+</body>
+</html>

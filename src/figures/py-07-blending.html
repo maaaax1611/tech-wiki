@@ -1,0 +1,39 @@
+<!-- title: Blending mit Pyramiden
+     lib: bv, py -->
+<figure class="fig">
+  <canvas id="cv-bd" class="c-bv-4" role="img" aria-label="Zwei unterschiedliche Bilder, die entlang einer Maske zusammengesetzt werden: mit harter Kante und mit Pyramiden-Blending."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="bd-k">Pyramidenebenen</label><output id="bd-k-o"></output></div><input id="bd-k" type="range" min="1" max="6" step="1" value="5" autocomplete="off"></div>
+    <div class="ctrl" style="flex:0 1 180px"><div class="lab"><label for="bd-m">Maske</label></div><select id="bd-m" autocomplete="off"><option value="half">linke Hälfte</option><option value="disk">Kreis</option></select></div>
+  </div>
+  <div class="readout" id="bd-read"></div>
+  <figcaption><b>Abb.</b> Zwei Bilder mit verschiedener Helligkeit und Textur sollen entlang einer Maske zusammengesetzt werden. Mit harter Maske entsteht eine sichtbare Naht. Beim Pyramiden-Blending (Burt und Adelson) werden beide Bilder in Laplace-Pyramiden zerlegt und jede Ebene mit der passend verkleinerten Gauß-Pyramide der Maske gemischt. Grobe Ebenen gehen dadurch über eine breite Zone ineinander über, feine Details über eine schmale. Mit nur einer Ebene ist das Ergebnis wieder die harte Naht.</figcaption>
+</figure>
+<script>
+/* ---------- Blending ---------- */
+(() => {
+  const c = $('#cv-bd'), ik = $('#bd-k'), im = $('#bd-m'), n = BV_N;
+  const A = new Float32Array(n * n), B = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    A[y * n + x] = 0.68 + 0.12 * Math.sin(x * 0.55) * Math.sin(y * 0.55) + 0.1 * (y / n);
+    B[y * n + x] = 0.3 + 0.18 * (((x >> 3) + (y >> 3)) % 2) - 0.08 * (x / n);
+  }
+  const mask = t => { const M = new Float32Array(n * n); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) M[y * n + x] = t === 'half' ? (x < n / 2 ? 1 : 0) : ((x - n / 2) ** 2 + (y - n / 2) ** 2 < (n * 0.3) ** 2 ? 1 : 0); return M; };
+  const m = reg({ el: c, draw() {
+    const K = +ik.value, M = mask(im.value); $('#bd-k-o').textContent = K;
+    const hard = new Float32Array(n * n); for (let q = 0; q < n * n; q++) hard[q] = M[q] * A[q] + (1 - M[q]) * B[q];
+    let R;
+    if (K === 1) R = hard;
+    else { const LA = lapPyr(A, n, K), LB = lapPyr(B, n, K), GM = gaussPyr(M, n, K);
+      const LR = LA.map((p, k) => ({ n: p.n, I: p.I.map((v, q) => GM[k].I[q] * v + (1 - GM[k].I[q]) * LB[k].I[q]) })); R = lapRecon(LR); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 4);
+    drawImg(ctx, A, n, L[0].x, L[0].y, L[0].size, { title: 'Bild A' });
+    drawImg(ctx, B, n, L[1].x, L[1].y, L[1].size, { title: 'Bild B' });
+    drawImg(ctx, hard, n, L[2].x, L[2].y, L[2].size, { title: 'harte Maske' });
+    drawImg(ctx, R, n, L[3].x, L[3].y, L[3].size, { title: K === 1 ? 'Pyramide (1 Ebene = hart)' : `Pyramide, ${K} Ebenen` });
+    const zone = Math.round(2 * Math.sqrt((4 ** (K - 1) - 1) / 3) * 2);
+    $('#bd-read').innerHTML = `<span class="k">Übergangsbreite der gröbsten Ebene:</span> etwa ${K === 1 ? 0 : zone} Pixel  <span class="k">·</span>  <span class="k">feinste Ebene:</span> wenige Pixel, Details bleiben scharf`;
+  } });
+  [ik, im].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

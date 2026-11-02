@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaußsche Pyramide</title>
+<!-- Erzeugt von build.py aus src/figures/py-03-gauss-pyramide.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-gp" class="c-bv-wide" role="img" aria-label="Die Ebenen der Gaußschen Pyramide des Testbilds, jede halb so groß wie die vorige."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="gp-k">Ebenen</label><output id="gp-k-o"></output></div><input id="gp-k" type="range" min="1" max="5" step="1" value="5" autocomplete="off"></div>
+    <label class="chk"><input id="gp-u" type="checkbox" autocomplete="off"> auf gleiche Größe ziehen</label>
+  </div>
+  <div class="readout" id="gp-read"></div>
+  <figcaption><b>Abb. 3</b> Die Gaußsche Pyramide des Testbilds. Jede Ebene entsteht aus der vorigen durch REDUCE: mit \([1, 4, 6, 4, 1]/16\) in beiden Richtungen glätten und jedes zweite Pixel behalten. Zieht man die Ebenen auf gleiche Größe, sieht man, dass jede Ebene eine stärker geglättete Version des Originals ist, wie im Skalenraum, nur mit jeweils halbierter Auflösung. Zusammen brauchen alle Ebenen nur etwa ein Drittel mehr Speicher als das Original.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Gaußsche Pyramide ---------- */
+(() => {
+  const c = $('#cv-gp'), ik = $('#gp-k'), iu = $('#gp-u'), n = BV_N, G = gaussPyr(BV_PH, n, 5);
+  const m = reg({ el: c, draw() {
+    const K = +ik.value, up = iu.checked; $('#gp-k-o').textContent = K;
+    const { ctx, w, h } = fit(c), gap = 14, top = 22;
+    if (up) { const L = imgLayout(w, h, K); G.slice(0, K).forEach((p, k) => drawImg(ctx, p.I, p.n, L[k].x, L[k].y, L[k].size, { title: `G${k}: ${p.n} × ${p.n}` })); }
+    else { const s0 = Math.min(h - top - 4, (w - gap * 4) / (1 + 1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)); let x = 0;
+      G.slice(0, K).forEach((p, k) => { const sz = s0 / 2 ** k; drawImg(ctx, p.I, p.n, x, top + (s0 - sz), sz, { title: k < 3 ? `G${k}: ${p.n} × ${p.n}` : `G${k}` }); x += sz + gap; }); }
+    const tot = G.slice(0, K).reduce((a, p) => a + p.n * p.n, 0);
+    $('#gp-read').innerHTML = `<span class="k">Pixel in ${K} Ebene${K > 1 ? 'n' : ''}:</span> ${tot.toLocaleString('de-DE')}  <span class="k">·</span>  <span class="k">Verhältnis zum Original:</span> <b>${nf(tot / (n * n), 3)}</b> (Grenzwert 4/3 = 1,333)  <span class="k">·</span>  <span class="k">Glättung von G${K - 1} gegenüber G0:</span> σ ≈ ${nf(Math.sqrt((4 ** (K - 1) - 1) / 3), 2)} px`;
+  } });
+  [ik, iu].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+</body>
+</html>

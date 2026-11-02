@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laplace-Pyramide und Rekonstruktion</title>
+<!-- Erzeugt von build.py aus src/figures/py-04-laplace-pyramide.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-lp" class="c-bv-wide" role="img" aria-label="Die vier Detailebenen der Laplace-Pyramide und die oberste Gauß-Ebene, darunter die Rekonstruktion aus den gewählten Ebenen."></canvas>
+  <div class="ctrls">
+    <span style="font-family:var(--font-display);font-size:14px;color:var(--muted)">Ebenen in der Rekonstruktion:</span>
+    <label class="chk"><input id="lp-0" type="checkbox" checked autocomplete="off"> L0</label>
+    <label class="chk"><input id="lp-1" type="checkbox" checked autocomplete="off"> L1</label>
+    <label class="chk"><input id="lp-2" type="checkbox" checked autocomplete="off"> L2</label>
+    <label class="chk"><input id="lp-3" type="checkbox" checked autocomplete="off"> L3</label>
+    <label class="chk"><input id="lp-4" type="checkbox" checked autocomplete="off"> G4</label>
+  </div>
+  <div class="readout" id="lp-read"></div>
+  <figcaption><b>Abb. 4</b> Oben die Laplace-Pyramide des Testbilds: Jede Ebene \(L_k\) ist die Differenz zwischen einer Gauß-Ebene und der vergrößerten nächsten, also genau die Details, die beim Verkleinern verloren gehen (blau positiv, rot negativ). \(L_0\) enthält die feinsten Kanten und das Gitter, \(L_3\) nur noch grobe Flächen. Ganz rechts die kleinste Gauß-Ebene als Rest. Unten die Rekonstruktion: von oben vergrößern und Ebene für Ebene addieren. Mit allen Ebenen ist sie exakt, bis auf Rundungsfehler. Lässt man Ebenen weg, fehlt genau deren Frequenzband.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Laplace-Pyramide ---------- */
+(() => {
+  const c = $('#cv-lp'), cks = [0, 1, 2, 3, 4].map(k => $('#lp-' + k)), n = BV_N, L = lapPyr(BV_PH, n, 5);
+  const m = reg({ el: c, draw() {
+    const g = cks.map(e => e.checked ? 1 : 0), R = lapRecon(L, g);
+    let err = 0; for (let q = 0; q < R.length; q++) err = Math.max(err, Math.abs(R[q] - BV_PH[q]));
+    const { ctx, w, h } = fit(c), top = 22, gap = 12;
+    const s = Math.floor(Math.min((w - 6 * gap) / 7, (h - 2 * top - gap) / 2));
+    L.forEach((p, k) => { const x = k * (s + gap); drawImg(ctx, p.I, p.n, x, top, s, k < 4 ? { title: `L${k}`, sym: true, hi: maxAbs(p.I) * 0.6 } : { title: 'G4 (Rest)' });
+      if (!g[k]) { ctx.fillStyle = rgba(tok('--surface'), 0.7); ctx.fillRect(x, top, s, s); } });
+    const big = 2 * s + gap, xr = 5 * (s + gap);
+    drawImg(ctx, R, n, xr, top, Math.min(big, h - top - 4), { title: 'Rekonstruktion' });
+    ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`; ctx.textAlign = 'left';
+    L.forEach((p, k) => ctx.fillText(`${p.n} × ${p.n}`, k * (s + gap), top + s + 14));
+    // Frequenzbänder schematisch
+    const by = top + s + 34, bw = 5 * s + 4 * gap, bh = Math.min(26, h - by - 20);
+    if (bh > 10) { ctx.fillStyle = tok('--muted'); ctx.fillText('Frequenzbänder (logarithmisch, fein → grob)', 0, by - 4);
+      const edges = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.008];
+      for (let k = 0; k < 5; k++) { const x0 = bw * (1 - Math.log2(edges[k] / 0.008) / Math.log2(0.5 / 0.008)), x1 = bw * (1 - Math.log2(edges[k + 1] / 0.008) / Math.log2(0.5 / 0.008));
+        ctx.fillStyle = g[k] ? rgba(tok('--accent'), 0.25 + 0.12 * k) : rgba(tok('--muted'), 0.15); ctx.fillRect(x0, by, x1 - x0 - 2, bh);
+        ctx.fillStyle = tok('--fg'); ctx.textAlign = 'center'; ctx.fillText(k < 4 ? `L${k}` : 'G4', (x0 + x1) / 2, by + bh / 2 + 4); } }
+    const on = g.reduce((a, b) => a + b, 0);
+    $('#lp-read').innerHTML = `<span class="k">Größte Abweichung der Rekonstruktion vom Original:</span> <b>${err < 1e-4 ? ex(err, 1) : nf(err, 3)}</b>${on === 5 ? ' (exakt bis auf Rundung)' : ''}  <span class="k">·</span>  <span class="k">gespeicherte Werte:</span> ${L.reduce((a, p) => a + p.n * p.n, 0).toLocaleString('de-DE')} statt ${(n * n).toLocaleString('de-DE')}`;
+  } });
+  cks.forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haar-Wavelet-Zerlegung</title>
+<!-- Erzeugt von build.py aus src/figures/py-08-haar.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-hw" class="c-bv-sq" role="img" aria-label="Haar-Wavelet-Zerlegung des Testbilds in Tiefpass und drei Richtungsbänder, über mehrere Stufen."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="hw-k">Stufen</label><output id="hw-k-o"></output></div><input id="hw-k" type="range" min="1" max="3" step="1" value="2" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="hw-read"></div>
+  <figcaption><b>Abb. 8</b> Eine Haar-Stufe fasst je 2 × 2 Pixel zu vier Werten zusammen: dem Mittelwert (LL, oben links) und drei Differenzen. LH reagiert auf waagrechte Kanten, HL auf senkrechte, HH auf diagonale Strukturen (blau positiv, rot negativ). Weitere Stufen zerlegen jeweils wieder das LL-Bild. Anders als die Laplace-Pyramide braucht die Zerlegung genau so viele Werte wie das Bild (kritisch abgetastet) und trennt die Details nach Richtung.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Haar ---------- */
+(() => {
+  const c = $('#cv-hw'), ik = $('#hw-k'), n = BV_N;
+  const m = reg({ el: c, draw() {
+    const K = +ik.value; $('#hw-k-o').textContent = K;
+    const { ctx, w, h } = fit(c), top = 20, S = Math.min(h - top - 4, w * 0.62), x0 = 0;
+    let cur = BV_PH, cn = n, size = S, ox = x0, oy = top, energy = [];
+    const tot = BV_PH.reduce((a, v) => a + v * v, 0);
+    for (let k = 0; k < K; k++) {
+      const H = haar(cur, cn), half = size / 2, dmax = Math.max(maxAbs(H.LH), maxAbs(H.HL), maxAbs(H.HH)) * 0.6;
+      drawImg(ctx, H.HL, H.n, ox + half, oy, half, { sym: true, hi: dmax });
+      drawImg(ctx, H.LH, H.n, ox, oy + half, half, { sym: true, hi: dmax });
+      drawImg(ctx, H.HH, H.n, ox + half, oy + half, half, { sym: true, hi: dmax });
+      ctx.fillStyle = tok('--fg'); ctx.font = `600 ${Math.max(10, 13 - 2 * k)}px ${DISP}`; ctx.textAlign = 'left';
+      ctx.fillText(`HL${k + 1}`, ox + half + 4, oy + 14); ctx.fillText(`LH${k + 1}`, ox + 4, oy + half + 14); ctx.fillText(`HH${k + 1}`, ox + half + 4, oy + half + 14);
+      energy.push(['LH', 'HL', 'HH'].map(b => H[b].reduce((a, v) => a + v * v, 0)));
+      cur = H.LL; cn = H.n; size = half;
+      if (k === K - 1) { const llmax = maxAbs(H.LL); drawImg(ctx, H.LL, H.n, ox, oy, half, { lo: 0, hi: llmax }); ctx.fillStyle = tok('--bin2'); ctx.fillText(`LL${k + 1}`, ox + 4, oy + 14); }
+    }
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.fillText('Zerlegung', x0, top - 6);
+    // Energieanteile
+    const bx = S + 30; if (w - bx > 140) { ctx.font = `600 13px ${DISP}`; ctx.fillText('Anteil der Energie', bx, top + 10);
+      const rows = [...energy.flatMap((e, k) => [['LH', e[0]], ['HL', e[1]], ['HH', e[2]]].map(([b, v]) => [`${b}${k + 1}`, v])), [`LL${K}`, cur.reduce((a, v) => a + v * v, 0)]];
+      const bw = w - bx - 70; rows.forEach(([lab, v], i) => { const y = top + 26 + i * 20, frac = v / tot; ctx.fillStyle = tok('--muted'); ctx.font = `11px ${MONO}`; ctx.fillText(lab, bx, y + 10);
+        ctx.fillStyle = lab.startsWith('LL') ? tok('--bin2') : tok('--accent'); ctx.fillRect(bx + 40, y, Math.max(1, bw * Math.sqrt(frac)), 13); ctx.fillStyle = tok('--fg'); ctx.fillText(nf(100 * frac, frac < 0.01 ? 2 : 1) + ' %', bx + 46 + bw * Math.sqrt(frac), y + 10); }); }
+    $('#hw-read').innerHTML = `<span class="k">Werte nach ${K} Stufe${K > 1 ? 'n' : ''}:</span> ${(n * n).toLocaleString('de-DE')}, genau so viele wie Pixel  <span class="k">·</span>  <span class="k">Energie im Tiefpass LL${K}:</span> <b>${nf(100 * cur.reduce((a, v) => a + v * v, 0) / tot, 1)} %</b>, der Rest verteilt sich auf wenige große Detailkoeffizienten`;
+  } });
+  ik.addEventListener('input', () => m.draw());
+})();
+</script>
+</body>
+</html>

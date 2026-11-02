@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blobs auf ihrer Skala finden</title>
+<!-- Erzeugt von build.py aus src/figures/py-05-blobs.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-bb" class="c-bv" tabindex="0" role="img" aria-label="Flecken verschiedener Größe mit den gefundenen Blobs als Kreise, daneben die skalennormierte LoG-Antwort und ihre Stärke über σ für jeden Fleck."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="bb-s">σ der Anzeige</label><output id="bb-s-o"></output></div><input id="bb-s" type="range" min="0" max="13" step="1" value="5" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="bb-t">Schwelle</label><output id="bb-t-o"></output></div><input id="bb-t" type="range" min="0.05" max="0.6" step="0.01" value="0.2" autocomplete="off"></div>
+    <label class="chk"><input id="bb-n" type="checkbox" checked autocomplete="off"> mit σ² normieren</label>
+  </div>
+  <div class="readout" id="bb-read"></div>
+  <figcaption><b>Abb. 5</b> Fünf helle Scheiben mit Radien von 2 bis 14 Pixeln. Für 14 Skalen von σ = 1 bis 16 wird der Laplacian of Gaussian berechnet und mit σ² multipliziert (Mitte, für das gewählte σ). Ein Blob ist ein Punkt, an dem die Antwort größer ist als bei allen Nachbarn im Ort und in der Skala. Die gefundenen Blobs sind links als Kreise mit Radius \(\sqrt2\,\sigma\) eingezeichnet. Rechts die Antwort im Mittelpunkt jeder Scheibe über σ: Jede Kurve hat ihr Maximum bei \(\sigma \approx r/\sqrt2\). Ohne die Normierung mit σ² fällt die Antwort mit wachsendem σ immer weiter ab, große Blobs würden nie gefunden.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Blobs ---------- */
+(() => {
+  const c = $('#cv-bb'), is = $('#bb-s'), it = $('#bb-t'), inr = $('#bb-n'), n = BV_N, I = blobImage(n), LAP = [0, 1, 0, 1, -4, 1, 0, 1, 0];
+  const S = Array.from({ length: 14 }, (_, k) => Math.pow(2, k * 4 / 13)), RAW = S.map(s => correlate(gaussBlur(I, n, s), n, LAP, 3, 3).map(v => -v));
+  const cols = ['--accent', '--bin1', '--bin2', '--hole', '--fg'];
+  const m = reg({ el: c, draw() {
+    const norm = inr.checked, R = RAW.map((A, k) => norm ? A.map(v => v * S[k] * S[k]) : A), gmax = Math.max(...R.map(maxAbs)), thr = +it.value * gmax, k0 = +is.value;
+    $('#bb-s-o').textContent = nf(S[k0], 2) + ' px'; $('#bb-t-o').textContent = nf(+it.value * 100, 0) + ' %';
+    const found = [];
+    for (let k = 1; k < S.length - 1; k++) for (let y = 2; y < n - 2; y++) for (let x = 2; x < n - 2; x++) { const v = R[k][y * n + x]; if (v < thr) continue; let mx = true;
+      for (let dk = -1; dk <= 1 && mx; dk++) for (let dy = -1; dy <= 1 && mx; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dk && !dy && !dx) continue; if (R[k + dk][(y + dy) * n + x + dx] > v) { mx = false; break; } }
+      if (mx) found.push([x, y, S[k]]); }
+    const { ctx, w, h } = fit(c), narrow = w < 560, L = narrow ? imgLayout(w, h * 0.55, 2) : imgLayout(w * 0.62, h, 2);
+    drawImg(ctx, I, n, L[0].x, L[0].y, L[0].size, { title: `gefundene Blobs: ${found.length}` });
+    const sc = L[0].size / n; found.forEach(([x, y, s]) => { ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L[0].x + (x + 0.5) * sc, L[0].y + (y + 0.5) * sc, Math.SQRT2 * s * sc, 0, 7); ctx.stroke(); });
+    drawImg(ctx, R[k0], n, L[1].x, L[1].y, L[1].size, { title: `${norm ? '−σ²·' : '−'}LoG, σ = ${nf(S[k0], 2)}`, sym: true, hi: gmax * 0.8 });
+    const px = narrow ? 0 : w * 0.62 + 16, py = narrow ? h * 0.58 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: 4, y0: Math.min(0, ...PY_BLOBS.map(([bx, by]) => Math.min(...R.map(A => A[by * n + bx])))), y1: gmax * 1.05, xt: [0, 1, 2, 3, 4], xf: v => String(2 ** v), yt: [0], yf: () => '0', xl: 'σ (logarithmisch)', yl: 'Antwort im Zentrum', l: 26, b: 50, t: 8 });
+    PY_BLOBS.forEach(([bx, by, r], i) => { ctx.strokeStyle = tok(cols[i]); ctx.lineWidth = 2; ctx.beginPath(); S.forEach((s, k) => { const X = f.X(Math.log2(s)), Y = f.Y(R[k][by * n + bx]); k ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.stroke();
+      const xs = Math.log2(r / Math.SQRT2); if (xs >= 0 && xs <= 4) { ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(f.X(xs), f.by); ctx.lineTo(f.X(xs), f.by + f.bh); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = tok(cols[i]); ctx.font = `11px ${MONO}`; ctx.textAlign = 'left'; ctx.fillText(`r ${nf(r, 1)}`, f.bx + i * f.bw / 5, f.by + f.bh + 44); });
+    ctx.strokeStyle = tok('--muted'); ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(f.X(Math.log2(S[k0])), f.by); ctx.lineTo(f.X(Math.log2(S[k0])), f.by + f.bh); ctx.stroke(); ctx.setLineDash([]);
+    $('#bb-read').innerHTML = found.length ? `<span class="k">Gefunden (Mitte, σ, Radius √2·σ):</span> ` + found.map(([x, y, s]) => `(${x}, ${y}) σ ${nf(s, 1)} → r ≈ ${nf(Math.SQRT2 * s, 1)}`).join('  ·  ') : '<span class="k">Keine Blobs über der Schwelle.</span>';
+  } });
+  [is, it, inr].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>
