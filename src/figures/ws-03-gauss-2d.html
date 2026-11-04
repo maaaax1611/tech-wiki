@@ -1,0 +1,54 @@
+<!-- title: Zweidimensionale Gaußverteilung
+     lib: ws -->
+<figure class="fig">
+  <canvas id="cv-g2" class="c-ws-sq" role="img" aria-label="Punktwolke einer zweidimensionalen Gaußverteilung mit Fehlerellipsen, Hauptachsen, Randverteilungen und der bedingten Verteilung bei einem gewählten x."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="g2-sx">σx</label><output id="g2-sx-o"></output></div><input id="g2-sx" type="range" min="0.3" max="1.8" step="0.05" value="1.2" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="g2-sy">σy</label><output id="g2-sy-o"></output></div><input id="g2-sy" type="range" min="0.3" max="1.8" step="0.05" value="0.9" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="g2-r">Korrelation ρ</label><output id="g2-r-o"></output></div><input id="g2-r" type="range" min="-0.95" max="0.95" step="0.05" value="0.7" autocomplete="off"></div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="g2-x">Schnitt bei x₀</label><output id="g2-x-o"></output></div><input id="g2-x" type="range" min="-2.5" max="2.5" step="0.05" value="1.2" autocomplete="off"></div>
+    <label class="chk"><input id="g2-a" type="checkbox" autocomplete="off"> Hauptachsen</label>
+  </div>
+  <div class="readout" id="g2-read"></div>
+  <figcaption><b>Abb.</b> 600 Punkte aus einer zweidimensionalen Gaußverteilung mit den Ellipsen für 1σ und 2σ. An den Rändern die Randverteilungen \(p(x)\) und \(p(y)\). Die senkrechte Linie bei \(x_0\) schneidet die Verteilung, auf Fläche 1 normiert ist das die bedingte Verteilung \(p(y \mid x_0)\) (blau). Ihr Mittelwert liegt auf der Regressionsgeraden (gestrichelt), ihre Breite \(\sigma_y\sqrt{1 - \rho^2}\) ist kleiner als die der Randverteilung: Wer \(x\) kennt, weiß mehr über \(y\). Bei \(\rho = 0\) ist jeder Schnitt gleich, \(x\) und \(y\) sind unabhängig.</figcaption>
+</figure>
+<script>
+/* ---------- 2D-Gauß ---------- */
+(() => {
+  const c = $('#cv-g2'), isx = $('#g2-sx'), isy = $('#g2-sy'), ir = $('#g2-r'), ix = $('#g2-x'), ia = $('#g2-a');
+  setSeed(424242); const Z = Array.from({ length: 600 }, () => [gauss(), gauss()]);
+  const m = reg({ el: c, draw() {
+    const sx = +isx.value, sy = +isy.value, r = +ir.value, x0 = +ix.value;
+    $('#g2-sx-o').textContent = nf(sx, 2); $('#g2-sy-o').textContent = nf(sy, 2); $('#g2-r-o').textContent = nf(r, 2); $('#g2-x-o').textContent = nf(x0, 2);
+    const P = plane(c, 4.2), { ctx, S, w, h, s } = P; grid(P);
+    const A = tok('--accent'), Fg = tok('--fg'), Mu = tok('--muted'), Bn = tok('--bin2');
+    // Cholesky: x = sx z1, y = sy (r z1 + sqrt(1−r²) z2)
+    const q = Math.sqrt(1 - r * r);
+    ctx.fillStyle = rgba(Mu, 0.55); for (const [a, b] of Z) { const [px, py] = S(sx * a, sy * (r * a + q * b)); ctx.fillRect(px - 1.3, py - 1.3, 2.6, 2.6); }
+    // Ellipsen über Eigenzerlegung von Σ
+    const c11 = sx * sx, c22 = sy * sy, c12 = r * sx * sy, tr = c11 + c22, dt = c11 * c22 - c12 * c12, l1 = tr / 2 + Math.sqrt(tr * tr / 4 - dt), l2 = tr / 2 - Math.sqrt(tr * tr / 4 - dt);
+    const phi = 0.5 * Math.atan2(2 * c12, c11 - c22), u = [Math.cos(phi), Math.sin(phi)], v = [-u[1], u[0]];
+    [[1, 2], [2, 1.2]].forEach(([k, lw]) => { const pts = []; for (let i = 0; i <= 120; i++) { const t = i / 120 * 2 * Math.PI, a = k * Math.sqrt(l1) * Math.cos(t), b = k * Math.sqrt(l2) * Math.sin(t); pts.push([a * u[0] + b * v[0], a * u[1] + b * v[1]]); }
+      poly(P, pts, true); ctx.strokeStyle = Fg; ctx.lineWidth = lw; ctx.setLineDash(k === 2 ? [4, 4] : []); ctx.stroke(); ctx.setLineDash([]); });
+    if (ia.checked) { arrow(P, 0, 0, 2 * Math.sqrt(l1) * u[0], 2 * Math.sqrt(l1) * u[1], tok('--hole'), 2.2); arrow(P, 0, 0, 2 * Math.sqrt(l2) * v[0], 2 * Math.sqrt(l2) * v[1], tok('--hole'), 2.2); }
+    // Regressionsgerade E[y|x]
+    const k = r * sy / sx; line(P, -6, -6 * k, 6, 6 * k, A, 1.4, [6, 4]);
+    // Randverteilungen an den Rändern
+    const [ox] = S(0, 0), [, oy] = S(0, 0), mh = Math.min(w, h) * 0.13;
+    ctx.strokeStyle = Bn; ctx.lineWidth = 1.8; ctx.beginPath(); for (let i = 0; i <= 200; i++) { const x = -5 + 10 * i / 200, [px] = S(x, 0), py = h - 2 - mh * normPdf(x, 0, sx) / normPdf(0, 0, sx); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+    ctx.beginPath(); for (let i = 0; i <= 200; i++) { const y = -5 + 10 * i / 200, [, py] = S(0, y), px = 2 + mh * normPdf(y, 0, sy) / normPdf(0, 0, sy); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Bn; ctx.textAlign = 'left'; ctx.fillText('p(x)', S(sx * 1.1, 0)[0], h - 4 - mh * 0.6); ctx.fillText('p(y)', 6 + mh * 0.6, S(0, sy * 1.1)[1]);
+    // bedingte Verteilung bei x0
+    const cm = k * x0, cs = sy * q;
+    line(P, x0, -6, x0, 6, A, 1.4);
+    const amp = 1.1; // Höhe der bedingten Dichte in Achseneinheiten
+    const pts = []; for (let i = 0; i <= 160; i++) { const y = cm - 4 * cs + 8 * cs * i / 160; pts.push([x0 + amp * normPdf(y, cm, cs) / normPdf(cm, cm, cs), y]); }
+    poly(P, [[x0, cm - 4 * cs], ...pts, [x0, cm + 4 * cs]], true); ctx.fillStyle = rgba(A, 0.25); ctx.fill(); poly(P, pts); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke();
+    dot(P, x0, cm, A, 4.5); label(P, x0 + amp, cm, 'p(y | x₀)', A, 8, 4, `600 13px ${DISP}`);
+    $('#g2-read').innerHTML = `<span class="k">Σ =</span> [${nf(c11, 2)}  ${nf(c12, 2)} ; ${nf(c12, 2)}  ${nf(c22, 2)}]  <span class="k">Eigenwerte (Varianzen entlang der Hauptachsen):</span> ${nf(l1, 2)} und ${nf(l2, 2)}<br><span class="k">E[y | x₀] =</span> ρ·σy/σx·x₀ = <b>${nf(cm, 2)}</b>  <span class="k">σ(y | x₀) =</span> σy·√(1 − ρ²) = <b>${nf(cs, 2)}</b> statt σy = ${nf(sy, 2)}`;
+  } });
+  [isx, isy, ir, ix, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

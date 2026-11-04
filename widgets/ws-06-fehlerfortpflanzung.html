@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fehlerfortpflanzung</title>
+<!-- Erzeugt von build.py aus src/figures/ws-06-fehlerfortpflanzung.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ws.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-fp" class="c-ws-tall" role="img" aria-label="Eine nichtlineare Funktion mit Tangente; unten die Verteilung der Eingangsgröße, links die Verteilung des Ergebnisses aus Stichproben und die lineare Näherung."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="fp-f">Funktion y = f(x)</label></div><select id="fp-f" autocomplete="off"><option value="ln">−ln x (CT: x = I/I₀)</option><option value="sq">x²</option><option value="rt">√x</option><option value="inv">1/x</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="fp-m">Mittelwert μx</label><output id="fp-m-o"></output></div><input id="fp-m" type="range" min="0.1" max="2.5" step="0.01" value="0.3" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="fp-s">Streuung σx</label><output id="fp-s-o"></output></div><input id="fp-s" type="range" min="0.01" max="0.5" step="0.01" value="0.06" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="fp-read"></div>
+  <figcaption><b>Abb. 6</b> Unten die Eingangsgröße \(x\), gaußverteilt um \(\mu_x\). Jeder Wert wird über die Kurve \(f\) nach links auf \(y\) übertragen. Links in Blau das Histogramm der Ergebnisse aus 40 000 Stichproben, als rote Linie die lineare Näherung \(\mathcal N\big(f(\mu_x), (f'(\mu_x)\,\sigma_x)^2\big)\), die aus der Tangente (gestrichelt) folgt. Bei kleiner Streuung passen beide. Wird \(\sigma_x\) größer oder liegt \(\mu_x\) dort, wo \(f\) stark gekrümmt ist, wird die Ausgangsverteilung schief und ihr Mittelwert verschiebt sich. Beim Logarithmus ist das genau der Fall wenig transmittierter Photonen in der CT.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ws.js"></script>
+<script>
+/* ---------- Fehlerfortpflanzung ---------- */
+(() => {
+  const c = $('#cv-fp'), iff = $('#fp-f'), im = $('#fp-m'), is = $('#fp-s');
+  const F = {
+    ln: { f: x => -Math.log(x), d: x => -1 / x, y0: -1, y1: 3.2, nm: '−ln x' },
+    sq: { f: x => x * x, d: x => 2 * x, y0: 0, y1: 7, nm: 'x²' },
+    rt: { f: x => Math.sqrt(x), d: x => 0.5 / Math.sqrt(x), y0: 0, y1: 1.8, nm: '√x' },
+    inv: { f: x => 1 / x, d: x => -1 / (x * x), y0: 0, y1: 8, nm: '1/x' },
+  };
+  setSeed(2718); const Zs = Float64Array.from({ length: 40000 }, () => gauss());
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value], mu = +im.value, sx = +is.value; $('#fp-m-o').textContent = nf(mu, 2); $('#fp-s-o').textContent = nf(sx, 2);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted');
+    const f = frame(ctx, 0, 0, w, h, { x0: -0.35, x1: 2.6, y0: fn.y0 - (fn.y1 - fn.y0) * 0.28, y1: fn.y1, xt: [0, 0.5, 1, 1.5, 2, 2.5], xf: v => nf(v, 1), yt: [], xl: 'x', l: 14, t: 10, b: 34 });
+    const yAx = f.X(0), xAx = f.Y(fn.y0);
+    // Achsen
+    ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(yAx, f.by); ctx.lineTo(yAx, f.by + f.bh); ctx.moveTo(f.bx, xAx); ctx.lineTo(f.bx + f.bw, xAx); ctx.stroke();
+    ctx.font = `11px ${MONO}`; ctx.fillStyle = Mu; ctx.textAlign = 'left';
+    const ys = (fn.y1 - fn.y0) > 4 ? 2 : 1; for (let y = Math.ceil(fn.y0); y <= fn.y1; y += ys) { ctx.fillText(nf(y, 0), yAx + 4, f.Y(y) - 3); ctx.strokeStyle = tok('--grid'); ctx.beginPath(); ctx.moveTo(yAx, f.Y(y)); ctx.lineTo(f.bx + f.bw, f.Y(y)); ctx.stroke(); }
+    // Funktion
+    ctx.save(); ctx.beginPath(); ctx.rect(f.bx, f.by, f.bw, xAx - f.by); ctx.clip();
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.2; curve(ctx, x => fn.f(x), f.X, f.Y, 0.03, 2.6, 400);
+    const y0 = fn.f(mu), k = fn.d(mu); ctx.strokeStyle = Mu; ctx.lineWidth = 1.4; ctx.setLineDash([6, 4]); curve(ctx, x => y0 + k * (x - mu), f.X, f.Y, -0.3, 2.6, 2); ctx.setLineDash([]);
+    // Streifen μ ± σ
+    ctx.fillStyle = rgba(A, 0.1); ctx.fillRect(f.X(mu - sx), f.by, f.X(mu + sx) - f.X(mu - sx), xAx - f.by);
+    ctx.fillRect(yAx, f.Y(y0 + Math.abs(k) * sx), f.bx + f.bw - yAx, f.Y(y0 - Math.abs(k) * sx) - f.Y(y0 + Math.abs(k) * sx));
+    ctx.restore();
+    // Eingangsverteilung unten (zwischen x-Achse und Rahmenunterkante)
+    const hb = (f.by + f.bh - xAx) - 6, pk = normPdf(0, 0, sx);
+    ctx.fillStyle = rgba(A, 0.3); ctx.strokeStyle = A; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.X(mu - 4 * sx), xAx + 4 + hb);
+    for (let i = 0; i <= 200; i++) { const x = mu - 4 * sx + 8 * sx * i / 200; ctx.lineTo(f.X(x), xAx + 4 + hb - hb * normPdf(x, mu, sx) / pk); } ctx.lineTo(f.X(mu + 4 * sx), xAx + 4 + hb); ctx.fill(); ctx.stroke();
+    // Ausgang aus Stichproben (links, quer)
+    const ylo = fn.y0, yhi = fn.y1, nb = 120, bwid = (yhi - ylo) / nb, Hh = new Array(nb).fill(0); let cnt = 0, s1 = 0, s2 = 0;
+    for (const z of Zs) { const x = mu + sx * z; if (x <= 0.002) continue; const y = fn.f(x); cnt++; s1 += y; s2 += y * y; const i = Math.floor((y - ylo) / bwid); if (i >= 0 && i < nb) Hh[i]++; }
+    const my = s1 / cnt, sy = Math.sqrt(Math.max(0, s2 / cnt - my * my)), sl = Math.abs(k) * sx;
+    const wb = yAx - f.bx - 6, dens = Hh.map(v => v / (cnt * bwid)), lpk = normPdf(0, 0, sl), dmax = Math.max(lpk, ...dens);
+    ctx.fillStyle = rgba(A, 0.45); dens.forEach((v, i) => { const yy0 = f.Y(ylo + (i + 1) * bwid), yy1 = f.Y(ylo + i * bwid), len = wb * v / dmax; ctx.fillRect(yAx - 4 - len, yy0, len, yy1 - yy0 + 0.4); });
+    ctx.strokeStyle = H; ctx.lineWidth = 1.8; ctx.beginPath(); for (let i = 0; i <= 200; i++) { const y = y0 - 4 * sl + 8 * sl * i / 200; if (y < ylo || y > yhi) continue; const px = yAx - 4 - wb * normPdf(y, y0, sl) / dmax; ctx.lineTo(px, f.Y(y)); } ctx.stroke();
+    // Projektion Mittelpunkt
+    ctx.strokeStyle = A; ctx.lineWidth = 1; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(f.X(mu), xAx); ctx.lineTo(f.X(mu), f.Y(y0)); ctx.lineTo(yAx, f.Y(y0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = Fg; ctx.beginPath(); ctx.arc(f.X(mu), f.Y(y0), 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = Fg; ctx.fillText(`y = ${fn.nm}`, f.X(2.05), f.Y(Math.min(fn.y1 * 0.92, fn.f(2.05))) - 8);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.textAlign = 'left'; ctx.fillText('p(x)', f.X(mu + 2.2 * sx) + 4, xAx + hb * 0.6); ctx.fillText('p(y)', f.bx, f.Y(fn.y1) + 12);
+    $('#fp-read').innerHTML = `<span class="k">linear:</span> σy ≈ |f′(μx)|·σx = ${nf(Math.abs(k), 2)}·${nf(sx, 2)} = <b>${nf(sl, 3)}</b>  <span class="k">aus Stichproben:</span> σy = <b>${nf(sy, 3)}</b>  <span class="k">·</span>  <span class="k">Mittelwert:</span> f(μx) = ${nf(y0, 3)}, E[f(x)] = ${nf(my, 3)}`;
+  } });
+  [iff, im, is].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

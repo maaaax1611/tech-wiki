@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wahrscheinlichkeit und Statistik</title>
+<!-- Erzeugt von build.py aus src/pages/grundlagen/wahrscheinlichkeit.md. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ws.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Inhalt">
+    <div class="eyebrow">Inhalt</div>
+    <ol>
+      <li class="lv">Grundbegriffe</li>
+      <li><a href="#zufall"><span class="n">1</span><span>Zufall und Wahrscheinlichkeit</span></a></li>
+      <li><a href="#verteilungen"><span class="n">2</span><span>Zufallsvariablen und Verteilungen</span></a></li>
+      <li><a href="#momente"><span class="n">3</span><span>Erwartungswert und Varianz</span></a></li>
+      <li class="lv">Wichtige Verteilungen</li>
+      <li><a href="#bpg"><span class="n">4</span><span>Binomial, Poisson, Gauß</span></a></li>
+      <li><a href="#weitere"><span class="n">5</span><span>Weitere Verteilungen</span></a></li>
+      <li class="lv">Mehrere Variablen</li>
+      <li><a href="#gemeinsam"><span class="n">6</span><span>Gemeinsame Verteilungen</span></a></li>
+      <li><a href="#kovarianz"><span class="n">7</span><span>Kovarianz und Korrelation</span></a></li>
+      <li><a href="#bayes"><span class="n">8</span><span>Satz von Bayes</span></a></li>
+      <li class="lv">Grenzwertsätze</li>
+      <li><a href="#zgs"><span class="n">9</span><span>Grenzwertsätze</span></a></li>
+      <li><a href="#fehler"><span class="n">10</span><span>Fehlerfortpflanzung</span></a></li>
+      <li class="lv">Schätzen</li>
+      <li><a href="#schaetzer"><span class="n">11</span><span>Schätzer</span></a></li>
+      <li><a href="#ml"><span class="n">12</span><span>Maximum Likelihood und MAP</span></a></li>
+      <li><a href="#ki"><span class="n">13</span><span>Konfidenzintervalle und Tests</span></a></li>
+      <li class="lv">Anhang</li>
+      <li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li>
+      <li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li>
+    </ol>
+  </nav>
+  <main>
+    <header id="ueberblick">
+      <p class="backlink"><a href="../index.html">← Wiki</a> · <a href="../index.html#grundlagen">Grundlagen</a></p>
+      <div class="topbar"><div class="eyebrow">Grundlagen · Mathematik</div>
+        <div class="theme" role="group" aria-label="Darstellung"><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button><button type="button" data-t="system">System</button></div></div>
+      <h1>Wahrscheinlichkeit und Statistik</h1>
+      <p class="lede">Zufallsvariablen, Verteilungen und wie man mit ihnen rechnet, bis zum Schätzen von Parametern aus Messdaten. Mit Blick auf das, was in der Bildgebung und im Machine Learning ständig vorkommt: Poisson-Rauschen, Kovarianzmatrizen, Fehlerfortpflanzung und Likelihood.</p>
+      <details class="toc-mobile"><summary>Inhalt</summary><ol><li><a href="#zufall">Zufall und Wahrscheinlichkeit</a></li><li><a href="#verteilungen">Zufallsvariablen und Verteilungen</a></li><li><a href="#momente">Erwartungswert und Varianz</a></li><li><a href="#bpg">Binomial, Poisson, Gauß</a></li><li><a href="#weitere">Weitere Verteilungen</a></li><li><a href="#gemeinsam">Gemeinsame Verteilungen</a></li><li><a href="#kovarianz">Kovarianz und Korrelation</a></li><li><a href="#bayes">Satz von Bayes</a></li><li><a href="#zgs">Grenzwertsätze</a></li><li><a href="#fehler">Fehlerfortpflanzung</a></li><li><a href="#schaetzer">Schätzer</a></li><li><a href="#ml">Maximum Likelihood und MAP</a></li><li><a href="#ki">Konfidenzintervalle und Tests</a></li><li><a href="#formeln">Formeln</a></li><li><a href="#befehle">Befehle</a></li></ol></details>
+    </header>
+<section id="zufall">
+<div class="step"><b>1</b><span class="eyebrow">Grundbegriffe</span></div>
+<h2>Zufall und Wahrscheinlichkeit</h2>
+<p>Ein <strong>Zufallsexperiment</strong> hat mehrere mögliche Ausgänge, etwa die Zahl der Photonen, die in einer Millisekunde in einem Detektorpixel ankommen. Die Menge aller Ausgänge heißt <strong>Ergebnisraum</strong> <span class="arithmatex">\(\Omega\)</span>, eine Teilmenge davon <strong>Ereignis</strong>. Eine <strong>Wahrscheinlichkeit</strong> <span class="arithmatex">\(P\)</span> ordnet jedem Ereignis eine Zahl zu, nach drei Regeln:</p>
+<div class="eq">\[
+P(A) \ge 0, \qquad P(\Omega) = 1, \qquad P(A \cup B) = P(A) + P(B) \ \text{ falls } A \cap B = \emptyset
+\]</div>
+<p>Alles Weitere folgt daraus, zum Beispiel <span class="arithmatex">\(P(\bar A) = 1 - P(A)\)</span> und <span class="arithmatex">\(P(A \cup B) = P(A) + P(B) - P(A \cap B)\)</span>.</p>
+<p>Die <strong>bedingte Wahrscheinlichkeit</strong> von <span class="arithmatex">\(A\)</span>, wenn man schon weiß, dass <span class="arithmatex">\(B\)</span> eingetreten ist, ist</p>
+<div class="eq">\[
+P(A \mid B) = \frac{P(A \cap B)}{P(B)}
+\]</div>
+<p>Man schränkt die Welt auf <span class="arithmatex">\(B\)</span> ein und fragt, welcher Anteil davon auch zu <span class="arithmatex">\(A\)</span> gehört. Zwei Ereignisse sind <strong>unabhängig</strong>, wenn das Wissen über das eine nichts am anderen ändert: <span class="arithmatex">\(P(A \mid B) = P(A)\)</span>, gleichbedeutend <span class="arithmatex">\(P(A \cap B) = P(A)\,P(B)\)</span>.</p>
+</section>
+<section id="verteilungen">
+<div class="step"><b>2</b><span class="eyebrow">Grundbegriffe</span></div>
+<h2>Zufallsvariablen und Verteilungen</h2>
+<p>Eine <strong>Zufallsvariable</strong> <span class="arithmatex">\(X\)</span> ordnet jedem Ausgang eine Zahl zu. Ihre <strong>Verteilung</strong> sagt, mit welcher Wahrscheinlichkeit welche Werte vorkommen.</p>
+<ul class="tight">
+<li><strong>Diskret</strong> (abzählbar viele Werte, z. B. Photonenzahlen): Die <strong>Wahrscheinlichkeitsfunktion</strong> <span class="arithmatex">\(p(k) = P(X = k)\)</span> gibt die Wahrscheinlichkeit jedes Werts. Alle <span class="arithmatex">\(p(k)\)</span> summieren sich zu 1.</li>
+<li><strong>Stetig</strong> (z. B. eine Spannung): Ein einzelner Wert hat Wahrscheinlichkeit 0. Stattdessen gibt es eine <strong>Dichte</strong> <span class="arithmatex">\(p(x)\)</span>, und Wahrscheinlichkeiten sind Flächen darunter: <span class="arithmatex">\(P(a \le X \le b) = \int_a^b p(x)\,\mathrm dx\)</span>. Die Dichte selbst kann größer als 1 sein, nur ihre Gesamtfläche ist 1.</li>
+</ul>
+<p>Für beide Fälle gibt es die <strong>Verteilungsfunktion</strong> <span class="arithmatex">\(F(x) = P(X \le x)\)</span>. Sie steigt von 0 auf 1 und ist bei stetigen Variablen das Integral der Dichte.</p>
+<p>Eine <strong>Stichprobe</strong> sind <span class="arithmatex">\(N\)</span> unabhängige Ziehungen aus derselben Verteilung (englisch <em>i.i.d.</em>). Ein Histogramm der Stichprobe, auf Fläche 1 normiert, nähert die Dichte an, umso besser, je größer <span class="arithmatex">\(N\)</span> ist.</p>
+<figure class="fig">
+<canvas aria-label="Histogramm einer Stichprobe mit der wahren Dichte darüber, daneben empirische und wahre Verteilungsfunktion." class="c-ws" id="cv-sd" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="sd-d">Verteilung</label></div><select autocomplete="off" id="sd-d"><option value="g">Gauß</option><option value="e">exponentiell</option><option value="b">zwei Gipfel</option><option value="u">gleichverteilt</option></select></div>
+<div class="ctrl"><div class="lab"><label for="sd-n">Stichprobengröße N</label><output id="sd-n-o"></output></div><input autocomplete="off" id="sd-n" max="12" min="0" step="1" type="range" value="4"/></div>
+<button class="btn" id="sd-r" type="button">Neue Stichprobe</button>
+</div>
+<div class="readout" id="sd-read"></div>
+<figcaption><b>Abb. 1</b> Links das Histogramm einer Stichprobe, auf Fläche 1 normiert, und die wahre Dichte (Linie). Rechts die empirische Verteilungsfunktion, also der Anteil der Werte bis \(x\), und die wahre \(F(x)\). Bei kleinem N sind beide grob und zufällig, mit wachsendem N laufen sie gegen die wahre Verteilung. Die Verteilungsfunktion konvergiert dabei sichtbar schneller als das Histogramm, weil sie ohne Klasseneinteilung auskommt.</figcaption>
+</figure>
+</section>
+<section id="momente">
+<div class="step"><b>3</b><span class="eyebrow">Grundbegriffe</span></div>
+<h2>Erwartungswert und Varianz</h2>
+<p>Der <strong>Erwartungswert</strong> ist der Schwerpunkt der Verteilung, die <strong>Varianz</strong> die mittlere quadratische Abweichung davon:</p>
+<div class="eq">\[
+\mathbb E[X] = \mu = \sum_k k\,p(k) \ \text{ bzw. } \int x\,p(x)\,\mathrm dx, \qquad \operatorname{Var}[X] = \sigma^2 = \mathbb E\big[(X - \mu)^2\big] = \mathbb E[X^2] - \mu^2
+\]</div>
+<p>Die <strong>Standardabweichung</strong> <span class="arithmatex">\(\sigma\)</span> hat dieselbe Einheit wie <span class="arithmatex">\(X\)</span> und ist das übliche Maß für die Streuung. Die wichtigsten Rechenregeln:</p>
+<div class="eq">\[
+\mathbb E[aX + b] = a\,\mathbb E[X] + b, \qquad \operatorname{Var}[aX + b] = a^2 \operatorname{Var}[X], \qquad \mathbb E[X + Y] = \mathbb E[X] + \mathbb E[Y]
+\]</div>
+<p>Die Summenregel für Erwartungswerte gilt immer. Für Varianzen gilt <span class="arithmatex">\(\operatorname{Var}[X + Y] = \operatorname{Var}[X] + \operatorname{Var}[Y]\)</span> nur, wenn <span class="arithmatex">\(X\)</span> und <span class="arithmatex">\(Y\)</span> unkorreliert sind (Abschnitt 7). Daraus folgt eine der wichtigsten Regeln überhaupt: Der Mittelwert aus <span class="arithmatex">\(N\)</span> unabhängigen Messungen mit Streuung <span class="arithmatex">\(\sigma\)</span> streut nur noch mit <span class="arithmatex">\(\sigma/\sqrt N\)</span>. Vierfache Messzeit halbiert das Rauschen.</p>
+<p>Höhere <strong>Momente</strong> beschreiben die Form: Die <strong>Schiefe</strong> <span class="arithmatex">\(\mathbb E[(X-\mu)^3]/\sigma^3\)</span> misst die Asymmetrie, die <strong>Kurtosis</strong> <span class="arithmatex">\(\mathbb E[(X-\mu)^4]/\sigma^4\)</span>, wie schwer die Ränder sind (Gauß: 0 bzw. 3).</p>
+<div class="merke">
+<div class="eyebrow">Merke</div>
+<ul>
+<li><span class="arithmatex">\(\mathbb E\)</span> ist linear, immer. <span class="arithmatex">\(\operatorname{Var}[aX] = a^2\operatorname{Var}[X]\)</span>.</li>
+<li>Varianzen unabhängiger Größen addieren sich, Standardabweichungen nicht.</li>
+<li>Mittelwert aus <span class="arithmatex">\(N\)</span> Messungen: Streuung <span class="arithmatex">\(\sigma/\sqrt N\)</span>.</li>
+</ul>
+</div>
+</section>
+<section id="bpg">
+<div class="step"><b>4</b><span class="eyebrow">Wichtige Verteilungen</span></div>
+<h2>Binomial, Poisson und Gauß</h2>
+<p>Drei Verteilungen, die ineinander übergehen und in der Bildgebung überall auftauchen.</p>
+<p><strong>Binomial.</strong> <span class="arithmatex">\(n\)</span> unabhängige Versuche, jeder mit Erfolgswahrscheinlichkeit <span class="arithmatex">\(p\)</span>. Die Zahl der Erfolge <span class="arithmatex">\(K\)</span> ist binomialverteilt:</p>
+<div class="eq">\[
+P(K = k) = \binom nk p^k (1-p)^{n-k}, \qquad \mathbb E[K] = np, \qquad \operatorname{Var}[K] = np(1-p)
+\]</div>
+<p>Beispiel: Von <span class="arithmatex">\(n\)</span> Photonen, die auf ein Pixel treffen, wird jedes mit Wahrscheinlichkeit <span class="arithmatex">\(p\)</span> absorbiert.</p>
+<p><strong>Poisson.</strong> Lässt man <span class="arithmatex">\(n \to \infty\)</span> und <span class="arithmatex">\(p \to 0\)</span> bei festem <span class="arithmatex">\(\lambda = np\)</span>, wird daraus die Poisson-Verteilung. Sie beschreibt seltene, unabhängige Ereignisse in einem Zeitraum, etwa Photonen pro Pixel und Belichtung:</p>
+<div class="eq">\[
+P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatorname{Var}[K] = \lambda
+\]</div>
+<p>Varianz gleich Mittelwert hat eine direkte Folge: Das Signal-Rausch-Verhältnis ist <span class="arithmatex">\(\lambda/\sqrt\lambda = \sqrt\lambda\)</span>. Viermal so viele Photonen, also viermal so viel Dosis, verdoppeln das SNR. Diese Grenze heißt <strong>Quantenrauschen</strong>, kein Detektor kann sie unterbieten.</p>
+<p><strong>Gauß.</strong> Für großes <span class="arithmatex">\(\lambda\)</span> (ab etwa 20) sieht die Poisson-Verteilung aus wie eine Normalverteilung mit <span class="arithmatex">\(\mu = \sigma^2 = \lambda\)</span>. Allgemein:</p>
+<div class="eq">\[
+\mathcal N(x \mid \mu, \sigma^2) = \frac{1}{\sqrt{2\pi}\,\sigma} \exp\!\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)
+\]</div>
+<p>Rund 68 % der Werte liegen innerhalb <span class="arithmatex">\(\pm 1\sigma\)</span>, 95 % innerhalb <span class="arithmatex">\(\pm 1{,}96\sigma\)</span>, 99,7 % innerhalb <span class="arithmatex">\(\pm 3\sigma\)</span>. Warum die Gaußverteilung so oft auftaucht, erklärt der zentrale Grenzwertsatz (Abschnitt 9).</p>
+<figure class="fig">
+<canvas aria-label="Binomialverteilung als Balken, die passende Poisson-Verteilung als Punkte und die Gauß-Näherung als Kurve." class="c-ws" id="cv-bp" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="bp-n">Versuche n</label><output id="bp-n-o"></output></div><input autocomplete="off" id="bp-n" max="200" min="1" step="1" type="range" value="20"/></div>
+<div class="ctrl"><div class="lab"><label for="bp-p">Erfolgswahrscheinlichkeit p</label><output id="bp-p-o"></output></div><input autocomplete="off" id="bp-p" max="0.9" min="0.01" step="0.01" type="range" value="0.3"/></div>
+</div>
+<div class="readout" id="bp-read"></div>
+<figcaption><b>Abb. 2</b> Balken: Binomialverteilung, die Zahl der Erfolge bei \(n\) Versuchen. Punkte: Poisson-Verteilung mit gleichem Mittelwert \(\lambda = np\). Linie: Gaußverteilung mit Mittelwert und Varianz der Binomialverteilung. Bei kleinem \(p\) fallen Binomial und Poisson zusammen, bei großem \(n\) werden alle drei gaußförmig. Bei kleinem Mittelwert ist die Verteilung schief, und die Gauß-Näherung passt schlecht, sie gibt sogar negativen Zählwerten Wahrscheinlichkeit.</figcaption>
+</figure>
+</section>
+<section id="weitere">
+<div class="step"><b>5</b><span class="eyebrow">Wichtige Verteilungen</span></div>
+<h2>Weitere Verteilungen</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Verteilung</th>
+<th>Wahrscheinlichkeit bzw. Dichte</th>
+<th><span class="arithmatex">\(\mathbb E\)</span></th>
+<th><span class="arithmatex">\(\operatorname{Var}\)</span></th>
+<th>typisch für</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bernoulli</td>
+<td><span class="arithmatex">\(P(1) = p\)</span>, <span class="arithmatex">\(P(0) = 1 - p\)</span></td>
+<td><span class="arithmatex">\(p\)</span></td>
+<td><span class="arithmatex">\(p(1-p)\)</span></td>
+<td>ein einzelner Ja/Nein-Versuch</td>
+</tr>
+<tr>
+<td>kategorial</td>
+<td><span class="arithmatex">\(P(k) = \pi_k\)</span>, <span class="arithmatex">\(\sum_k \pi_k = 1\)</span></td>
+<td></td>
+<td></td>
+<td>Klassifikation, nächstes Token</td>
+</tr>
+<tr>
+<td>gleichverteilt</td>
+<td><span class="arithmatex">\(\frac1{b-a}\)</span> auf <span class="arithmatex">\([a, b]\)</span></td>
+<td><span class="arithmatex">\(\frac{a+b}2\)</span></td>
+<td><span class="arithmatex">\(\frac{(b-a)^2}{12}\)</span></td>
+<td>Rundungsfehler, Quantisierung</td>
+</tr>
+<tr>
+<td>exponentiell</td>
+<td><span class="arithmatex">\(\lambda e^{-\lambda x}\)</span>, <span class="arithmatex">\(x \ge 0\)</span></td>
+<td><span class="arithmatex">\(\frac1\lambda\)</span></td>
+<td><span class="arithmatex">\(\frac1{\lambda^2}\)</span></td>
+<td>Wartezeit bis zum nächsten Photon</td>
+</tr>
+<tr>
+<td>Gamma</td>
+<td><span class="arithmatex">\(\propto x^{\alpha-1}e^{-\beta x}\)</span></td>
+<td><span class="arithmatex">\(\frac\alpha\beta\)</span></td>
+<td><span class="arithmatex">\(\frac\alpha{\beta^2}\)</span></td>
+<td>Prior für Poisson-Raten</td>
+</tr>
+<tr>
+<td>Beta</td>
+<td><span class="arithmatex">\(\propto x^{\alpha-1}(1-x)^{\beta-1}\)</span> auf <span class="arithmatex">\([0,1]\)</span></td>
+<td><span class="arithmatex">\(\frac\alpha{\alpha+\beta}\)</span></td>
+<td></td>
+<td>Prior für Wahrscheinlichkeiten</td>
+</tr>
+</tbody>
+</table></div>
+<p>Die <strong>kategoriale</strong> Verteilung ist das, was ein Klassifikator oder Sprachmodell am Ende ausgibt. Die Softmax macht aus beliebigen Zahlen <span class="arithmatex">\(z_k\)</span> gültige Wahrscheinlichkeiten <span class="arithmatex">\(\pi_k = e^{z_k} / \sum_j e^{z_j}\)</span>. Die Varianz der Gleichverteilung erklärt das Quantisierungsrauschen: Ein Analog-Digital-Wandler mit Stufenhöhe <span class="arithmatex">\(\Delta\)</span> fügt ein Rauschen von <span class="arithmatex">\(\Delta/\sqrt{12}\)</span> hinzu.</p>
+</section>
+<section id="gemeinsam">
+<div class="step"><b>6</b><span class="eyebrow">Mehrere Variablen</span></div>
+<h2>Gemeinsame Verteilungen</h2>
+<p>Für zwei Zufallsvariablen beschreibt die <strong>gemeinsame Verteilung</strong> <span class="arithmatex">\(p(x, y)\)</span> alle Kombinationen. Daraus gewinnt man zwei andere Verteilungen:</p>
+<ul class="tight">
+<li><strong>Randverteilung:</strong> über die andere Variable summieren oder integrieren, <span class="arithmatex">\(p(x) = \int p(x, y)\,\mathrm dy\)</span>.</li>
+<li><strong>Bedingte Verteilung:</strong> einen Schnitt bei festem <span class="arithmatex">\(x\)</span> nehmen und auf Fläche 1 normieren, <span class="arithmatex">\(p(y \mid x) = p(x, y) / p(x)\)</span>.</li>
+</ul>
+<p>Umgestellt ergeben sich die beiden Regeln, auf denen die ganze Wahrscheinlichkeitsrechnung aufbaut:</p>
+<div class="eq">\[
+\text{Summenregel: } p(x) = \int p(x, y)\,\mathrm dy, \qquad \text{Produktregel: } p(x, y) = p(y \mid x)\,p(x)
+\]</div>
+<p><span class="arithmatex">\(X\)</span> und <span class="arithmatex">\(Y\)</span> sind <strong>unabhängig</strong>, wenn <span class="arithmatex">\(p(x, y) = p(x)\,p(y)\)</span>, also wenn jeder Schnitt <span class="arithmatex">\(p(y \mid x)\)</span> gleich aussieht.</p>
+</section>
+<section id="kovarianz">
+<div class="step"><b>7</b><span class="eyebrow">Mehrere Variablen</span></div>
+<h2>Kovarianz und Korrelation</h2>
+<p>Die <strong>Kovarianz</strong> misst, ob zwei Größen gemeinsam schwanken:</p>
+<div class="eq">\[
+\operatorname{Cov}[X, Y] = \mathbb E\big[(X - \mu_X)(Y - \mu_Y)\big], \qquad \rho = \frac{\operatorname{Cov}[X, Y]}{\sigma_X\,\sigma_Y} \in [-1, 1]
+\]</div>
+<p>Der <strong>Korrelationskoeffizient</strong> <span class="arithmatex">\(\rho\)</span> ist die auf Einheiten bereinigte Version. <span class="arithmatex">\(\rho = 0\)</span> heißt unkorreliert, das ist schwächer als unabhängig: <span class="arithmatex">\(Y = X^2\)</span> mit symmetrischem <span class="arithmatex">\(X\)</span> ist unkorreliert, aber völlig abhängig. Korrelation misst nur lineare Zusammenhänge.</p>
+<p>Für einen Zufallsvektor <span class="arithmatex">\(\mathbf x \in \mathbb R^d\)</span> fasst die <strong>Kovarianzmatrix</strong> alle Paare zusammen:</p>
+<div class="eq">\[
+\Sigma = \mathbb E\big[(\mathbf x - \boldsymbol\mu)(\mathbf x - \boldsymbol\mu)^\top\big], \qquad \Sigma_{ij} = \operatorname{Cov}[x_i, x_j]
+\]</div>
+<p>Auf der Diagonale stehen die Varianzen. <span class="arithmatex">\(\Sigma\)</span> ist symmetrisch und positiv semidefinit. Ihre Eigenvektoren sind die Hauptachsen der Streuung, die Eigenwerte die Varianzen entlang dieser Achsen. Das ist genau die PCA aus der <a href="lineare-algebra.html#svd">linearen Algebra</a>. Für eine lineare Abbildung <span class="arithmatex">\(\mathbf y = A\mathbf x\)</span> gilt <span class="arithmatex">\(\Sigma_y = A\,\Sigma_x A^\top\)</span>. In einem Detektorbild sagt die Kovarianz benachbarter Pixel, ob das Rauschen weiß oder korreliert ist; das Rauschleistungsspektrum (NPS) ist ihre Fourier-Transformierte.</p>
+<p>Die <strong>mehrdimensionale Gaußverteilung</strong> hat Höhenlinien in Form von Ellipsen, deren Form <span class="arithmatex">\(\Sigma\)</span> festlegt:</p>
+<div class="eq">\[
+\mathcal N(\mathbf x \mid \boldsymbol\mu, \Sigma) = \frac{1}{\sqrt{(2\pi)^d \det\Sigma}} \exp\!\left(-\tfrac12 (\mathbf x - \boldsymbol\mu)^\top \Sigma^{-1} (\mathbf x - \boldsymbol\mu)\right)
+\]</div>
+<p>Der Ausdruck im Exponenten ist die quadrierte Mahalanobis-Distanz. Bei der Gaußverteilung sind Rand- und bedingte Verteilungen wieder gaußsch. Der bedingte Mittelwert <span class="arithmatex">\(\mathbb E[y \mid x] = \mu_y + \rho\,\frac{\sigma_y}{\sigma_x}(x - \mu_x)\)</span> ist eine Gerade, die Regressionsgerade.</p>
+<figure class="fig">
+<canvas aria-label="Punktwolke einer zweidimensionalen Gaußverteilung mit Fehlerellipsen, Hauptachsen, Randverteilungen und der bedingten Verteilung bei einem gewählten x." class="c-ws-sq" id="cv-g2" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="g2-sx">σx</label><output id="g2-sx-o"></output></div><input autocomplete="off" id="g2-sx" max="1.8" min="0.3" step="0.05" type="range" value="1.2"/></div>
+<div class="ctrl"><div class="lab"><label for="g2-sy">σy</label><output id="g2-sy-o"></output></div><input autocomplete="off" id="g2-sy" max="1.8" min="0.3" step="0.05" type="range" value="0.9"/></div>
+<div class="ctrl"><div class="lab"><label for="g2-r">Korrelation ρ</label><output id="g2-r-o"></output></div><input autocomplete="off" id="g2-r" max="0.95" min="-0.95" step="0.05" type="range" value="0.7"/></div>
+</div>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="g2-x">Schnitt bei x₀</label><output id="g2-x-o"></output></div><input autocomplete="off" id="g2-x" max="2.5" min="-2.5" step="0.05" type="range" value="1.2"/></div>
+<label class="chk"><input autocomplete="off" id="g2-a" type="checkbox"/> Hauptachsen</label>
+</div>
+<div class="readout" id="g2-read"></div>
+<figcaption><b>Abb. 3</b> 600 Punkte aus einer zweidimensionalen Gaußverteilung mit den Ellipsen für 1σ und 2σ. An den Rändern die Randverteilungen \(p(x)\) und \(p(y)\). Die senkrechte Linie bei \(x_0\) schneidet die Verteilung, auf Fläche 1 normiert ist das die bedingte Verteilung \(p(y \mid x_0)\) (blau). Ihr Mittelwert liegt auf der Regressionsgeraden (gestrichelt), ihre Breite \(\sigma_y\sqrt{1 - \rho^2}\) ist kleiner als die der Randverteilung: Wer \(x\) kennt, weiß mehr über \(y\). Bei \(\rho = 0\) ist jeder Schnitt gleich, \(x\) und \(y\) sind unabhängig.</figcaption>
+</figure>
+</section>
+<section id="bayes">
+<div class="step"><b>8</b><span class="eyebrow">Mehrere Variablen</span></div>
+<h2>Satz von Bayes</h2>
+<p>Die Produktregel lässt sich auf zwei Arten schreiben, <span class="arithmatex">\(p(x, y) = p(y \mid x)\,p(x) = p(x \mid y)\,p(y)\)</span>. Gleichsetzen ergibt den <strong>Satz von Bayes</strong>. Mit <span class="arithmatex">\(\theta\)</span> für das Unbekannte und <span class="arithmatex">\(\mathcal D\)</span> für die Daten:</p>
+<div class="eq">\[
+\underbrace{p(\theta \mid \mathcal D)}_{\text{Posterior}} = \frac{\overbrace{p(\mathcal D \mid \theta)}^{\text{Likelihood}}\ \overbrace{p(\theta)}^{\text{Prior}}}{\underbrace{p(\mathcal D)}_{\text{Evidenz}}}
+\]</div>
+<p>Der <strong>Prior</strong> ist das Wissen vor der Messung, die <strong>Likelihood</strong> sagt, wie gut ein Wert von <span class="arithmatex">\(\theta\)</span> die Daten erklärt, der <strong>Posterior</strong> ist das Wissen danach. Die Evidenz sorgt nur dafür, dass sich der Posterior zu 1 normiert.</p>
+<p>Das klassische Beispiel ist ein Test für eine seltene Krankheit. Selbst ein guter Test liefert dann überwiegend falsch positive Ergebnisse, weil es so viel mehr Gesunde als Kranke gibt. Wie wahrscheinlich ein positiver Befund wirklich krank bedeutet, hängt stark von der Häufigkeit der Krankheit ab, der <strong>Basisrate</strong>. Wer sie ignoriert, verwechselt <span class="arithmatex">\(P(\text{positiv} \mid \text{krank})\)</span> mit <span class="arithmatex">\(P(\text{krank} \mid \text{positiv})\)</span>.</p>
+<figure class="fig">
+<canvas aria-label="1000 Personen als Kästchen, eingefärbt nach krank oder gesund und Testergebnis, daneben der Anteil der wirklich Kranken unter den positiv Getesteten." class="c-ws-by" id="cv-by" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="by-p">Häufigkeit der Krankheit (Prior)</label><output id="by-p-o"></output></div><input autocomplete="off" id="by-p" max="9" min="0" step="1" type="range" value="3"/></div>
+<div class="ctrl"><div class="lab"><label for="by-se">Sensitivität P(+ | krank)</label><output id="by-se-o"></output></div><input autocomplete="off" id="by-se" max="1" min="0.5" step="0.01" type="range" value="0.9"/></div>
+<div class="ctrl"><div class="lab"><label for="by-sp">Spezifität P(− | gesund)</label><output id="by-sp-o"></output></div><input autocomplete="off" id="by-sp" max="0.999" min="0.5" step="0.001" type="range" value="0.95"/></div>
+</div>
+<div class="readout" id="by-read"></div>
+<figcaption><b>Abb. 4</b> 1000 Personen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau richtig positiv, rot falsch positiv. Rechts nur die positiv Getesteten. Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
+</figure>
+</section>
+<section id="zgs">
+<div class="step"><b>9</b><span class="eyebrow">Grenzwertsätze</span></div>
+<h2>Gesetz der großen Zahlen und zentraler Grenzwertsatz</h2>
+<p>Das <strong>Gesetz der großen Zahlen</strong> sagt: Der Mittelwert <span class="arithmatex">\(\bar X_N\)</span> von <span class="arithmatex">\(N\)</span> unabhängigen Ziehungen läuft gegen den Erwartungswert <span class="arithmatex">\(\mu\)</span>. Deshalb lassen sich Erwartungswerte durch Mittelwerte schätzen und Integrale durch Zufallsstichproben berechnen (Monte-Carlo).</p>
+<p>Der <strong>zentrale Grenzwertsatz</strong> sagt zusätzlich, wie der Mittelwert um <span class="arithmatex">\(\mu\)</span> streut: Für großes <span class="arithmatex">\(N\)</span> ist er normalverteilt, egal wie die einzelnen <span class="arithmatex">\(X_i\)</span> verteilt sind, solange ihre Varianz endlich ist:</p>
+<div class="eq">\[
+\bar X_N \approx \mathcal N\!\left(\mu, \frac{\sigma^2}{N}\right) \qquad \text{bzw.} \qquad \frac{\bar X_N - \mu}{\sigma/\sqrt N} \to \mathcal N(0, 1)
+\]</div>
+<p>Deshalb ist Gauß-Rauschen so verbreitet: Viele kleine, unabhängige Störungen addieren sich zu einer Normalverteilung. Und deshalb wird die Poisson-Verteilung für großes <span class="arithmatex">\(\lambda\)</span> gaußförmig, denn eine Poisson-Zahl mit <span class="arithmatex">\(\lambda\)</span> ist die Summe von <span class="arithmatex">\(\lambda\)</span> Poisson-Zahlen mit Rate 1.</p>
+<figure class="fig">
+<canvas aria-label="Links die Ausgangsverteilung, rechts das Histogramm standardisierter Mittelwerte aus n Ziehungen mit der Standardnormalverteilung darüber." class="c-ws" id="cv-zg" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="zg-d">Ausgangsverteilung</label></div><select autocomplete="off" id="zg-d"><option value="e">exponentiell</option><option value="u">gleichverteilt</option><option value="b">U-förmig</option><option value="c">Münzwurf (0 oder 1)</option></select></div>
+<div class="ctrl"><div class="lab"><label for="zg-n">Werte pro Mittelwert n</label><output id="zg-n-o"></output></div><input autocomplete="off" id="zg-n" max="50" min="1" step="1" type="range" value="1"/></div>
+<button class="btn" id="zg-p" type="button">Abspielen</button>
+</div>
+<div class="readout" id="zg-read"></div>
+<figcaption><b>Abb. 5</b> Aus der Ausgangsverteilung (links) werden immer wieder \(n\) Werte gezogen und gemittelt, 20 000 Mal. Rechts das Histogramm dieser Mittelwerte, standardisiert auf Mittelwert 0 und Streuung 1, mit der Standardnormalverteilung als Linie. Bei \(n = 1\) sieht man die Ausgangsverteilung selbst. Schon ab wenigen Werten wird das Histogramm gaußförmig, bei schiefen Verteilungen dauert es etwas länger. Beim Münzwurf sind die Mittelwerte diskret, und erst mit größerem \(n\) liegen die Stufen dicht genug.</figcaption>
+</figure>
+</section>
+<section id="fehler">
+<div class="step"><b>10</b><span class="eyebrow">Grenzwertsätze</span></div>
+<h2>Fehlerfortpflanzung</h2>
+<p>Gemessen wird <span class="arithmatex">\(x\)</span> mit Streuung <span class="arithmatex">\(\sigma_x\)</span>, gebraucht wird <span class="arithmatex">\(y = f(x)\)</span>. Wie stark streut <span class="arithmatex">\(y\)</span>? Für eine lineare Funktion folgt das direkt aus den Rechenregeln. Für eine nichtlineare Funktion linearisiert man um den Mittelwert, <span class="arithmatex">\(f(x) \approx f(\mu) + f'(\mu)(x - \mu)\)</span>, und erhält</p>
+<div class="eq">\[
+\sigma_y \approx |f'(\mu)|\,\sigma_x
+\]</div>
+<p>Mehrere Eingänge mit Kovarianzmatrix <span class="arithmatex">\(\Sigma_x\)</span> und mehrere Ausgänge gehen genauso, mit der <a href="lineare-algebra.html#kalkuel">Jacobi-Matrix</a> <span class="arithmatex">\(J\)</span> statt der Ableitung:</p>
+<div class="eq">\[
+\Sigma_y \approx J\,\Sigma_x\,J^\top, \qquad J_{ij} = \frac{\partial f_i}{\partial x_j}
+\]</div>
+<p>Sind die Eingänge unkorreliert, wird daraus die bekannte Formel <span class="arithmatex">\(\sigma_y^2 = \sum_j \big(\tfrac{\partial f}{\partial x_j}\big)^2 \sigma_j^2\)</span>.</p>
+<p>Das Beispiel aus der <a href="../physik/rekonstruktion.html">CT</a>: Gemessen wird die Intensität <span class="arithmatex">\(I\)</span> mit Poisson-Rauschen, <span class="arithmatex">\(\sigma_I = \sqrt I\)</span>. Rekonstruiert wird mit dem Linienintegral <span class="arithmatex">\(p = -\ln(I / I_0)\)</span>. Die Ableitung ist <span class="arithmatex">\(-1/I\)</span>, also</p>
+<div class="eq">\[
+\sigma_p \approx \frac{\sqrt I}{I} = \frac{1}{\sqrt I}
+\]</div>
+<p>Hinter dicken Objekten kommen wenige Photonen an, und genau dort wird <span class="arithmatex">\(p\)</span> am stärksten verrauscht. Die Linearisierung gilt, solange die Funktion über die Breite der Streuung fast gerade ist. Sonst wird die Ausgangsverteilung schief, und auch ihr Mittelwert verschiebt sich gegenüber <span class="arithmatex">\(f(\mu)\)</span>.</p>
+<figure class="fig">
+<canvas aria-label="Eine nichtlineare Funktion mit Tangente; unten die Verteilung der Eingangsgröße, links die Verteilung des Ergebnisses aus Stichproben und die lineare Näherung." class="c-ws-tall" id="cv-fp" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="fp-f">Funktion y = f(x)</label></div><select autocomplete="off" id="fp-f"><option value="ln">−ln x (CT: x = I/I₀)</option><option value="sq">x²</option><option value="rt">√x</option><option value="inv">1/x</option></select></div>
+<div class="ctrl"><div class="lab"><label for="fp-m">Mittelwert μx</label><output id="fp-m-o"></output></div><input autocomplete="off" id="fp-m" max="2.5" min="0.1" step="0.01" type="range" value="0.3"/></div>
+<div class="ctrl"><div class="lab"><label for="fp-s">Streuung σx</label><output id="fp-s-o"></output></div><input autocomplete="off" id="fp-s" max="0.5" min="0.01" step="0.01" type="range" value="0.06"/></div>
+</div>
+<div class="readout" id="fp-read"></div>
+<figcaption><b>Abb. 6</b> Unten die Eingangsgröße \(x\), gaußverteilt um \(\mu_x\). Jeder Wert wird über die Kurve \(f\) nach links auf \(y\) übertragen. Links in Blau das Histogramm der Ergebnisse aus 40 000 Stichproben, als rote Linie die lineare Näherung \(\mathcal N\big(f(\mu_x), (f'(\mu_x)\,\sigma_x)^2\big)\), die aus der Tangente (gestrichelt) folgt. Bei kleiner Streuung passen beide. Wird \(\sigma_x\) größer oder liegt \(\mu_x\) dort, wo \(f\) stark gekrümmt ist, wird die Ausgangsverteilung schief und ihr Mittelwert verschiebt sich. Beim Logarithmus ist das genau der Fall wenig transmittierter Photonen in der CT.</figcaption>
+</figure>
+</section>
+<section id="schaetzer">
+<div class="step"><b>11</b><span class="eyebrow">Schätzen</span></div>
+<h2>Schätzer</h2>
+<p>Ein <strong>Schätzer</strong> ist eine Rechenvorschrift, die aus einer Stichprobe einen Wert für eine unbekannte Größe macht. Die üblichen für Mittelwert und Varianz:</p>
+<div class="eq">\[
+\bar x = \frac1N \sum_{i=1}^N x_i, \qquad s^2 = \frac{1}{N - 1}\sum_{i=1}^N (x_i - \bar x)^2
+\]</div>
+<p>Ein Schätzer ist selbst eine Zufallsvariable, denn eine andere Stichprobe gibt einen anderen Wert. Zwei Kenngrößen beschreiben seine Güte:</p>
+<ul class="tight">
+<li><strong>Bias</strong> <span class="arithmatex">\(\mathbb E[\hat\theta] - \theta\)</span>: Liegt der Schätzer im Mittel richtig?</li>
+<li><strong>Varianz</strong> <span class="arithmatex">\(\operatorname{Var}[\hat\theta]\)</span>: Wie stark schwankt er von Stichprobe zu Stichprobe? Für <span class="arithmatex">\(\bar x\)</span> ist das <span class="arithmatex">\(\sigma^2/N\)</span>, ihre Wurzel heißt <strong>Standardfehler</strong>.</li>
+</ul>
+<p>Der mittlere quadratische Fehler ist beides zusammen: <span class="arithmatex">\(\mathbb E[(\hat\theta - \theta)^2] = \text{Bias}^2 + \text{Varianz}\)</span>. Ein kleiner Bias kann sich lohnen, wenn er die Varianz deutlich senkt. Das ist die Idee hinter Regularisierung.</p>
+<p>Das <span class="arithmatex">\(N - 1\)</span> in <span class="arithmatex">\(s^2\)</span> heißt <strong>Bessel-Korrektur</strong>. Die Abweichungen werden vom geschätzten Mittelwert <span class="arithmatex">\(\bar x\)</span> gemessen, nicht vom wahren <span class="arithmatex">\(\mu\)</span>. Da <span class="arithmatex">\(\bar x\)</span> aus denselben Daten stammt, liegt er näher an ihnen als <span class="arithmatex">\(\mu\)</span>, und die Summe der Quadrate fällt im Mittel um genau ein <span class="arithmatex">\(\sigma^2\)</span> zu klein aus. Mit <span class="arithmatex">\(1/N\)</span> wäre <span class="arithmatex">\(s^2\)</span> also systematisch zu klein. Bei großem <span class="arithmatex">\(N\)</span> spielt das keine Rolle.</p>
+</section>
+<section id="ml">
+<div class="step"><b>12</b><span class="eyebrow">Schätzen</span></div>
+<h2>Maximum Likelihood und MAP</h2>
+<p>Die meisten Schätzer folgen einem Prinzip: Wähle den Parameter, unter dem die beobachteten Daten am wahrscheinlichsten sind. Die <strong>Likelihood</strong> ist die Wahrscheinlichkeit der Daten als Funktion des Parameters. Bei unabhängigen Daten ist sie ein Produkt, deshalb arbeitet man mit ihrem Logarithmus:</p>
+<div class="eq">\[
+\hat\theta_\text{ML} = \arg\max_\theta \sum_{i=1}^N \log p(x_i \mid \theta)
+\]</div>
+<p>Zwei Fälle, die man kennen sollte:</p>
+<ul class="tight">
+<li><strong>Gauß-Rauschen</strong> mit fester Varianz: <span class="arithmatex">\(-\log p = \frac{(x_i - f_\theta)^2}{2\sigma^2} + \text{const}\)</span>. Maximum Likelihood ist hier dasselbe wie <strong>kleinste Quadrate</strong>. Mit unterschiedlichen <span class="arithmatex">\(\sigma_i\)</span> wird es gewichtete kleinste Quadrate.</li>
+<li><strong>Poisson-Zählung</strong> mit Rate <span class="arithmatex">\(\lambda\)</span>: <span class="arithmatex">\(\log p = k_i \log\lambda - \lambda + \text{const}\)</span>. Ableiten und null setzen ergibt <span class="arithmatex">\(\hat\lambda = \bar k\)</span>. Diese Poisson-Likelihood maximieren statistische CT-Rekonstruktion und die Materialzerlegung beim Photon Counting.</li>
+</ul>
+<p>Auch die <strong>Cross-Entropy</strong>, mit der Klassifikatoren und Sprachmodelle trainiert werden, ist eine negative Log-Likelihood: die der kategorialen Verteilung für die richtige Klasse.</p>
+<p>Wie genau der Schätzer ist, sieht man an der Krümmung der Log-Likelihood am Maximum: Ist sie spitz, legen die Daten den Parameter eng fest. Für viele Daten gilt <span class="arithmatex">\(\operatorname{Var}[\hat\theta] \approx 1/\big(-\ell''(\hat\theta)\big)\)</span>. Dieser Wert ist zugleich die kleinstmögliche Varianz eines erwartungstreuen Schätzers (<strong>Cramér-Rao-Schranke</strong>).</p>
+<p>Nimmt man einen Prior dazu, maximiert man den Posterior statt der Likelihood. Das heißt <strong>MAP-Schätzung</strong> (maximum a posteriori):</p>
+<div class="eq">\[
+\hat\theta_\text{MAP} = \arg\max_\theta \big[\log p(\mathcal D \mid \theta) + \log p(\theta)\big]
+\]</div>
+<p>Der Log-Prior wirkt wie ein Regularisierungsterm. Ein Gauß-Prior auf die Gewichte gibt genau die L2-Regularisierung (Ridge, Weight Decay). Mit vielen Daten dominiert die Likelihood, und MAP und ML fallen zusammen.</p>
+<figure class="fig">
+<canvas aria-label="Links gemessene Photonenzahlen als Punkte, rechts die Log-Likelihood der Rate λ mit ihrem Maximum, optional mit Prior und Posterior." class="c-ws" id="cv-lk" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="lk-l">wahre Rate λ</label><output id="lk-l-o"></output></div><input autocomplete="off" id="lk-l" max="30" min="1" step="0.5" type="range" value="8"/></div>
+<div class="ctrl"><div class="lab"><label for="lk-n">Messungen N</label><output id="lk-n-o"></output></div><input autocomplete="off" id="lk-n" max="100" min="1" step="1" type="range" value="5"/></div>
+<label class="chk"><input autocomplete="off" id="lk-p" type="checkbox"/> Prior (MAP)</label>
+<button class="btn" id="lk-r" type="button">Neue Messung</button>
+</div>
+<div class="readout" id="lk-read"></div>
+<figcaption><b>Abb. 7</b> Links \(N\) Photonenzählungen eines Pixels mit wahrer Rate \(\lambda\). Rechts die Log-Likelihood \(\ell(\lambda) = \sum_i (k_i \log\lambda - \lambda) + \text{const}\), so verschoben, dass ihr Maximum bei 0 liegt. Das Maximum liegt beim Mittelwert der Zählungen. Wo die Kurve um 0,5 abgefallen ist, liegt etwa ±1 Standardfehler (Balken). Mit mehr Messungen wird die Kurve spitzer und der Schätzwert genauer. Mit Prior kommt ein Gamma-Prior um \(\lambda = 5\) dazu, der so viel wiegt wie zwei Messungen. Er zieht den Schätzwert bei wenigen Daten zu sich hin und verliert mit vielen Daten an Gewicht.</figcaption>
+</figure>
+</section>
+<section id="ki">
+<div class="step"><b>13</b><span class="eyebrow">Schätzen</span></div>
+<h2>Konfidenzintervalle und Tests</h2>
+<p>Ein Schätzwert allein sagt nicht, wie sicher er ist. Ein <strong>95-%-Konfidenzintervall</strong> ist eine Vorschrift, die aus den Daten ein Intervall macht, das in 95 % aller Wiederholungen des Experiments den wahren Wert enthält. Für den Mittelwert mit bekanntem <span class="arithmatex">\(\sigma\)</span>:</p>
+<div class="eq">\[
+\bar x \pm 1{,}96\,\frac{\sigma}{\sqrt N}
+\]</div>
+<p>Mit geschätztem <span class="arithmatex">\(s\)</span> statt <span class="arithmatex">\(\sigma\)</span> und kleinem <span class="arithmatex">\(N\)</span> nimmt man statt 1,96 den etwas größeren Wert der <span class="arithmatex">\(t\)</span>-Verteilung.</p>
+<p>Wichtig ist, was die 95 % bedeuten: Sie sind eine Eigenschaft des Verfahrens, nicht des einen berechneten Intervalls. Der wahre Wert ist fest, das Intervall ist zufällig. Ein konkretes Intervall enthält ihn oder nicht.</p>
+<p>Ein <strong>Hypothesentest</strong> stellt die Frage umgekehrt. Man nimmt eine Nullhypothese an, etwa „kein Unterschied zwischen zwei Detektoren“, und berechnet den <strong>p-Wert</strong>: die Wahrscheinlichkeit, unter dieser Annahme ein mindestens so extremes Ergebnis zu sehen. Ein kleiner p-Wert spricht gegen die Nullhypothese. Er ist aber nicht die Wahrscheinlichkeit, dass die Nullhypothese stimmt, und er sagt nichts darüber, wie groß ein Effekt ist. Bei sehr vielen Daten wird auch ein winziger, praktisch bedeutungsloser Unterschied signifikant.</p>
+<figure class="fig">
+<canvas aria-label="100 Konfidenzintervalle aus wiederholten Experimenten als waagrechte Striche; die meisten schneiden den wahren Wert, einige nicht." class="c-ws" id="cv-ki" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="ki-n">Werte pro Experiment N</label><output id="ki-n-o"></output></div><input autocomplete="off" id="ki-n" max="50" min="2" step="1" type="range" value="5"/></div>
+<div class="ctrl" style="flex:0 1 150px"><div class="lab"><label for="ki-c">Niveau</label></div><select autocomplete="off" id="ki-c"><option value="0.68">68 %</option><option value="0.9">90 %</option><option selected="" value="0.95">95 %</option><option value="0.99">99 %</option></select></div>
+<div class="ctrl" style="flex:0 1 230px"><div class="lab"><label for="ki-m">Intervall</label></div><select autocomplete="off" id="ki-m"><option value="k">σ bekannt: x̄ ± z·σ/√N</option><option value="z">s geschätzt, aber z-Wert</option><option value="t">s geschätzt, t-Wert</option></select></div>
+<button class="btn" id="ki-r" type="button">Neue Experimente</button>
+</div>
+<div class="readout" id="ki-read"></div>
+<figcaption><b>Abb. 8</b> 100 Wiederholungen desselben Experiments: Jedes zieht \(N\) Werte aus einer Normalverteilung mit wahrem Mittelwert \(\mu = 0\) und berechnet daraus ein Intervall. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
+</figure>
+</section>
+<section id="formeln">
+<div class="eyebrow">Anhang A</div>
+<h2>Formeln</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Thema</th>
+<th>Formel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bedingte Wahrscheinlichkeit</td>
+<td><span class="arithmatex">\(P(A \mid B) = P(A \cap B) / P(B)\)</span></td>
+</tr>
+<tr>
+<td>Summen- und Produktregel</td>
+<td><span class="arithmatex">\(p(x) = \int p(x, y)\,\mathrm dy\)</span>, <span class="arithmatex">\(p(x, y) = p(y \mid x)\,p(x)\)</span></td>
+</tr>
+<tr>
+<td>Bayes</td>
+<td><span class="arithmatex">\(p(\theta \mid \mathcal D) = p(\mathcal D \mid \theta)\,p(\theta) / p(\mathcal D)\)</span></td>
+</tr>
+<tr>
+<td>Varianz</td>
+<td><span class="arithmatex">\(\operatorname{Var}[X] = \mathbb E[X^2] - \mu^2\)</span>, <span class="arithmatex">\(\operatorname{Var}[aX + b] = a^2\operatorname{Var}[X]\)</span></td>
+</tr>
+<tr>
+<td>Summe</td>
+<td><span class="arithmatex">\(\operatorname{Var}[X + Y] = \operatorname{Var}[X] + \operatorname{Var}[Y] + 2\operatorname{Cov}[X, Y]\)</span></td>
+</tr>
+<tr>
+<td>Mittelwert aus <span class="arithmatex">\(N\)</span></td>
+<td><span class="arithmatex">\(\operatorname{Var}[\bar X] = \sigma^2 / N\)</span></td>
+</tr>
+<tr>
+<td>lineare Abbildung</td>
+<td><span class="arithmatex">\(\mathbb E[A\mathbf x] = A\boldsymbol\mu\)</span>, <span class="arithmatex">\(\Sigma_{A\mathbf x} = A\Sigma A^\top\)</span></td>
+</tr>
+<tr>
+<td>Fehlerfortpflanzung</td>
+<td><span class="arithmatex">\(\Sigma_y \approx J\Sigma_x J^\top\)</span>, eindimensional <span class="arithmatex">\(\sigma_y \approx \vert f'(\mu)\vert\,\sigma_x\)</span></td>
+</tr>
+<tr>
+<td>Poisson</td>
+<td><span class="arithmatex">\(\mathbb E = \operatorname{Var} = \lambda\)</span>, SNR <span class="arithmatex">\(= \sqrt\lambda\)</span></td>
+</tr>
+<tr>
+<td>Stichprobenvarianz</td>
+<td><span class="arithmatex">\(s^2 = \frac1{N-1}\sum (x_i - \bar x)^2\)</span></td>
+</tr>
+<tr>
+<td>MSE</td>
+<td><span class="arithmatex">\(\mathbb E[(\hat\theta - \theta)^2] = \text{Bias}^2 + \text{Varianz}\)</span></td>
+</tr>
+<tr>
+<td>ML, MAP</td>
+<td><span class="arithmatex">\(\arg\max \sum\log p(x_i \mid \theta)\)</span>, plus <span class="arithmatex">\(\log p(\theta)\)</span></td>
+</tr>
+<tr>
+<td>Konfidenzintervall</td>
+<td><span class="arithmatex">\(\bar x \pm 1{,}96\,\sigma/\sqrt N\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section id="befehle">
+<div class="eyebrow">Anhang B</div>
+<h2>Befehle</h2>
+<pre><code class="language-python">import numpy as np
+from scipy import stats
+
+rng = np.random.default_rng(0)
+k = rng.poisson(lam=50, size=10_000)          # Photonenzahlen
+x = rng.normal(loc=0, scale=1, size=(1000, 2))
+X = rng.multivariate_normal(mean=[0, 0], cov=[[1, 0.8], [0.8, 1]], size=1000)
+
+k.mean(), k.var(ddof=1)                       # Mittelwert, Stichprobenvarianz (N−1)
+np.cov(X, rowvar=False)                       # Kovarianzmatrix (Spalten = Variablen)
+np.corrcoef(X, rowvar=False)                  # Korrelationsmatrix
+
+stats.norm.pdf(1.0), stats.norm.cdf(1.96)     # Dichte, Verteilungsfunktion
+stats.norm.ppf(0.975)                         # Quantil: 1,96
+stats.poisson.pmf(3, mu=4)                    # P(K = 3) bei λ = 4
+stats.norm.fit(x[:, 0])                       # ML-Schätzung von μ und σ
+
+stats.ttest_ind(a, b)                         # t-Test zweier Stichproben
+stats.t.interval(0.95, df=len(a) - 1, loc=a.mean(), scale=stats.sem(a))  # 95-%-Intervall
+</code></pre>
+</section>
+    <footer>Alle Abbildungen ziehen ihre Stichproben live im Browser, mit festem Startwert, damit sie reproduzierbar sind. Für echte Auswertungen nimmt man NumPy und <code>scipy.stats</code>.</footer>
+  </main>
+</div>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ws.js"></script>
+<script>
+/* ---------- Stichprobe und Dichte ---------- */
+(() => {
+  const c = $('#cv-sd'), id = $('#sd-d'), inn = $('#sd-n'), NS = [10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000];
+  const mix = (x, a, s) => normPdf(x, a, s);
+  const D = {
+    g: { lo: -4, hi: 4, pdf: x => normPdf(x), cdf: x => normCdf(x), s: () => gauss(), mu: 0, v: 1 },
+    e: { lo: 0, hi: 6, pdf: x => x < 0 ? 0 : Math.exp(-x), cdf: x => x < 0 ? 0 : 1 - Math.exp(-x), s: () => rExp(1), mu: 1, v: 1 },
+    b: { lo: -4, hi: 4, pdf: x => 0.6 * mix(x, -1.2, 0.5) + 0.4 * mix(x, 1.5, 0.7), cdf: x => 0.6 * normCdf(x, -1.2, 0.5) + 0.4 * normCdf(x, 1.5, 0.7), s: () => rnd() < 0.6 ? -1.2 + 0.5 * gauss() : 1.5 + 0.7 * gauss(), mu: -0.12, v: 2.0956 },
+    u: { lo: -2.5, hi: 2.5, pdf: x => Math.abs(x) <= 1.5 ? 1 / 3 : 0, cdf: x => Math.max(0, Math.min(1, (x + 1.5) / 3)), s: () => -1.5 + 3 * rnd(), mu: 0, v: 0.75 },
+  };
+  let gen = 1, key = '', S = null;
+  const m = reg({ el: c, draw() {
+    const d = D[id.value], N = NS[+inn.value]; $('#sd-n-o').textContent = N.toLocaleString('de-DE');
+    if (key !== id.value + gen) { key = id.value + gen; setSeed(7919 * gen + id.value.charCodeAt(0)); S = Array.from({ length: 10000 }, d.s); }
+    const A = S.slice(0, N), nb = Math.min(60, Math.max(8, Math.round(2 * Math.cbrt(N)))), { H, w: bw } = hist(A, d.lo, d.hi, nb);
+    const dens = H.map(v => v / (N * bw)); let pmax = 0; for (let i = 0; i <= 200; i++) pmax = Math.max(pmax, d.pdf(d.lo + (d.hi - d.lo) * i / 200));
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    const r1 = narrow ? [0, 0, w, h * 0.52] : [0, 0, w * 0.58, h], r2 = narrow ? [0, h * 0.52, w, h * 0.48] : [w * 0.58 + 10, 0, w * 0.42 - 10, h];
+    const ymax = Math.max(pmax * 1.25, Math.min(Math.max(...dens), pmax * 2.2));
+    const f = frame(ctx, ...r1, { x0: d.lo, x1: d.hi, y0: 0, y1: ymax, xt: [d.lo, (d.lo + d.hi) / 2, d.hi].map(v => Math.round(v * 2) / 2), yt: [0, Math.round(pmax * 10) / 10], yf: v => nf(v, 1), xl: 'x', l: 40, t: 22 });
+    ctx.fillStyle = rgba(tok('--accent'), 0.32); ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1;
+    dens.forEach((v, i) => { const x0 = f.X(d.lo + i * bw), x1 = f.X(d.lo + (i + 1) * bw), y = f.Y(Math.min(v, ymax)); ctx.fillRect(x0, y, x1 - x0, f.Y(0) - y); ctx.strokeRect(x0 + 0.5, y + 0.5, x1 - x0 - 1, f.Y(0) - y); });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; curve(ctx, d.pdf, f.X, f.Y, d.lo, d.hi, 400);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('Histogramm und Dichte p(x)', f.bx, 14);
+    const g = frame(ctx, ...r2, { x0: d.lo, x1: d.hi, y0: 0, y1: 1, xt: [d.lo, d.hi].map(v => Math.round(v * 2) / 2), yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'x', l: 36, t: 22 });
+    const so = A.slice().sort((a, b) => a - b);
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(g.X(d.lo), g.Y(0));
+    so.forEach((v, i) => { const x = g.X(Math.max(d.lo, Math.min(d.hi, v))); ctx.lineTo(x, g.Y(i / N)); ctx.lineTo(x, g.Y((i + 1) / N)); }); ctx.lineTo(g.X(d.hi), g.Y(1)); ctx.stroke();
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]); curve(ctx, d.cdf, g.X, g.Y, d.lo, d.hi); ctx.setLineDash([]);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('Verteilungsfunktion F(x)', g.bx, r2[1] + 14);
+    let ks = 0; so.forEach((v, i) => { const F = d.cdf(v); ks = Math.max(ks, Math.abs(F - i / N), Math.abs(F - (i + 1) / N)); });
+    $('#sd-read').innerHTML = `<span class="k">Stichprobe:</span> x̄ = ${nf(mean(A), 3)}, s² = ${nf(variance(A), 3)}  <span class="k">·</span>  <span class="k">wahr:</span> μ = ${nf(d.mu, 2)}, σ² = ${nf(d.v, 2)}  <span class="k">·</span>  <span class="k">größter Abstand der Verteilungsfunktionen:</span> <b>${nf(ks, 3)}</b> (schrumpft etwa wie 1/√N)`;
+  } });
+  [id, inn].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#sd-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Binomial, Poisson, Gauß ---------- */
+(() => {
+  const c = $('#cv-bp'), inn = $('#bp-n'), ip = $('#bp-p');
+  const m = reg({ el: c, draw() {
+    const n = +inn.value, p = +ip.value, lam = n * p, v = n * p * (1 - p), sd = Math.sqrt(v);
+    $('#bp-n-o').textContent = n; $('#bp-p-o').textContent = nf(p, 2);
+    const k0 = Math.max(0, Math.floor(lam - 5 * Math.sqrt(lam) - 2)), k1 = Math.min(n, Math.ceil(lam + 5 * Math.sqrt(lam) + 3)), lo = Math.max(-2, k0 - 1);
+    const B = [], P = []; let ymax = 0; for (let k = k0; k <= k1; k++) { B.push(binomPmf(k, n, p)); P.push(poisPmf(k, lam)); ymax = Math.max(ymax, B.at(-1), P.at(-1)); }
+    const { ctx, w, h } = fit(c);
+    const step = Math.max(1, Math.round((k1 - lo) / 8)), xt = []; for (let k = Math.ceil(lo / step) * step; k <= k1; k += step) xt.push(k);
+    const narrow = w < 560, f = frame(ctx, 0, narrow ? 16 : 0, w, h - (narrow ? 16 : 0), { x0: lo - 0.5, x1: k1 + 0.5, y0: 0, y1: ymax * 1.15, xt, yt: [0, Math.round(ymax * 100) / 100], yf: v => nf(v, 2), xl: 'k (Zahl der Erfolge)', l: 46, t: 24 });
+    const bw = Math.max(1, (f.X(1) - f.X(0)) * 0.8);
+    ctx.fillStyle = rgba(tok('--accent'), 0.35); ctx.strokeStyle = tok('--accent');
+    B.forEach((b, i) => { const x = f.X(k0 + i); ctx.fillRect(x - bw / 2, f.Y(b), bw, f.Y(0) - f.Y(b)); });
+    ctx.fillStyle = tok('--bin2'); P.forEach((q, i) => { ctx.beginPath(); ctx.arc(f.X(k0 + i), f.Y(q), Math.min(4.5, bw / 2 + 1.5), 0, 2 * Math.PI); ctx.fill(); });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; curve(ctx, x => normPdf(x, lam, sd), f.X, f.Y, lo - 0.5, k1 + 0.5, 300);
+    legend(ctx, f.bx + 4, narrow ? 12 : f.by + 4, [['Binomial(n, p)', tok('--accent')], ['Poisson(λ = np)', tok('--bin2')], ['Gauß(np, np(1−p))', tok('--hole')]], { maxW: w - f.bx - 8 });
+    // Abstände (totale Variation)
+    let tvP = 0, tvG = 0; for (let k = 0; k <= n; k++) { const b = binomPmf(k, n, p); tvP += Math.abs(b - poisPmf(k, lam)); tvG += Math.abs(b - (normCdf(k + 0.5, lam, sd) - normCdf(k - 0.5, lam, sd))); }
+    $('#bp-read').innerHTML = `<span class="k">Mittelwert</span> np = ${nf(lam, 2)}  <span class="k">Varianz:</span> Binomial np(1−p) = ${nf(v, 2)}, Poisson λ = ${nf(lam, 2)}  <span class="k">·</span>  <span class="k">SNR = μ/σ =</span> ${nf(lam / sd, 2)}<br><span class="k">Abweichung der Binomialverteilung von Poisson:</span> ${nf(50 * tvP, 1)} %  <span class="k">von Gauß:</span> ${nf(50 * tvG, 1)} %  <span class="k">(Anteil der Wahrscheinlichkeit, der verschoben werden müsste)</span>`;
+  } });
+  [inn, ip].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- 2D-Gauß ---------- */
+(() => {
+  const c = $('#cv-g2'), isx = $('#g2-sx'), isy = $('#g2-sy'), ir = $('#g2-r'), ix = $('#g2-x'), ia = $('#g2-a');
+  setSeed(424242); const Z = Array.from({ length: 600 }, () => [gauss(), gauss()]);
+  const m = reg({ el: c, draw() {
+    const sx = +isx.value, sy = +isy.value, r = +ir.value, x0 = +ix.value;
+    $('#g2-sx-o').textContent = nf(sx, 2); $('#g2-sy-o').textContent = nf(sy, 2); $('#g2-r-o').textContent = nf(r, 2); $('#g2-x-o').textContent = nf(x0, 2);
+    const P = plane(c, 4.2), { ctx, S, w, h, s } = P; grid(P);
+    const A = tok('--accent'), Fg = tok('--fg'), Mu = tok('--muted'), Bn = tok('--bin2');
+    // Cholesky: x = sx z1, y = sy (r z1 + sqrt(1−r²) z2)
+    const q = Math.sqrt(1 - r * r);
+    ctx.fillStyle = rgba(Mu, 0.55); for (const [a, b] of Z) { const [px, py] = S(sx * a, sy * (r * a + q * b)); ctx.fillRect(px - 1.3, py - 1.3, 2.6, 2.6); }
+    // Ellipsen über Eigenzerlegung von Σ
+    const c11 = sx * sx, c22 = sy * sy, c12 = r * sx * sy, tr = c11 + c22, dt = c11 * c22 - c12 * c12, l1 = tr / 2 + Math.sqrt(tr * tr / 4 - dt), l2 = tr / 2 - Math.sqrt(tr * tr / 4 - dt);
+    const phi = 0.5 * Math.atan2(2 * c12, c11 - c22), u = [Math.cos(phi), Math.sin(phi)], v = [-u[1], u[0]];
+    [[1, 2], [2, 1.2]].forEach(([k, lw]) => { const pts = []; for (let i = 0; i <= 120; i++) { const t = i / 120 * 2 * Math.PI, a = k * Math.sqrt(l1) * Math.cos(t), b = k * Math.sqrt(l2) * Math.sin(t); pts.push([a * u[0] + b * v[0], a * u[1] + b * v[1]]); }
+      poly(P, pts, true); ctx.strokeStyle = Fg; ctx.lineWidth = lw; ctx.setLineDash(k === 2 ? [4, 4] : []); ctx.stroke(); ctx.setLineDash([]); });
+    if (ia.checked) { arrow(P, 0, 0, 2 * Math.sqrt(l1) * u[0], 2 * Math.sqrt(l1) * u[1], tok('--hole'), 2.2); arrow(P, 0, 0, 2 * Math.sqrt(l2) * v[0], 2 * Math.sqrt(l2) * v[1], tok('--hole'), 2.2); }
+    // Regressionsgerade E[y|x]
+    const k = r * sy / sx; line(P, -6, -6 * k, 6, 6 * k, A, 1.4, [6, 4]);
+    // Randverteilungen an den Rändern
+    const [ox] = S(0, 0), [, oy] = S(0, 0), mh = Math.min(w, h) * 0.13;
+    ctx.strokeStyle = Bn; ctx.lineWidth = 1.8; ctx.beginPath(); for (let i = 0; i <= 200; i++) { const x = -5 + 10 * i / 200, [px] = S(x, 0), py = h - 2 - mh * normPdf(x, 0, sx) / normPdf(0, 0, sx); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+    ctx.beginPath(); for (let i = 0; i <= 200; i++) { const y = -5 + 10 * i / 200, [, py] = S(0, y), px = 2 + mh * normPdf(y, 0, sy) / normPdf(0, 0, sy); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke();
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Bn; ctx.textAlign = 'left'; ctx.fillText('p(x)', S(sx * 1.1, 0)[0], h - 4 - mh * 0.6); ctx.fillText('p(y)', 6 + mh * 0.6, S(0, sy * 1.1)[1]);
+    // bedingte Verteilung bei x0
+    const cm = k * x0, cs = sy * q;
+    line(P, x0, -6, x0, 6, A, 1.4);
+    const amp = 1.1; // Höhe der bedingten Dichte in Achseneinheiten
+    const pts = []; for (let i = 0; i <= 160; i++) { const y = cm - 4 * cs + 8 * cs * i / 160; pts.push([x0 + amp * normPdf(y, cm, cs) / normPdf(cm, cm, cs), y]); }
+    poly(P, [[x0, cm - 4 * cs], ...pts, [x0, cm + 4 * cs]], true); ctx.fillStyle = rgba(A, 0.25); ctx.fill(); poly(P, pts); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke();
+    dot(P, x0, cm, A, 4.5); label(P, x0 + amp, cm, 'p(y | x₀)', A, 8, 4, `600 13px ${DISP}`);
+    $('#g2-read').innerHTML = `<span class="k">Σ =</span> [${nf(c11, 2)}  ${nf(c12, 2)} ; ${nf(c12, 2)}  ${nf(c22, 2)}]  <span class="k">Eigenwerte (Varianzen entlang der Hauptachsen):</span> ${nf(l1, 2)} und ${nf(l2, 2)}<br><span class="k">E[y | x₀] =</span> ρ·σy/σx·x₀ = <b>${nf(cm, 2)}</b>  <span class="k">σ(y | x₀) =</span> σy·√(1 − ρ²) = <b>${nf(cs, 2)}</b> statt σy = ${nf(sy, 2)}`;
+  } });
+  [isx, isy, ir, ix, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Bayes ---------- */
+(() => {
+  const c = $('#cv-by'), ip = $('#by-p'), ise = $('#by-se'), isp = $('#by-sp');
+  const PREV = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5], prev = i => PREV[i];
+  const pct = v => nf(100 * v, v < 0.01 || v > 0.999 ? 2 : v < 0.1 || v > 0.99 ? 1 : 0) + ' %';
+  const m = reg({ el: c, draw() {
+    const p = prev(+ip.value), se = +ise.value, sp = +isp.value;
+    $('#by-p-o').textContent = pct(p); $('#by-se-o').textContent = pct(se); $('#by-sp-o').textContent = pct(sp);
+    const N = 1000, nk = Math.round(N * p), tp = Math.round(nk * se), ng = N - nk, fp = Math.round(ng * (1 - sp));
+    const post = p * se / (p * se + (1 - p) * (1 - sp));
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Mu = tok('--muted');
+    const gw = narrow ? w : w * 0.66, gh = narrow ? h * 0.6 : h - 26, cols = 40, rows = 25, cell = Math.min(gw / cols, (gh - 4) / rows), sz = Math.max(2, cell - 1.6);
+    // Reihenfolge: spaltenweise, zuerst Kranke (positiv, dann negativ), dann Gesunde (positiv, dann negativ)
+    const kind = i => i < tp ? 'tp' : i < nk ? 'fn' : i < nk + fp ? 'fp' : 'tn';
+    for (let i = 0; i < N; i++) { const col = Math.floor(i / rows), row = i % rows, x = col * cell, y = 22 + row * cell, t = kind(i);
+      if (t === 'tp') { ctx.fillStyle = A; ctx.fillRect(x, y, sz, sz); } else if (t === 'fp') { ctx.fillStyle = H; ctx.fillRect(x, y, sz, sz); }
+      else { ctx.strokeStyle = t === 'fn' ? A : rgba(Mu, 0.55); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, sz - 1, sz - 1); } }
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.fillText(`${N} Personen: ${nk} krank, ${ng} gesund`, 0, 14);
+    if (nk > 0) { const xe = Math.ceil(nk / rows) * cell; ctx.strokeStyle = A; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(xe + 0.5, 18); ctx.lineTo(xe + 0.5, 22 + rows * cell + 2); ctx.stroke(); ctx.setLineDash([]); }
+    // rechter Teil: nur positiv Getestete
+    const bx = narrow ? 0 : gw + 24, by = narrow ? 22 + rows * cell + 30 : 40, bwid = narrow ? w : w - bx, bh = 30, pos = tp + fp;
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.fillText(`${pos} positiv getestet`, bx, by - 8);
+    const fr = pos ? tp / pos : 0; ctx.fillStyle = A; ctx.fillRect(bx, by, bwid * fr, bh); ctx.fillStyle = H; ctx.fillRect(bx + bwid * fr, by, bwid * (1 - fr), bh);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText(`${tp} krank`, bx, by + bh + 16); ctx.textAlign = 'right'; ctx.fillText(`${fp} gesund`, bx + bwid, by + bh + 16);
+    ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.font = `600 ${narrow ? 22 : 30}px ${DISP}`; ctx.fillText(pct(post), bx, by + bh + (narrow ? 44 : 60));
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText('P(krank | positiv)', bx, by + bh + (narrow ? 60 : 80));
+    if (!narrow) { [[A, 'krank, positiv', true], [A, 'krank, negativ', false], [H, 'gesund, positiv', true], [Mu, 'gesund, negativ', false]].forEach(([col, t, fill], i) => { const x = bx + (i % 2) * (bwid / 2), yy = h - 46 + Math.floor(i / 2) * 18; if (fill) { ctx.fillStyle = col; ctx.fillRect(x, yy - 9, 10, 10); } else { ctx.strokeStyle = col; ctx.strokeRect(x + 0.5, yy - 8.5, 9, 9); } ctx.fillStyle = Mu; ctx.fillText(t, x + 15, yy); }); }
+    $('#by-read').innerHTML = `<span class="k">P(krank | +) =</span> P(+ | krank)·P(krank) / P(+) = ${nf(se, 3)}·${nf(p, 4)} / (${nf(se, 3)}·${nf(p, 4)} + ${nf(1 - sp, 3)}·${nf(1 - p, 4)}) = <b>${pct(post)}</b>  <span class="k">·</span>  <span class="k">P(gesund | −) =</span> ${pct(sp * (1 - p) / (sp * (1 - p) + (1 - se) * p))}`;
+  } });
+  [ip, ise, isp].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Zentraler Grenzwertsatz ---------- */
+(() => {
+  const c = $('#cv-zg'), id = $('#zg-d'), inn = $('#zg-n'), bp = $('#zg-p'), M = 20000; let key = '', Z = null;
+  const D = {
+    e: { lo: -0.2, hi: 5, pdf: x => x < 0 ? 0 : Math.exp(-x), s: () => rExp(1), mu: 1, sd: 1, sk: 2 },
+    u: { lo: -0.2, hi: 1.2, pdf: x => x >= 0 && x <= 1 ? 1 : 0, s: () => rnd(), mu: 0.5, sd: Math.sqrt(1 / 12), sk: 0 },
+    b: { lo: 0, hi: 1, pdf: x => x > 0.003 && x < 0.997 ? 1 / (Math.PI * Math.sqrt(x * (1 - x))) : NaN, s: () => Math.sin(Math.PI * rnd() / 2) ** 2, mu: 0.5, sd: Math.sqrt(1 / 8), sk: 0 },
+    c: { lo: -0.3, hi: 1.3, pdf: null, s: () => rnd() < 0.5 ? 0 : 1, mu: 0.5, sd: 0.5, sk: 0 },
+  };
+  const m = reg({ el: c, playing: false, t: 1, anim: true, step(dt) { this.t += dt * 6; if (this.t > 50) { this.t = 50; this.playing = false; bp.textContent = 'Abspielen'; } inn.value = Math.round(this.t); },
+    draw() {
+    const d = D[id.value], n = +inn.value; $('#zg-n-o').textContent = n;
+    if (key !== id.value + n) { key = id.value + n; setSeed(99 + n * 31 + id.value.charCodeAt(0)); Z = new Float64Array(M);
+      for (let j = 0; j < M; j++) { let s = 0; for (let i = 0; i < n; i++) s += d.s(); Z[j] = (s / n - d.mu) / (d.sd / Math.sqrt(n)); } }
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    const r1 = narrow ? [0, 0, w, h * 0.36] : [0, 0, w * 0.3, h], r2 = narrow ? [0, h * 0.38, w, h * 0.62] : [w * 0.3 + 14, 0, w * 0.7 - 14, h];
+    // links Ausgangsverteilung
+    const f = frame(ctx, ...r1, { x0: d.lo, x1: d.hi, y0: 0, y1: id.value === 'b' ? 3 : id.value === 'c' ? 0.6 : 1.3, xt: [], yt: [], l: 10, t: 22, b: 14 });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; ctx.fillStyle = tok('--fg');
+    if (d.pdf) { ctx.beginPath(); let on = false; for (let i = 0; i <= 300; i++) { const x = d.lo + (d.hi - d.lo) * i / 300, y = d.pdf(x); if (!isFinite(y)) { on = false; continue; } const Y = f.Y(Math.min(y, 3)); on ? ctx.lineTo(f.X(x), Y) : ctx.moveTo(f.X(x), Y); on = true; } ctx.stroke(); }
+    else [0, 1].forEach(x => { ctx.fillRect(f.X(x) - 3, f.Y(0.5), 6, f.Y(0) - f.Y(0.5)); });
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillText('Ausgangsverteilung', r1[0], r1[1] + 14);
+    // rechts Mittelwerte
+    const nb = 64, { H, w: bw } = hist(Z, -4, 4, nb), dens = H.map(v => v / (M * bw));
+    const ytop = Math.min(1.1, Math.max(0.6, 1.05 * Math.max(...dens))), g = frame(ctx, ...r2, { x0: -4, x1: 4, y0: 0, y1: ytop, xt: [-3, -2, -1, 0, 1, 2, 3], yt: [0, 0.2, 0.4], yf: v => nf(v, 1), xl: '(x̄ − μ) / (σ/√n)', l: 40, t: 22 });
+    ctx.fillStyle = rgba(tok('--accent'), 0.35); dens.forEach((v, i) => { const x0 = g.X(-4 + i * bw), x1 = g.X(-4 + (i + 1) * bw), y = g.Y(Math.min(v, ytop)); ctx.fillRect(x0, y, x1 - x0 - 0.5, g.Y(0) - y); });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; curve(ctx, x => normPdf(x), g.X, g.Y, -4, 4);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText(`Mittelwerte aus je n = ${n} Werten`, r2[0], r2[1] + 14);
+    let ks = 0; const so = Array.from(Z).sort((a, b) => a - b); for (let j = 0; j < M; j += 7) ks = Math.max(ks, Math.abs(normCdf(so[j]) - j / M));
+    $('#zg-read').innerHTML = `<span class="k">Streuung des Mittelwerts:</span> σ/√n = ${nf(d.sd / Math.sqrt(n), 3)}  <span class="k">·</span>  <span class="k">Schiefe:</span> ${nf(d.sk / Math.sqrt(n), 2)} (Ausgang ${nf(d.sk, 0)}, fällt wie 1/√n)  <span class="k">·</span>  <span class="k">Abstand zur Normalverteilung:</span> <b>${nf(ks, 3)}</b>`;
+  } });
+  [id, inn].forEach(e => e.addEventListener('input', rafDebounce(() => { m.t = +inn.value; m.draw(); })));
+  bp.addEventListener('click', () => { m.playing = !m.playing; if (m.playing && m.t >= 50) m.t = 1; bp.textContent = m.playing ? 'Anhalten' : 'Abspielen'; });
+})();
+</script>
+<script>
+/* ---------- Fehlerfortpflanzung ---------- */
+(() => {
+  const c = $('#cv-fp'), iff = $('#fp-f'), im = $('#fp-m'), is = $('#fp-s');
+  const F = {
+    ln: { f: x => -Math.log(x), d: x => -1 / x, y0: -1, y1: 3.2, nm: '−ln x' },
+    sq: { f: x => x * x, d: x => 2 * x, y0: 0, y1: 7, nm: 'x²' },
+    rt: { f: x => Math.sqrt(x), d: x => 0.5 / Math.sqrt(x), y0: 0, y1: 1.8, nm: '√x' },
+    inv: { f: x => 1 / x, d: x => -1 / (x * x), y0: 0, y1: 8, nm: '1/x' },
+  };
+  setSeed(2718); const Zs = Float64Array.from({ length: 40000 }, () => gauss());
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value], mu = +im.value, sx = +is.value; $('#fp-m-o').textContent = nf(mu, 2); $('#fp-s-o').textContent = nf(sx, 2);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted');
+    const f = frame(ctx, 0, 0, w, h, { x0: -0.35, x1: 2.6, y0: fn.y0 - (fn.y1 - fn.y0) * 0.28, y1: fn.y1, xt: [0, 0.5, 1, 1.5, 2, 2.5], xf: v => nf(v, 1), yt: [], xl: 'x', l: 14, t: 10, b: 34 });
+    const yAx = f.X(0), xAx = f.Y(fn.y0);
+    // Achsen
+    ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(yAx, f.by); ctx.lineTo(yAx, f.by + f.bh); ctx.moveTo(f.bx, xAx); ctx.lineTo(f.bx + f.bw, xAx); ctx.stroke();
+    ctx.font = `11px ${MONO}`; ctx.fillStyle = Mu; ctx.textAlign = 'left';
+    const ys = (fn.y1 - fn.y0) > 4 ? 2 : 1; for (let y = Math.ceil(fn.y0); y <= fn.y1; y += ys) { ctx.fillText(nf(y, 0), yAx + 4, f.Y(y) - 3); ctx.strokeStyle = tok('--grid'); ctx.beginPath(); ctx.moveTo(yAx, f.Y(y)); ctx.lineTo(f.bx + f.bw, f.Y(y)); ctx.stroke(); }
+    // Funktion
+    ctx.save(); ctx.beginPath(); ctx.rect(f.bx, f.by, f.bw, xAx - f.by); ctx.clip();
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.2; curve(ctx, x => fn.f(x), f.X, f.Y, 0.03, 2.6, 400);
+    const y0 = fn.f(mu), k = fn.d(mu); ctx.strokeStyle = Mu; ctx.lineWidth = 1.4; ctx.setLineDash([6, 4]); curve(ctx, x => y0 + k * (x - mu), f.X, f.Y, -0.3, 2.6, 2); ctx.setLineDash([]);
+    // Streifen μ ± σ
+    ctx.fillStyle = rgba(A, 0.1); ctx.fillRect(f.X(mu - sx), f.by, f.X(mu + sx) - f.X(mu - sx), xAx - f.by);
+    ctx.fillRect(yAx, f.Y(y0 + Math.abs(k) * sx), f.bx + f.bw - yAx, f.Y(y0 - Math.abs(k) * sx) - f.Y(y0 + Math.abs(k) * sx));
+    ctx.restore();
+    // Eingangsverteilung unten (zwischen x-Achse und Rahmenunterkante)
+    const hb = (f.by + f.bh - xAx) - 6, pk = normPdf(0, 0, sx);
+    ctx.fillStyle = rgba(A, 0.3); ctx.strokeStyle = A; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.X(mu - 4 * sx), xAx + 4 + hb);
+    for (let i = 0; i <= 200; i++) { const x = mu - 4 * sx + 8 * sx * i / 200; ctx.lineTo(f.X(x), xAx + 4 + hb - hb * normPdf(x, mu, sx) / pk); } ctx.lineTo(f.X(mu + 4 * sx), xAx + 4 + hb); ctx.fill(); ctx.stroke();
+    // Ausgang aus Stichproben (links, quer)
+    const ylo = fn.y0, yhi = fn.y1, nb = 120, bwid = (yhi - ylo) / nb, Hh = new Array(nb).fill(0); let cnt = 0, s1 = 0, s2 = 0;
+    for (const z of Zs) { const x = mu + sx * z; if (x <= 0.002) continue; const y = fn.f(x); cnt++; s1 += y; s2 += y * y; const i = Math.floor((y - ylo) / bwid); if (i >= 0 && i < nb) Hh[i]++; }
+    const my = s1 / cnt, sy = Math.sqrt(Math.max(0, s2 / cnt - my * my)), sl = Math.abs(k) * sx;
+    const wb = yAx - f.bx - 6, dens = Hh.map(v => v / (cnt * bwid)), lpk = normPdf(0, 0, sl), dmax = Math.max(lpk, ...dens);
+    ctx.fillStyle = rgba(A, 0.45); dens.forEach((v, i) => { const yy0 = f.Y(ylo + (i + 1) * bwid), yy1 = f.Y(ylo + i * bwid), len = wb * v / dmax; ctx.fillRect(yAx - 4 - len, yy0, len, yy1 - yy0 + 0.4); });
+    ctx.strokeStyle = H; ctx.lineWidth = 1.8; ctx.beginPath(); for (let i = 0; i <= 200; i++) { const y = y0 - 4 * sl + 8 * sl * i / 200; if (y < ylo || y > yhi) continue; const px = yAx - 4 - wb * normPdf(y, y0, sl) / dmax; ctx.lineTo(px, f.Y(y)); } ctx.stroke();
+    // Projektion Mittelpunkt
+    ctx.strokeStyle = A; ctx.lineWidth = 1; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(f.X(mu), xAx); ctx.lineTo(f.X(mu), f.Y(y0)); ctx.lineTo(yAx, f.Y(y0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = Fg; ctx.beginPath(); ctx.arc(f.X(mu), f.Y(y0), 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = Fg; ctx.fillText(`y = ${fn.nm}`, f.X(2.05), f.Y(Math.min(fn.y1 * 0.92, fn.f(2.05))) - 8);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.textAlign = 'left'; ctx.fillText('p(x)', f.X(mu + 2.2 * sx) + 4, xAx + hb * 0.6); ctx.fillText('p(y)', f.bx, f.Y(fn.y1) + 12);
+    $('#fp-read').innerHTML = `<span class="k">linear:</span> σy ≈ |f′(μx)|·σx = ${nf(Math.abs(k), 2)}·${nf(sx, 2)} = <b>${nf(sl, 3)}</b>  <span class="k">aus Stichproben:</span> σy = <b>${nf(sy, 3)}</b>  <span class="k">·</span>  <span class="k">Mittelwert:</span> f(μx) = ${nf(y0, 3)}, E[f(x)] = ${nf(my, 3)}`;
+  } });
+  [iff, im, is].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Likelihood ---------- */
+(() => {
+  const c = $('#cv-lk'), il = $('#lk-l'), inn = $('#lk-n'), ip = $('#lk-p'); let gen = 1;
+  const PA = 10, PB = 2; // Gamma(α, β): Mittel 5, Gewicht β = 2 Messungen
+  const m = reg({ el: c, draw() {
+    const lam = +il.value, N = +inn.value; $('#lk-l-o').textContent = nf(lam, 1); $('#lk-n-o').textContent = N;
+    setSeed(1000 * gen + Math.round(lam * 2)); const K = Array.from({ length: 100 }, () => rPois(lam)).slice(0, N);
+    const sk = K.reduce((a, v) => a + v, 0), kb = sk / N, se = Math.sqrt(Math.max(kb, 0.5) / N);
+    const ll = l => sk * Math.log(l) - N * l, lp = l => ll(l) + (PA - 1) * Math.log(l) - PB * l;
+    const lmap = (sk + PA - 1) / (N + PB);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted'), B2 = tok('--bin2');
+    const r1 = narrow ? [0, 0, w, h * 0.4] : [0, 0, w * 0.36, h], r2 = narrow ? [0, h * 0.42, w, h * 0.58] : [w * 0.36 + 14, 0, w * 0.64 - 14, h];
+    const kmax = Math.max(12, Math.ceil(lam + 4 * Math.sqrt(lam) + 2));
+    // links: Zählungen als gestapelte Punkte
+    const cnt = {}; let hmax = 3; K.forEach(k => { cnt[k] = (cnt[k] || 0) + 1; hmax = Math.max(hmax, cnt[k]); });
+    const f = frame(ctx, ...r1, { x0: -0.5, x1: kmax + 0.5, y0: 0, y1: hmax + 0.5, xt: [0, Math.round(kmax / 2), kmax], yt: [], xl: 'gezählte Photonen k', l: 10, t: 22 });
+    const rr = Math.max(2, Math.min(5, (f.Y(0) - f.Y(1)) * 0.42, (f.X(1) - f.X(0)) * 0.45)), seen = {};
+    ctx.fillStyle = A; K.forEach(k => { seen[k] = (seen[k] || 0) + 1; ctx.beginPath(); ctx.arc(f.X(Math.min(k, kmax)), f.Y(seen[k] - 0.5), rr, 0, 2 * Math.PI); ctx.fill(); });
+    ctx.strokeStyle = Mu; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(f.X(lam), f.by); ctx.lineTo(f.X(lam), f.Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText(`${N} Messung${N > 1 ? 'en' : ''}`, r1[0], 14);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText('wahres λ', f.X(lam) + 4, f.by + 12);
+    // rechts: Log-Likelihood
+    const l0 = 0.3, l1 = Math.max(20, lam * 2 + 4), ymin = -6;
+    const g = frame(ctx, ...r2, { x0: l0, x1: l1, y0: ymin, y1: 0.6, xt: [0, 5, 10, 15, 20, 30, 40, 50, 60].filter(v => v <= l1), yt: [-6, -4, -2, 0], xl: 'λ', l: 34, t: narrow ? 40 : 22 });
+    const llm = ll(Math.max(kb, 1e-3)), clip = v => Math.max(ymin, v);
+    ctx.save(); ctx.beginPath(); ctx.rect(g.bx, g.by, g.bw, g.bh); ctx.clip();
+    ctx.strokeStyle = A; ctx.lineWidth = 2.2; curve(ctx, l => clip(ll(l) - llm), g.X, g.Y, l0, l1, 400);
+    if (ip.checked) {
+      const pr = l => (PA - 1) * Math.log(l) - PB * l, prm = pr((PA - 1) / PB), lpm = lp(lmap);
+      ctx.strokeStyle = Mu; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]); curve(ctx, l => clip(pr(l) - prm), g.X, g.Y, l0, l1, 300); ctx.setLineDash([]);
+      ctx.strokeStyle = B2; ctx.lineWidth = 2.2; curve(ctx, l => clip(lp(l) - lpm), g.X, g.Y, l0, l1, 400);
+      ctx.fillStyle = B2; ctx.beginPath(); ctx.arc(g.X(lmap), g.Y(0), 5, 0, 2 * Math.PI); ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = tok('--rule'); ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(g.bx, g.Y(-0.5)); ctx.lineTo(g.bx + g.bw, g.Y(-0.5)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = A; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(g.X(kb - se), g.Y(-0.5)); ctx.lineTo(g.X(kb + se), g.Y(-0.5)); ctx.stroke();
+    ctx.fillStyle = A; ctx.beginPath(); ctx.arc(g.X(kb), g.Y(0), 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = Mu; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(g.X(lam), g.by); ctx.lineTo(g.X(lam), g.by + g.bh); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('Log-Likelihood ℓ(λ) − max', r2[0], r2[1] + 14);
+    legend(ctx, r2[0] + r2[2], r2[1] + (narrow ? 32 : 14), ip.checked ? [['Likelihood', A], ['Prior', Mu], ['Posterior', B2]] : [['Likelihood', A]], { right: true });
+    $('#lk-read').innerHTML = `<span class="k">ML-Schätzung:</span> λ<sub>ML</sub> = k̄ = <b>${nf(kb, 2)}</b> ± ${nf(se, 2)} (Standardfehler √(λ<sub>ML</sub>/N))  <span class="k">·</span>  <span class="k">wahr:</span> ${nf(lam, 1)}` + (ip.checked ? `  <span class="k">·</span>  <span class="k">MAP:</span> λ<sub>MAP</sub> = (Σk + α − 1)/(N + β) = <b>${nf(lmap, 2)}</b>` : '');
+  } });
+  [il, inn, ip].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#lk-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Konfidenzintervalle ---------- */
+(() => {
+  const c = $('#cv-ki'), inn = $('#ki-n'), ic = $('#ki-c'), im = $('#ki-m'); let gen = 1;
+  const tpdf = (x, v) => Math.exp(lgamma((v + 1) / 2) - lgamma(v / 2) - 0.5 * Math.log(v * Math.PI) - (v + 1) / 2 * Math.log(1 + x * x / v));
+  const tcdf0 = (x, v) => { const n = 400, hh = x / n; let s = tpdf(0, v) + tpdf(x, v); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * tpdf(i * hh, v); return s * hh / 3; }; // ∫₀ˣ
+  const tq = (p, v) => { let lo = 0, hi = 80; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; tcdf0(mid, v) < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
+  const zq = p => { let lo = 0, hi = 6; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; normCdf(mid) - 0.5 < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
+  const run = (N, M, crit, mode) => { let hit = 0; const out = []; for (let j = 0; j < M; j++) { let s = 0, s2 = 0; for (let i = 0; i < N; i++) { const x = gauss(); s += x; s2 += x * x; }
+      const xb = s / N, sd = mode === 'k' ? 1 : Math.sqrt(Math.max(0, (s2 - N * xb * xb) / (N - 1))), hw = crit * sd / Math.sqrt(N); if (Math.abs(xb) <= hw) hit++; if (out.length < 100) out.push([xb, hw]); } return { hit, out }; };
+  const m = reg({ el: c, draw() {
+    const N = +inn.value, cl = +ic.value, mode = im.value; $('#ki-n-o').textContent = N;
+    const crit = mode === 't' ? tq(cl, N - 1) : zq(cl);
+    setSeed(31337 * gen + N); const R = run(N, 100, crit, mode); setSeed(777 + N); const L = run(N, 20000, crit, mode);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const f = frame(ctx, 0, 0, w, h, { x0: -2.2, x1: 2.2, y0: 0, y1: 100, xt: [-2, -1, 0, 1, 2], yt: [], xl: 'Schätzwert und Intervall (wahres μ = 0)', l: 10, t: 8 });
+    R.out.forEach(([xb, hw], j) => { const y = f.Y(j + 0.5), ok = Math.abs(xb) <= hw; ctx.strokeStyle = ok ? rgba(A, 0.75) : H; ctx.lineWidth = ok ? 1.6 : 2.4;
+      ctx.beginPath(); ctx.moveTo(f.X(Math.max(-2.2, xb - hw)), y); ctx.lineTo(f.X(Math.min(2.2, xb + hw)), y); ctx.stroke(); ctx.fillStyle = ok ? A : H; ctx.fillRect(f.X(xb) - 1.5, y - 1.5, 3, 3); });
+    ctx.strokeStyle = Fg; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.X(0), f.by); ctx.lineTo(f.X(0), f.by + f.bh); ctx.stroke();
+    $('#ki-read').innerHTML = `<span class="k">Faktor:</span> ${mode === 't' ? `t(${N - 1})` : 'z'} = ${nf(crit, 3)}  <span class="k">·</span>  <span class="k">hier:</span> ${R.hit} von 100 enthalten μ  <span class="k">·</span>  <span class="k">auf lange Sicht (20 000 Experimente):</span> <b>${nf(100 * L.hit / 20000, 1)} %</b>, Soll ${nf(100 * cl, 0)} %`;
+  } });
+  [inn, ic, im].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#ki-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+</body>
+</html>

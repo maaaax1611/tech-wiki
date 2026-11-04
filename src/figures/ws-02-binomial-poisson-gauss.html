@@ -1,0 +1,36 @@
+<!-- title: Binomial, Poisson und Gauß
+     lib: ws -->
+<figure class="fig">
+  <canvas id="cv-bp" class="c-ws" role="img" aria-label="Binomialverteilung als Balken, die passende Poisson-Verteilung als Punkte und die Gauß-Näherung als Kurve."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="bp-n">Versuche n</label><output id="bp-n-o"></output></div><input id="bp-n" type="range" min="1" max="200" step="1" value="20" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="bp-p">Erfolgswahrscheinlichkeit p</label><output id="bp-p-o"></output></div><input id="bp-p" type="range" min="0.01" max="0.9" step="0.01" value="0.3" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="bp-read"></div>
+  <figcaption><b>Abb.</b> Balken: Binomialverteilung, die Zahl der Erfolge bei \(n\) Versuchen. Punkte: Poisson-Verteilung mit gleichem Mittelwert \(\lambda = np\). Linie: Gaußverteilung mit Mittelwert und Varianz der Binomialverteilung. Bei kleinem \(p\) fallen Binomial und Poisson zusammen, bei großem \(n\) werden alle drei gaußförmig. Bei kleinem Mittelwert ist die Verteilung schief, und die Gauß-Näherung passt schlecht, sie gibt sogar negativen Zählwerten Wahrscheinlichkeit.</figcaption>
+</figure>
+<script>
+/* ---------- Binomial, Poisson, Gauß ---------- */
+(() => {
+  const c = $('#cv-bp'), inn = $('#bp-n'), ip = $('#bp-p');
+  const m = reg({ el: c, draw() {
+    const n = +inn.value, p = +ip.value, lam = n * p, v = n * p * (1 - p), sd = Math.sqrt(v);
+    $('#bp-n-o').textContent = n; $('#bp-p-o').textContent = nf(p, 2);
+    const k0 = Math.max(0, Math.floor(lam - 5 * Math.sqrt(lam) - 2)), k1 = Math.min(n, Math.ceil(lam + 5 * Math.sqrt(lam) + 3)), lo = Math.max(-2, k0 - 1);
+    const B = [], P = []; let ymax = 0; for (let k = k0; k <= k1; k++) { B.push(binomPmf(k, n, p)); P.push(poisPmf(k, lam)); ymax = Math.max(ymax, B.at(-1), P.at(-1)); }
+    const { ctx, w, h } = fit(c);
+    const step = Math.max(1, Math.round((k1 - lo) / 8)), xt = []; for (let k = Math.ceil(lo / step) * step; k <= k1; k += step) xt.push(k);
+    const narrow = w < 560, f = frame(ctx, 0, narrow ? 16 : 0, w, h - (narrow ? 16 : 0), { x0: lo - 0.5, x1: k1 + 0.5, y0: 0, y1: ymax * 1.15, xt, yt: [0, Math.round(ymax * 100) / 100], yf: v => nf(v, 2), xl: 'k (Zahl der Erfolge)', l: 46, t: 24 });
+    const bw = Math.max(1, (f.X(1) - f.X(0)) * 0.8);
+    ctx.fillStyle = rgba(tok('--accent'), 0.35); ctx.strokeStyle = tok('--accent');
+    B.forEach((b, i) => { const x = f.X(k0 + i); ctx.fillRect(x - bw / 2, f.Y(b), bw, f.Y(0) - f.Y(b)); });
+    ctx.fillStyle = tok('--bin2'); P.forEach((q, i) => { ctx.beginPath(); ctx.arc(f.X(k0 + i), f.Y(q), Math.min(4.5, bw / 2 + 1.5), 0, 2 * Math.PI); ctx.fill(); });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; curve(ctx, x => normPdf(x, lam, sd), f.X, f.Y, lo - 0.5, k1 + 0.5, 300);
+    legend(ctx, f.bx + 4, narrow ? 12 : f.by + 4, [['Binomial(n, p)', tok('--accent')], ['Poisson(λ = np)', tok('--bin2')], ['Gauß(np, np(1−p))', tok('--hole')]], { maxW: w - f.bx - 8 });
+    // Abstände (totale Variation)
+    let tvP = 0, tvG = 0; for (let k = 0; k <= n; k++) { const b = binomPmf(k, n, p); tvP += Math.abs(b - poisPmf(k, lam)); tvG += Math.abs(b - (normCdf(k + 0.5, lam, sd) - normCdf(k - 0.5, lam, sd))); }
+    $('#bp-read').innerHTML = `<span class="k">Mittelwert</span> np = ${nf(lam, 2)}  <span class="k">Varianz:</span> Binomial np(1−p) = ${nf(v, 2)}, Poisson λ = ${nf(lam, 2)}  <span class="k">·</span>  <span class="k">SNR = μ/σ =</span> ${nf(lam / sd, 2)}<br><span class="k">Abweichung der Binomialverteilung von Poisson:</span> ${nf(50 * tvP, 1)} %  <span class="k">von Gauß:</span> ${nf(50 * tvG, 1)} %  <span class="k">(Anteil der Wahrscheinlichkeit, der verschoben werden müsste)</span>`;
+  } });
+  [inn, ip].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

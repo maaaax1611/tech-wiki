@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konfidenzintervalle</title>
+<!-- Erzeugt von build.py aus src/figures/ws-08-konfidenzintervalle.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ws.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-ki" class="c-ws" role="img" aria-label="100 Konfidenzintervalle aus wiederholten Experimenten als waagrechte Striche; die meisten schneiden den wahren Wert, einige nicht."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="ki-n">Werte pro Experiment N</label><output id="ki-n-o"></output></div><input id="ki-n" type="range" min="2" max="50" step="1" value="5" autocomplete="off"></div>
+    <div class="ctrl" style="flex:0 1 150px"><div class="lab"><label for="ki-c">Niveau</label></div><select id="ki-c" autocomplete="off"><option value="0.68">68 %</option><option value="0.9">90 %</option><option value="0.95" selected>95 %</option><option value="0.99">99 %</option></select></div>
+    <div class="ctrl" style="flex:0 1 230px"><div class="lab"><label for="ki-m">Intervall</label></div><select id="ki-m" autocomplete="off"><option value="k">σ bekannt: x̄ ± z·σ/√N</option><option value="z">s geschätzt, aber z-Wert</option><option value="t">s geschätzt, t-Wert</option></select></div>
+    <button class="btn" type="button" id="ki-r">Neue Experimente</button>
+  </div>
+  <div class="readout" id="ki-read"></div>
+  <figcaption><b>Abb. 8</b> 100 Wiederholungen desselben Experiments: Jedes zieht \(N\) Werte aus einer Normalverteilung mit wahrem Mittelwert \(\mu = 0\) und berechnet daraus ein Intervall. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ws.js"></script>
+<script>
+/* ---------- Konfidenzintervalle ---------- */
+(() => {
+  const c = $('#cv-ki'), inn = $('#ki-n'), ic = $('#ki-c'), im = $('#ki-m'); let gen = 1;
+  const tpdf = (x, v) => Math.exp(lgamma((v + 1) / 2) - lgamma(v / 2) - 0.5 * Math.log(v * Math.PI) - (v + 1) / 2 * Math.log(1 + x * x / v));
+  const tcdf0 = (x, v) => { const n = 400, hh = x / n; let s = tpdf(0, v) + tpdf(x, v); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * tpdf(i * hh, v); return s * hh / 3; }; // ∫₀ˣ
+  const tq = (p, v) => { let lo = 0, hi = 80; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; tcdf0(mid, v) < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
+  const zq = p => { let lo = 0, hi = 6; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; normCdf(mid) - 0.5 < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
+  const run = (N, M, crit, mode) => { let hit = 0; const out = []; for (let j = 0; j < M; j++) { let s = 0, s2 = 0; for (let i = 0; i < N; i++) { const x = gauss(); s += x; s2 += x * x; }
+      const xb = s / N, sd = mode === 'k' ? 1 : Math.sqrt(Math.max(0, (s2 - N * xb * xb) / (N - 1))), hw = crit * sd / Math.sqrt(N); if (Math.abs(xb) <= hw) hit++; if (out.length < 100) out.push([xb, hw]); } return { hit, out }; };
+  const m = reg({ el: c, draw() {
+    const N = +inn.value, cl = +ic.value, mode = im.value; $('#ki-n-o').textContent = N;
+    const crit = mode === 't' ? tq(cl, N - 1) : zq(cl);
+    setSeed(31337 * gen + N); const R = run(N, 100, crit, mode); setSeed(777 + N); const L = run(N, 20000, crit, mode);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const f = frame(ctx, 0, 0, w, h, { x0: -2.2, x1: 2.2, y0: 0, y1: 100, xt: [-2, -1, 0, 1, 2], yt: [], xl: 'Schätzwert und Intervall (wahres μ = 0)', l: 10, t: 8 });
+    R.out.forEach(([xb, hw], j) => { const y = f.Y(j + 0.5), ok = Math.abs(xb) <= hw; ctx.strokeStyle = ok ? rgba(A, 0.75) : H; ctx.lineWidth = ok ? 1.6 : 2.4;
+      ctx.beginPath(); ctx.moveTo(f.X(Math.max(-2.2, xb - hw)), y); ctx.lineTo(f.X(Math.min(2.2, xb + hw)), y); ctx.stroke(); ctx.fillStyle = ok ? A : H; ctx.fillRect(f.X(xb) - 1.5, y - 1.5, 3, 3); });
+    ctx.strokeStyle = Fg; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.X(0), f.by); ctx.lineTo(f.X(0), f.by + f.bh); ctx.stroke();
+    $('#ki-read').innerHTML = `<span class="k">Faktor:</span> ${mode === 't' ? `t(${N - 1})` : 'z'} = ${nf(crit, 3)}  <span class="k">·</span>  <span class="k">hier:</span> ${R.hit} von 100 enthalten μ  <span class="k">·</span>  <span class="k">auf lange Sicht (20 000 Experimente):</span> <b>${nf(100 * L.hit / 20000, 1)} %</b>, Soll ${nf(100 * cl, 0)} %`;
+  } });
+  [inn, ic, im].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#ki-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+</body>
+</html>

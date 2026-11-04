@@ -1,0 +1,2 @@
+.c-ws { aspect-ratio: 2.2 / 1; } .c-ws-sq { aspect-ratio: 1.5 / 1; touch-action: none; } .c-ws-tall { aspect-ratio: 1.9 / 1; } .c-ws-by { aspect-ratio: 2.2 / 1; }
+@media (max-width: 560px) { .c-ws { aspect-ratio: 1.15 / 1; } .c-ws-sq { aspect-ratio: 0.95 / 1; } .c-ws-tall { aspect-ratio: 0.9 / 1; } .c-ws-by { aspect-ratio: 0.95 / 1; } }

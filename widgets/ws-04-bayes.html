@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satz von Bayes: Test auf eine seltene Krankheit</title>
+<!-- Erzeugt von build.py aus src/figures/ws-04-bayes.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ws.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-by" class="c-ws-by" role="img" aria-label="1000 Personen als Kästchen, eingefärbt nach krank oder gesund und Testergebnis, daneben der Anteil der wirklich Kranken unter den positiv Getesteten."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="by-p">Häufigkeit der Krankheit (Prior)</label><output id="by-p-o"></output></div><input id="by-p" type="range" min="0" max="9" step="1" value="3" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="by-se">Sensitivität P(+ | krank)</label><output id="by-se-o"></output></div><input id="by-se" type="range" min="0.5" max="1" step="0.01" value="0.9" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="by-sp">Spezifität P(− | gesund)</label><output id="by-sp-o"></output></div><input id="by-sp" type="range" min="0.5" max="0.999" step="0.001" value="0.95" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="by-read"></div>
+  <figcaption><b>Abb. 4</b> 1000 Personen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau richtig positiv, rot falsch positiv. Rechts nur die positiv Getesteten. Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ws.js"></script>
+<script>
+/* ---------- Bayes ---------- */
+(() => {
+  const c = $('#cv-by'), ip = $('#by-p'), ise = $('#by-se'), isp = $('#by-sp');
+  const PREV = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5], prev = i => PREV[i];
+  const pct = v => nf(100 * v, v < 0.01 || v > 0.999 ? 2 : v < 0.1 || v > 0.99 ? 1 : 0) + ' %';
+  const m = reg({ el: c, draw() {
+    const p = prev(+ip.value), se = +ise.value, sp = +isp.value;
+    $('#by-p-o').textContent = pct(p); $('#by-se-o').textContent = pct(se); $('#by-sp-o').textContent = pct(sp);
+    const N = 1000, nk = Math.round(N * p), tp = Math.round(nk * se), ng = N - nk, fp = Math.round(ng * (1 - sp));
+    const post = p * se / (p * se + (1 - p) * (1 - sp));
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Mu = tok('--muted');
+    const gw = narrow ? w : w * 0.66, gh = narrow ? h * 0.6 : h - 26, cols = 40, rows = 25, cell = Math.min(gw / cols, (gh - 4) / rows), sz = Math.max(2, cell - 1.6);
+    // Reihenfolge: spaltenweise, zuerst Kranke (positiv, dann negativ), dann Gesunde (positiv, dann negativ)
+    const kind = i => i < tp ? 'tp' : i < nk ? 'fn' : i < nk + fp ? 'fp' : 'tn';
+    for (let i = 0; i < N; i++) { const col = Math.floor(i / rows), row = i % rows, x = col * cell, y = 22 + row * cell, t = kind(i);
+      if (t === 'tp') { ctx.fillStyle = A; ctx.fillRect(x, y, sz, sz); } else if (t === 'fp') { ctx.fillStyle = H; ctx.fillRect(x, y, sz, sz); }
+      else { ctx.strokeStyle = t === 'fn' ? A : rgba(Mu, 0.55); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, sz - 1, sz - 1); } }
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.fillText(`${N} Personen: ${nk} krank, ${ng} gesund`, 0, 14);
+    if (nk > 0) { const xe = Math.ceil(nk / rows) * cell; ctx.strokeStyle = A; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(xe + 0.5, 18); ctx.lineTo(xe + 0.5, 22 + rows * cell + 2); ctx.stroke(); ctx.setLineDash([]); }
+    // rechter Teil: nur positiv Getestete
+    const bx = narrow ? 0 : gw + 24, by = narrow ? 22 + rows * cell + 30 : 40, bwid = narrow ? w : w - bx, bh = 30, pos = tp + fp;
+    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.fillText(`${pos} positiv getestet`, bx, by - 8);
+    const fr = pos ? tp / pos : 0; ctx.fillStyle = A; ctx.fillRect(bx, by, bwid * fr, bh); ctx.fillStyle = H; ctx.fillRect(bx + bwid * fr, by, bwid * (1 - fr), bh);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText(`${tp} krank`, bx, by + bh + 16); ctx.textAlign = 'right'; ctx.fillText(`${fp} gesund`, bx + bwid, by + bh + 16);
+    ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.font = `600 ${narrow ? 22 : 30}px ${DISP}`; ctx.fillText(pct(post), bx, by + bh + (narrow ? 44 : 60));
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText('P(krank | positiv)', bx, by + bh + (narrow ? 60 : 80));
+    if (!narrow) { [[A, 'krank, positiv', true], [A, 'krank, negativ', false], [H, 'gesund, positiv', true], [Mu, 'gesund, negativ', false]].forEach(([col, t, fill], i) => { const x = bx + (i % 2) * (bwid / 2), yy = h - 46 + Math.floor(i / 2) * 18; if (fill) { ctx.fillStyle = col; ctx.fillRect(x, yy - 9, 10, 10); } else { ctx.strokeStyle = col; ctx.strokeRect(x + 0.5, yy - 8.5, 9, 9); } ctx.fillStyle = Mu; ctx.fillText(t, x + 15, yy); }); }
+    $('#by-read').innerHTML = `<span class="k">P(krank | +) =</span> P(+ | krank)·P(krank) / P(+) = ${nf(se, 3)}·${nf(p, 4)} / (${nf(se, 3)}·${nf(p, 4)} + ${nf(1 - sp, 3)}·${nf(1 - p, 4)}) = <b>${pct(post)}</b>  <span class="k">·</span>  <span class="k">P(gesund | −) =</span> ${pct(sp * (1 - p) / (sp * (1 - p) + (1 - se) * p))}`;
+  } });
+  [ip, ise, isp].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

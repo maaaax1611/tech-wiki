@@ -80,8 +80,7 @@
     "Poisson",
     "Gauß",
     "Bayes"
-   ],
-   "status": "geplant"
+   ]
   },
   {
    "id": "fourier",
@@ -629,6 +628,62 @@
    "slug": "la-12-pca",
    "page": "lineare-algebra",
    "title": "PCA",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-01-stichprobe-und-dichte",
+   "page": "wahrscheinlichkeit",
+   "title": "Stichprobe und Dichte",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-02-binomial-poisson-gauss",
+   "page": "wahrscheinlichkeit",
+   "title": "Binomial, Poisson und Gauß",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-03-gauss-2d",
+   "page": "wahrscheinlichkeit",
+   "title": "Zweidimensionale Gaußverteilung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-04-bayes",
+   "page": "wahrscheinlichkeit",
+   "title": "Satz von Bayes: Test auf eine seltene Krankheit",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-05-grenzwertsatz",
+   "page": "wahrscheinlichkeit",
+   "title": "Zentraler Grenzwertsatz",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-06-fehlerfortpflanzung",
+   "page": "wahrscheinlichkeit",
+   "title": "Fehlerfortpflanzung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-07-likelihood",
+   "page": "wahrscheinlichkeit",
+   "title": "Maximum Likelihood für Poisson-Zählungen",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ws-08-konfidenzintervalle",
+   "page": "wahrscheinlichkeit",
+   "title": "Konfidenzintervalle",
    "interactive": true,
    "height": 640
   },

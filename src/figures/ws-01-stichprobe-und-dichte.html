@@ -1,0 +1,50 @@
+<!-- title: Stichprobe und Dichte
+     lib: ws -->
+<figure class="fig">
+  <canvas id="cv-sd" class="c-ws" role="img" aria-label="Histogramm einer Stichprobe mit der wahren Dichte darüber, daneben empirische und wahre Verteilungsfunktion."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="sd-d">Verteilung</label></div><select id="sd-d" autocomplete="off"><option value="g">Gauß</option><option value="e">exponentiell</option><option value="b">zwei Gipfel</option><option value="u">gleichverteilt</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="sd-n">Stichprobengröße N</label><output id="sd-n-o"></output></div><input id="sd-n" type="range" min="0" max="12" step="1" value="4" autocomplete="off"></div>
+    <button class="btn" type="button" id="sd-r">Neue Stichprobe</button>
+  </div>
+  <div class="readout" id="sd-read"></div>
+  <figcaption><b>Abb.</b> Links das Histogramm einer Stichprobe, auf Fläche 1 normiert, und die wahre Dichte (Linie). Rechts die empirische Verteilungsfunktion, also der Anteil der Werte bis \(x\), und die wahre \(F(x)\). Bei kleinem N sind beide grob und zufällig, mit wachsendem N laufen sie gegen die wahre Verteilung. Die Verteilungsfunktion konvergiert dabei sichtbar schneller als das Histogramm, weil sie ohne Klasseneinteilung auskommt.</figcaption>
+</figure>
+<script>
+/* ---------- Stichprobe und Dichte ---------- */
+(() => {
+  const c = $('#cv-sd'), id = $('#sd-d'), inn = $('#sd-n'), NS = [10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000];
+  const mix = (x, a, s) => normPdf(x, a, s);
+  const D = {
+    g: { lo: -4, hi: 4, pdf: x => normPdf(x), cdf: x => normCdf(x), s: () => gauss(), mu: 0, v: 1 },
+    e: { lo: 0, hi: 6, pdf: x => x < 0 ? 0 : Math.exp(-x), cdf: x => x < 0 ? 0 : 1 - Math.exp(-x), s: () => rExp(1), mu: 1, v: 1 },
+    b: { lo: -4, hi: 4, pdf: x => 0.6 * mix(x, -1.2, 0.5) + 0.4 * mix(x, 1.5, 0.7), cdf: x => 0.6 * normCdf(x, -1.2, 0.5) + 0.4 * normCdf(x, 1.5, 0.7), s: () => rnd() < 0.6 ? -1.2 + 0.5 * gauss() : 1.5 + 0.7 * gauss(), mu: -0.12, v: 2.0956 },
+    u: { lo: -2.5, hi: 2.5, pdf: x => Math.abs(x) <= 1.5 ? 1 / 3 : 0, cdf: x => Math.max(0, Math.min(1, (x + 1.5) / 3)), s: () => -1.5 + 3 * rnd(), mu: 0, v: 0.75 },
+  };
+  let gen = 1, key = '', S = null;
+  const m = reg({ el: c, draw() {
+    const d = D[id.value], N = NS[+inn.value]; $('#sd-n-o').textContent = N.toLocaleString('de-DE');
+    if (key !== id.value + gen) { key = id.value + gen; setSeed(7919 * gen + id.value.charCodeAt(0)); S = Array.from({ length: 10000 }, d.s); }
+    const A = S.slice(0, N), nb = Math.min(60, Math.max(8, Math.round(2 * Math.cbrt(N)))), { H, w: bw } = hist(A, d.lo, d.hi, nb);
+    const dens = H.map(v => v / (N * bw)); let pmax = 0; for (let i = 0; i <= 200; i++) pmax = Math.max(pmax, d.pdf(d.lo + (d.hi - d.lo) * i / 200));
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    const r1 = narrow ? [0, 0, w, h * 0.52] : [0, 0, w * 0.58, h], r2 = narrow ? [0, h * 0.52, w, h * 0.48] : [w * 0.58 + 10, 0, w * 0.42 - 10, h];
+    const ymax = Math.max(pmax * 1.25, Math.min(Math.max(...dens), pmax * 2.2));
+    const f = frame(ctx, ...r1, { x0: d.lo, x1: d.hi, y0: 0, y1: ymax, xt: [d.lo, (d.lo + d.hi) / 2, d.hi].map(v => Math.round(v * 2) / 2), yt: [0, Math.round(pmax * 10) / 10], yf: v => nf(v, 1), xl: 'x', l: 40, t: 22 });
+    ctx.fillStyle = rgba(tok('--accent'), 0.32); ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1;
+    dens.forEach((v, i) => { const x0 = f.X(d.lo + i * bw), x1 = f.X(d.lo + (i + 1) * bw), y = f.Y(Math.min(v, ymax)); ctx.fillRect(x0, y, x1 - x0, f.Y(0) - y); ctx.strokeRect(x0 + 0.5, y + 0.5, x1 - x0 - 1, f.Y(0) - y); });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; curve(ctx, d.pdf, f.X, f.Y, d.lo, d.hi, 400);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('Histogramm und Dichte p(x)', f.bx, 14);
+    const g = frame(ctx, ...r2, { x0: d.lo, x1: d.hi, y0: 0, y1: 1, xt: [d.lo, d.hi].map(v => Math.round(v * 2) / 2), yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'x', l: 36, t: 22 });
+    const so = A.slice().sort((a, b) => a - b);
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(g.X(d.lo), g.Y(0));
+    so.forEach((v, i) => { const x = g.X(Math.max(d.lo, Math.min(d.hi, v))); ctx.lineTo(x, g.Y(i / N)); ctx.lineTo(x, g.Y((i + 1) / N)); }); ctx.lineTo(g.X(d.hi), g.Y(1)); ctx.stroke();
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]); curve(ctx, d.cdf, g.X, g.Y, d.lo, d.hi); ctx.setLineDash([]);
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('Verteilungsfunktion F(x)', g.bx, r2[1] + 14);
+    let ks = 0; so.forEach((v, i) => { const F = d.cdf(v); ks = Math.max(ks, Math.abs(F - i / N), Math.abs(F - (i + 1) / N)); });
+    $('#sd-read').innerHTML = `<span class="k">Stichprobe:</span> x̄ = ${nf(mean(A), 3)}, s² = ${nf(variance(A), 3)}  <span class="k">·</span>  <span class="k">wahr:</span> μ = ${nf(d.mu, 2)}, σ² = ${nf(d.v, 2)}  <span class="k">·</span>  <span class="k">größter Abstand der Verteilungsfunktionen:</span> <b>${nf(ks, 3)}</b> (schrumpft etwa wie 1/√N)`;
+  } });
+  [id, inn].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#sd-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
