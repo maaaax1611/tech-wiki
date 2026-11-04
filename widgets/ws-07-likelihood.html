@@ -27,11 +27,14 @@ window.MathJax = {
   <div class="ctrls">
     <div class="ctrl"><div class="lab"><label for="lk-l">wahre Rate λ</label><output id="lk-l-o"></output></div><input id="lk-l" type="range" min="1" max="30" step="0.5" value="8" autocomplete="off"></div>
     <div class="ctrl"><div class="lab"><label for="lk-n">Messungen N</label><output id="lk-n-o"></output></div><input id="lk-n" type="range" min="1" max="100" step="1" value="5" autocomplete="off"></div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="lk-c">λ ausprobieren</label><output id="lk-c-o"></output></div><input id="lk-c" type="range" min="1" max="40" step="0.5" value="12" autocomplete="off"></div>
     <label class="chk"><input id="lk-p" type="checkbox" autocomplete="off"> Prior (MAP)</label>
     <button class="btn" type="button" id="lk-r">Neue Messung</button>
   </div>
   <div class="readout" id="lk-read"></div>
-  <figcaption><b>Abb. 7</b> Links \(N\) Photonenzählungen eines Pixels mit wahrer Rate \(\lambda\). Rechts die Log-Likelihood \(\ell(\lambda) = \sum_i (k_i \log\lambda - \lambda) + \text{const}\), so verschoben, dass ihr Maximum bei 0 liegt. Das Maximum liegt beim Mittelwert der Zählungen. Wo die Kurve um 0,5 abgefallen ist, liegt etwa ±1 Standardfehler (Balken). Mit mehr Messungen wird die Kurve spitzer und der Schätzwert genauer. Mit Prior kommt ein Gamma-Prior um \(\lambda = 5\) dazu, der so viel wiegt wie zwei Messungen. Er zieht den Schätzwert bei wenigen Daten zu sich hin und verliert mit vielen Daten an Gewicht.</figcaption>
+  <figcaption><b>Abb. 7</b> Links \(N\) Photonenzählungen eines Pixels mit wahrer Rate \(\lambda\), jeder Punkt eine Messung. Mit „λ ausprobieren“ wählt man eine Rate, links erscheint dann als Treppe, wie sich \(N\) Messungen bei dieser Rate im Mittel verteilen würden. Liegt sie neben den Punkten, erklärt dieses \(\lambda\) die Daten schlecht. Rechts wird das für alle \(\lambda\) zugleich bewertet: die Log-Likelihood \(\ell(\lambda) = \sum_i (k_i \log\lambda - \lambda) + \text{const}\), so verschoben, dass ihr Maximum bei 0 liegt. Das Maximum liegt beim Mittelwert der Zählungen. Wo die Kurve um 0,5 abgefallen ist, liegt etwa ±1 Standardfehler (Balken). Mit mehr Messungen wird die Kurve spitzer und der Schätzwert genauer. Mit Prior kommt ein Gamma-Prior um \(\lambda = 5\) dazu, der so viel wiegt wie zwei Messungen. Er zieht den Schätzwert bei wenigen Daten zu sich hin und verliert mit vielen Daten an Gewicht.</figcaption>
 </figure>
 </main>
 <script src="../assets/ui.js"></script>
@@ -39,35 +42,39 @@ window.MathJax = {
 <script>
 /* ---------- Likelihood ---------- */
 (() => {
-  const c = $('#cv-lk'), il = $('#lk-l'), inn = $('#lk-n'), ip = $('#lk-p'); let gen = 1;
+  const c = $('#cv-lk'), il = $('#lk-l'), inn = $('#lk-n'), ip = $('#lk-p'), icand = $('#lk-c'); let gen = 1;
   const PA = 10, PB = 2; // Gamma(α, β): Mittel 5, Gewicht β = 2 Messungen
   const m = reg({ el: c, draw() {
-    const lam = +il.value, N = +inn.value; $('#lk-l-o').textContent = nf(lam, 1); $('#lk-n-o').textContent = N;
+    const lam = +il.value, N = +inn.value, lc = +icand.value; $('#lk-l-o').textContent = nf(lam, 1); $('#lk-n-o').textContent = N; $('#lk-c-o').textContent = nf(lc, 1);
     setSeed(1000 * gen + Math.round(lam * 2)); const K = Array.from({ length: 100 }, () => rPois(lam)).slice(0, N);
     const sk = K.reduce((a, v) => a + v, 0), kb = sk / N, se = Math.sqrt(Math.max(kb, 0.5) / N);
     const ll = l => sk * Math.log(l) - N * l, lp = l => ll(l) + (PA - 1) * Math.log(l) - PB * l;
     const lmap = (sk + PA - 1) / (N + PB);
     const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted'), B2 = tok('--bin2');
     const r1 = narrow ? [0, 0, w, h * 0.4] : [0, 0, w * 0.36, h], r2 = narrow ? [0, h * 0.42, w, h * 0.58] : [w * 0.36 + 14, 0, w * 0.64 - 14, h];
-    const kmax = Math.max(12, Math.ceil(lam + 4 * Math.sqrt(lam) + 2));
+    const kmax = Math.max(12, Math.ceil(Math.max(lam, lc) + 4 * Math.sqrt(Math.max(lam, lc)) + 2));
     // links: Zählungen als gestapelte Punkte
-    const cnt = {}; let hmax = 3; K.forEach(k => { cnt[k] = (cnt[k] || 0) + 1; hmax = Math.max(hmax, cnt[k]); });
+    const cnt = {}; let hmax = 3; K.forEach(k => { cnt[k] = (cnt[k] || 0) + 1; hmax = Math.max(hmax, cnt[k]); }); for (let k = 0; k <= kmax; k++) hmax = Math.max(hmax, N * poisPmf(k, lc));
     const f = frame(ctx, ...r1, { x0: -0.5, x1: kmax + 0.5, y0: 0, y1: hmax + 0.5, xt: [0, Math.round(kmax / 2), kmax], yt: [], xl: 'gezählte Photonen k', l: 10, t: 22 });
     const rr = Math.max(2, Math.min(5, (f.Y(0) - f.Y(1)) * 0.42, (f.X(1) - f.X(0)) * 0.45)), seen = {};
     ctx.fillStyle = A; K.forEach(k => { seen[k] = (seen[k] || 0) + 1; ctx.beginPath(); ctx.arc(f.X(Math.min(k, kmax)), f.Y(seen[k] - 0.5), rr, 0, 2 * Math.PI); ctx.fill(); });
     ctx.strokeStyle = Mu; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(f.X(lam), f.by); ctx.lineTo(f.X(lam), f.Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    // erwartete Verteilung bei λ ausprobiert
+    ctx.strokeStyle = H; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k <= kmax; k++) { const y = f.Y(N * poisPmf(k, lc)); k ? ctx.lineTo(f.X(k - 0.5), y) : ctx.moveTo(f.X(-0.5), y); ctx.lineTo(f.X(k + 0.5), y); } ctx.stroke();
     ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText(`${N} Messung${N > 1 ? 'en' : ''}`, r1[0], 14);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = H; ctx.textAlign = 'right'; ctx.fillText(`erwartet bei λ = ${nf(lc, 1)}`, r1[0] + r1[2] - 4, 14); ctx.textAlign = 'left';
     ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText('wahres λ', f.X(lam) + 4, f.by + 12);
     // rechts: Log-Likelihood
     const l0 = 0.3, l1 = Math.max(20, lam * 2 + 4), ymin = -6;
-    const g = frame(ctx, ...r2, { x0: l0, x1: l1, y0: ymin, y1: 0.6, xt: [0, 5, 10, 15, 20, 30, 40, 50, 60].filter(v => v <= l1), yt: [-6, -4, -2, 0], xl: 'λ', l: 34, t: narrow ? 40 : 22 });
-    const llm = ll(Math.max(kb, 1e-3)), clip = v => Math.max(ymin, v);
+    const g = frame(ctx, ...r2, { x0: l0, x1: l1, y0: ymin, y1: 0.6, xt: [0, 5, 10, 15, 20, 30, 40, 50, 60].filter(v => v <= l1), yt: [-6, -4, -2, 0], xl: 'λ', l: 34, t: 40 });
+    const llm = ll(Math.max(kb, 1e-3));
     ctx.save(); ctx.beginPath(); ctx.rect(g.bx, g.by, g.bw, g.bh); ctx.clip();
-    ctx.strokeStyle = A; ctx.lineWidth = 2.2; curve(ctx, l => clip(ll(l) - llm), g.X, g.Y, l0, l1, 400);
+    const plot = fn => { ctx.beginPath(); let on = false; for (let i = 0; i <= 400; i++) { const l = l0 + (l1 - l0) * i / 400, v = fn(l); if (v < ymin) { on = false; continue; } on ? ctx.lineTo(g.X(l), g.Y(v)) : ctx.moveTo(g.X(l), g.Y(v)); on = true; } ctx.stroke(); };
+    ctx.strokeStyle = A; ctx.lineWidth = 2.2; plot(l => ll(l) - llm);
     if (ip.checked) {
       const pr = l => (PA - 1) * Math.log(l) - PB * l, prm = pr((PA - 1) / PB), lpm = lp(lmap);
-      ctx.strokeStyle = Mu; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]); curve(ctx, l => clip(pr(l) - prm), g.X, g.Y, l0, l1, 300); ctx.setLineDash([]);
-      ctx.strokeStyle = B2; ctx.lineWidth = 2.2; curve(ctx, l => clip(lp(l) - lpm), g.X, g.Y, l0, l1, 400);
+      ctx.strokeStyle = Mu; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]); plot(l => pr(l) - prm); ctx.setLineDash([]);
+      ctx.strokeStyle = B2; ctx.lineWidth = 2.2; plot(l => lp(l) - lpm);
       ctx.fillStyle = B2; ctx.beginPath(); ctx.arc(g.X(lmap), g.Y(0), 5, 0, 2 * Math.PI); ctx.fill();
     }
     ctx.restore();
@@ -75,11 +82,15 @@ window.MathJax = {
     ctx.strokeStyle = A; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(g.X(kb - se), g.Y(-0.5)); ctx.lineTo(g.X(kb + se), g.Y(-0.5)); ctx.stroke();
     ctx.fillStyle = A; ctx.beginPath(); ctx.arc(g.X(kb), g.Y(0), 5, 0, 2 * Math.PI); ctx.fill();
     ctx.strokeStyle = Mu; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(g.X(lam), g.by); ctx.lineTo(g.X(lam), g.by + g.bh); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('Log-Likelihood ℓ(λ) − max', r2[0], r2[1] + 14);
-    legend(ctx, r2[0] + r2[2], r2[1] + (narrow ? 32 : 14), ip.checked ? [['Likelihood', A], ['Prior', Mu], ['Posterior', B2]] : [['Likelihood', A]], { right: true });
-    $('#lk-read').innerHTML = `<span class="k">ML-Schätzung:</span> λ<sub>ML</sub> = k̄ = <b>${nf(kb, 2)}</b> ± ${nf(se, 2)} (Standardfehler √(λ<sub>ML</sub>/N))  <span class="k">·</span>  <span class="k">wahr:</span> ${nf(lam, 1)}` + (ip.checked ? `  <span class="k">·</span>  <span class="k">MAP:</span> λ<sub>MAP</sub> = (Σk + α − 1)/(N + β) = <b>${nf(lmap, 2)}</b>` : '');
+    // ausprobiertes λ auf der Kurve
+    const lcv = ll(lc) - llm; ctx.strokeStyle = H; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(g.X(lc), g.by); ctx.lineTo(g.X(lc), g.by + g.bh); ctx.stroke();
+    if (lcv >= ymin) { ctx.fillStyle = H; ctx.beginPath(); ctx.arc(g.X(lc), g.Y(lcv), 5, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('Wie gut erklärt λ die Daten? ℓ(λ) − max', r2[0], r2[1] + 14);
+    legend(ctx, r2[0] + r2[2], r2[1] + 32, ip.checked ? [['Likelihood', A], ['Prior', Mu], ['Posterior', B2]] : [['Likelihood', A]], { right: true });
+    const ratio = Math.exp(lcv), rtxt = ratio > 0.01 ? nf(ratio, ratio > 0.1 ? 2 : 3) : ex(ratio, 1);
+    $('#lk-read').innerHTML = `<span class="k">Bei λ = ${nf(lc, 1)}:</span> ℓ − max = ${nf(lcv, 1)}, die Messwerte sind dort <b>${rtxt}-mal</b> so wahrscheinlich wie beim besten λ<br><span class="k">ML-Schätzung:</span> λ<sub>ML</sub> = k̄ = <b>${nf(kb, 2)}</b> ± ${nf(se, 2)} (Standardfehler √(λ<sub>ML</sub>/N))  <span class="k">·</span>  <span class="k">wahr:</span> ${nf(lam, 1)}` + (ip.checked ? `  <span class="k">·</span>  <span class="k">MAP:</span> λ<sub>MAP</sub> = (Σk + α − 1)/(N + β) = <b>${nf(lmap, 2)}</b>` : '');
   } });
-  [il, inn, ip].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  [il, inn, ip, icand].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
   $('#lk-r').addEventListener('click', () => { gen++; m.draw(); });
 })();
 </script>

@@ -8,7 +8,7 @@
     <div class="ctrl"><div class="lab"><label for="by-sp">Spezifität P(− | gesund)</label><output id="by-sp-o"></output></div><input id="by-sp" type="range" min="0.5" max="0.999" step="0.001" value="0.95" autocomplete="off"></div>
   </div>
   <div class="readout" id="by-read"></div>
-  <figcaption><b>Abb.</b> 1000 Personen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau richtig positiv, rot falsch positiv. Rechts nur die positiv Getesteten. Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
+  <figcaption><b>Abb.</b> 1000 Personen als Kästchen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau die Kranken, die er richtig erkennt, rot die Gesunden, bei denen er sich irrt. Rechts dieselben Zahlen als Baum und nur die Positiven: Wer ein positives Ergebnis bekommt, ist einer der gefüllten Kästchen, und der blaue Anteil davon ist \(P(\text{krank} \mid +)\). Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
 </figure>
 <script>
 /* ---------- Bayes ---------- */
@@ -19,26 +19,36 @@
   const m = reg({ el: c, draw() {
     const p = prev(+ip.value), se = +ise.value, sp = +isp.value;
     $('#by-p-o').textContent = pct(p); $('#by-se-o').textContent = pct(se); $('#by-sp-o').textContent = pct(sp);
-    const N = 1000, nk = Math.round(N * p), tp = Math.round(nk * se), ng = N - nk, fp = Math.round(ng * (1 - sp));
+    const N = 1000, nk = Math.round(N * p), tp = Math.round(nk * se), fn = nk - tp, ng = N - nk, fp = Math.round(ng * (1 - sp)), tn = ng - fp;
     const post = p * se / (p * se + (1 - p) * (1 - sp));
-    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Mu = tok('--muted');
-    const gw = narrow ? w : w * 0.66, gh = narrow ? h * 0.6 : h - 26, cols = 40, rows = 25, cell = Math.min(gw / cols, (gh - 4) / rows), sz = Math.max(2, cell - 1.6);
-    // Reihenfolge: spaltenweise, zuerst Kranke (positiv, dann negativ), dann Gesunde (positiv, dann negativ)
-    const kind = i => i < tp ? 'tp' : i < nk ? 'fn' : i < nk + fp ? 'fp' : 'tn';
-    for (let i = 0; i < N; i++) { const col = Math.floor(i / rows), row = i % rows, x = col * cell, y = 22 + row * cell, t = kind(i);
-      if (t === 'tp') { ctx.fillStyle = A; ctx.fillRect(x, y, sz, sz); } else if (t === 'fp') { ctx.fillStyle = H; ctx.fillRect(x, y, sz, sz); }
-      else { ctx.strokeStyle = t === 'fn' ? A : rgba(Mu, 0.55); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, sz - 1, sz - 1); } }
-    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.fillText(`${N} Personen: ${nk} krank, ${ng} gesund`, 0, 14);
-    if (nk > 0) { const xe = Math.ceil(nk / rows) * cell; ctx.strokeStyle = A; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(xe + 0.5, 18); ctx.lineTo(xe + 0.5, 22 + rows * cell + 2); ctx.stroke(); ctx.setLineDash([]); }
-    // rechter Teil: nur positiv Getestete
-    const bx = narrow ? 0 : gw + 24, by = narrow ? 22 + rows * cell + 30 : 40, bwid = narrow ? w : w - bx, bh = 30, pos = tp + fp;
-    ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.fillText(`${pos} positiv getestet`, bx, by - 8);
-    const fr = pos ? tp / pos : 0; ctx.fillStyle = A; ctx.fillRect(bx, by, bwid * fr, bh); ctx.fillStyle = H; ctx.fillRect(bx + bwid * fr, by, bwid * (1 - fr), bh);
-    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText(`${tp} krank`, bx, by + bh + 16); ctx.textAlign = 'right'; ctx.fillText(`${fp} gesund`, bx + bwid, by + bh + 16);
-    ctx.textAlign = 'left'; ctx.fillStyle = tok('--fg'); ctx.font = `600 ${narrow ? 22 : 30}px ${DISP}`; ctx.fillText(pct(post), bx, by + bh + (narrow ? 44 : 60));
-    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText('P(krank | positiv)', bx, by + bh + (narrow ? 60 : 80));
-    if (!narrow) { [[A, 'krank, positiv', true], [A, 'krank, negativ', false], [H, 'gesund, positiv', true], [Mu, 'gesund, negativ', false]].forEach(([col, t, fill], i) => { const x = bx + (i % 2) * (bwid / 2), yy = h - 46 + Math.floor(i / 2) * 18; if (fill) { ctx.fillStyle = col; ctx.fillRect(x, yy - 9, 10, 10); } else { ctx.strokeStyle = col; ctx.strokeRect(x + 0.5, yy - 8.5, 9, 9); } ctx.fillStyle = Mu; ctx.fillText(t, x + 15, yy); }); }
-    $('#by-read').innerHTML = `<span class="k">P(krank | +) =</span> P(+ | krank)·P(krank) / P(+) = ${nf(se, 3)}·${nf(p, 4)} / (${nf(se, 3)}·${nf(p, 4)} + ${nf(1 - sp, 3)}·${nf(1 - p, 4)}) = <b>${pct(post)}</b>  <span class="k">·</span>  <span class="k">P(gesund | −) =</span> ${pct(sp * (1 - p) / (sp * (1 - p) + (1 - se) * p))}`;
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Mu = tok('--muted'), Fg = tok('--fg');
+    // Raster: Kranke und Gesunde als getrennte Blöcke, je spaltenweise, Positive zuerst
+    const rows = 25, ck = Math.ceil(nk / rows), cg = Math.ceil(ng / rows), cols = ck + cg + (nk ? 1 : 0);
+    const gw = narrow ? w : w * 0.56, top = 40, cell = Math.min(gw / cols, (narrow ? h * 0.4 : h - top - 6) / rows), sz = Math.max(2, cell - 1.6);
+    const box = (x, y, t) => { if (t === 'tp') { ctx.fillStyle = A; ctx.fillRect(x, y, sz, sz); } else if (t === 'fp') { ctx.fillStyle = H; ctx.fillRect(x, y, sz, sz); } else { ctx.strokeStyle = t === 'fn' ? A : rgba(Mu, 0.5); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, sz - 1, sz - 1); } };
+    for (let i = 0; i < nk; i++) box(Math.floor(i / rows) * cell, top + (i % rows) * cell, i < tp ? 'tp' : 'fn');
+    const xg = nk ? (ck + 1) * cell : 0;
+    for (let i = 0; i < ng; i++) box(xg + Math.floor(i / rows) * cell, top + (i % rows) * cell, i < fp ? 'fp' : 'tn');
+    // Klammern über den Blöcken
+    const brace = (x0, x1, txt, col) => { ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x0, top - 6); ctx.lineTo(x0, top - 12); ctx.lineTo(x1, top - 12); ctx.lineTo(x1, top - 6); ctx.stroke();
+      ctx.font = `600 13px ${DISP}`; ctx.fillStyle = col; ctx.textAlign = x1 - x0 < 70 ? 'left' : 'center'; ctx.fillText(txt, x1 - x0 < 70 ? x0 : (x0 + x1) / 2, top - 17); };
+    if (nk) brace(0, ck * cell - 1.6, `${nk} krank`, A);
+    brace(xg, xg + cg * cell - 1.6, `${ng} gesund`, Fg);
+    // Baum der natürlichen Häufigkeiten
+    const bx = narrow ? 0 : gw + 24, by0 = narrow ? top + rows * cell + 24 : top, bw = narrow ? w : w - bx;
+    ctx.textAlign = 'left'; ctx.font = `13px ${DISP}`;
+    const row = (y, parts) => { let x = bx; for (const [t, col, bold] of parts) { ctx.font = `${bold ? '600 ' : ''}13px ${DISP}`; ctx.fillStyle = col; ctx.fillText(t, x, y); x += ctx.measureText(t).width; } };
+    row(by0 + 4, [[`${nk} krank`, A, true], [` → ${pct(se)} erkannt → `, Mu], [`${tp} positiv`, A, true]]);
+    row(by0 + 24, [[`${ng} gesund`, Fg, true], [` → ${pct(1 - sp)} Fehlalarm → `, Mu], [`${fp} positiv`, H, true]]);
+    // nur Positive
+    const by = by0 + 52, bh = 26, pos = tp + fp, fr = pos ? tp / pos : 0;
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.fillText(`${pos} positiv getestet, davon`, bx, by - 6);
+    ctx.fillStyle = A; ctx.fillRect(bx, by, bw * fr, bh); ctx.fillStyle = H; ctx.fillRect(bx + bw * fr, by, bw * (1 - fr), bh);
+    ctx.font = `12px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText(`${tp} krank`, bx, by + bh + 15); ctx.textAlign = 'right'; ctx.fillText(`${fp} gesund`, bx + bw, by + bh + 15);
+    ctx.textAlign = 'left'; ctx.fillStyle = Fg; ctx.font = `600 ${narrow ? 22 : 28}px ${DISP}`; ctx.fillText(pct(post), bx, by + bh + (narrow ? 42 : 52));
+    const tw = ctx.measureText(pct(post)).width; ctx.font = `13px ${DISP}`; ctx.fillStyle = Mu; ctx.fillText(`= ${tp} / ${pos} = P(krank | positiv)`, bx + tw + 10, by + bh + (narrow ? 36 : 44));
+    ctx.fillText('So wahrscheinlich ist man bei positivem', bx, by + bh + (narrow ? 64 : 80)); ctx.fillText('Test wirklich krank.', bx, by + bh + (narrow ? 80 : 96));
+    $('#by-read').innerHTML = `<span class="k">Bayes:</span> P(krank | +) = P(+ | krank)·P(krank) / P(+) = ${nf(se, 2)}·${nf(p, 3)} / (${nf(se, 2)}·${nf(p, 3)} + ${nf(1 - sp, 3)}·${nf(1 - p, 3)}) = <b>${pct(post)}</b>  <span class="k">·</span>  <span class="k">umgekehrt, P(gesund | −) =</span> ${pct(sp * (1 - p) / (sp * (1 - p) + (1 - se) * p))}`;
   } });
   [ip, ise, isp].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
 })();

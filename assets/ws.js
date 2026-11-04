@@ -134,3 +134,4 @@ function legend(ctx, x, y, items, o = {}) {
     ctx.fillStyle = col; ctx.fillRect(px, py - 8, 12, 3); ctx.fillStyle = tok('--muted'); ctx.fillText(txt, px + 16, py - 3); px += ws[i]; });
   return py;
 }
+function mouse(c, e) { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }

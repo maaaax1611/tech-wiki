@@ -9,7 +9,7 @@
     <button class="btn" type="button" id="ki-r">Neue Experimente</button>
   </div>
   <div class="readout" id="ki-read"></div>
-  <figcaption><b>Abb.</b> 100 Wiederholungen desselben Experiments: Jedes zieht \(N\) Werte aus einer Normalverteilung mit wahrem Mittelwert \(\mu = 0\) und berechnet daraus ein Intervall. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
+  <figcaption><b>Abb.</b> Jede Zeile ist ein eigenes Experiment. Es misst \(N\) Werte (kleine Striche in der markierten Zeile), deren wahrer Mittelwert \(\mu = 0\) ist, berechnet daraus den Mittelwert (Punkt) und das Intervall (Linie). Zeile anklicken oder darüberfahren, um ihre Messwerte zu sehen. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
 </figure>
 <script>
 /* ---------- Konfidenzintervalle ---------- */
@@ -19,20 +19,28 @@
   const tcdf0 = (x, v) => { const n = 400, hh = x / n; let s = tpdf(0, v) + tpdf(x, v); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * tpdf(i * hh, v); return s * hh / 3; }; // ∫₀ˣ
   const tq = (p, v) => { let lo = 0, hi = 80; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; tcdf0(mid, v) < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
   const zq = p => { let lo = 0, hi = 6; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; normCdf(mid) - 0.5 < p / 2 ? lo = mid : hi = mid; } return (lo + hi) / 2; };
-  const run = (N, M, crit, mode) => { let hit = 0; const out = []; for (let j = 0; j < M; j++) { let s = 0, s2 = 0; for (let i = 0; i < N; i++) { const x = gauss(); s += x; s2 += x * x; }
-      const xb = s / N, sd = mode === 'k' ? 1 : Math.sqrt(Math.max(0, (s2 - N * xb * xb) / (N - 1))), hw = crit * sd / Math.sqrt(N); if (Math.abs(xb) <= hw) hit++; if (out.length < 100) out.push([xb, hw]); } return { hit, out }; };
-  const m = reg({ el: c, draw() {
+  const run = (N, M, crit, mode) => { let hit = 0; const out = []; for (let j = 0; j < M; j++) { let s = 0, s2 = 0; const xs = j < 100 ? [] : null; for (let i = 0; i < N; i++) { const x = gauss(); s += x; s2 += x * x; if (xs) xs.push(x); }
+      const xb = s / N, sd = mode === 'k' ? 1 : Math.sqrt(Math.max(0, (s2 - N * xb * xb) / (N - 1))), hw = crit * sd / Math.sqrt(N); if (Math.abs(xb) <= hw) hit++; if (xs) out.push([xb, hw, xs]); } return { hit, out }; };
+  let F = null;
+  const m = reg({ el: c, sel: null, draw() {
     const N = +inn.value, cl = +ic.value, mode = im.value; $('#ki-n-o').textContent = N;
     const crit = mode === 't' ? tq(cl, N - 1) : zq(cl);
     setSeed(31337 * gen + N); const R = run(N, 100, crit, mode); setSeed(777 + N); const L = run(N, 20000, crit, mode);
     const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
-    const f = frame(ctx, 0, 0, w, h, { x0: -2.2, x1: 2.2, y0: 0, y1: 100, xt: [-2, -1, 0, 1, 2], yt: [], xl: 'Schätzwert und Intervall (wahres μ = 0)', l: 10, t: 8 });
+    const f = F = frame(ctx, 0, 0, w, h, { x0: -2.6, x1: 2.6, y0: 0, y1: 100, xt: [-2, -1, 0, 1, 2], yt: [], xl: 'Messwert, Mittelwert und Intervall (wahres μ = 0)', yl: 'Experiment 1 … 100', l: 24, t: 8 });
+    if (m.sel === null || m.sel >= R.out.length) { const miss = R.out.findIndex(([xb, hw]) => Math.abs(xb) > hw); m.sel = miss >= 0 ? miss : 0; }
+    const sy = f.Y(m.sel + 0.5), rh = f.bh / 100; ctx.fillStyle = rgba(Fg, 0.08); ctx.fillRect(f.bx, sy - Math.max(5, rh), f.bw, 2 * Math.max(5, rh));
     R.out.forEach(([xb, hw], j) => { const y = f.Y(j + 0.5), ok = Math.abs(xb) <= hw; ctx.strokeStyle = ok ? rgba(A, 0.75) : H; ctx.lineWidth = ok ? 1.6 : 2.4;
       ctx.beginPath(); ctx.moveTo(f.X(Math.max(-2.2, xb - hw)), y); ctx.lineTo(f.X(Math.min(2.2, xb + hw)), y); ctx.stroke(); ctx.fillStyle = ok ? A : H; ctx.fillRect(f.X(xb) - 1.5, y - 1.5, 3, 3); });
     ctx.strokeStyle = Fg; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.X(0), f.by); ctx.lineTo(f.X(0), f.by + f.bh); ctx.stroke();
-    $('#ki-read').innerHTML = `<span class="k">Faktor:</span> ${mode === 't' ? `t(${N - 1})` : 'z'} = ${nf(crit, 3)}  <span class="k">·</span>  <span class="k">hier:</span> ${R.hit} von 100 enthalten μ  <span class="k">·</span>  <span class="k">auf lange Sicht (20 000 Experimente):</span> <b>${nf(100 * L.hit / 20000, 1)} %</b>, Soll ${nf(100 * cl, 0)} %`;
+    const [sxb, shw, sxs] = R.out[m.sel]; ctx.strokeStyle = Fg; ctx.lineWidth = 1.5; for (const x of sxs) { const px = f.X(Math.max(-2.6, Math.min(2.6, x))); ctx.beginPath(); ctx.moveTo(px, sy - 7); ctx.lineTo(px, sy + 7); ctx.stroke(); }
+    ctx.fillStyle = Math.abs(sxb) <= shw ? A : H; ctx.beginPath(); ctx.arc(f.X(sxb), sy, 4.5, 0, 2 * Math.PI); ctx.fill();
+    const selTxt = `<br><span class="k">Experiment ${m.sel + 1}:</span> ${N} Messwerte, Mittelwert ${nf(sxb, 2)}, Intervall [${nf(sxb - shw, 2)}; ${nf(sxb + shw, 2)}] ${Math.abs(sxb) <= shw ? 'enthält μ = 0' : '<b>verfehlt μ = 0</b>'}`;
+    $('#ki-read').innerHTML = `<span class="k">Faktor:</span> ${mode === 't' ? `t(${N - 1})` : 'z'} = ${nf(crit, 3)}  <span class="k">·</span>  <span class="k">hier:</span> ${R.hit} von 100 enthalten μ  <span class="k">·</span>  <span class="k">auf lange Sicht (20 000 Experimente):</span> <b>${nf(100 * L.hit / 20000, 1)} %</b>, Soll ${nf(100 * cl, 0)} %` + selTxt;
   } });
   [inn, ic, im].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
-  $('#ki-r').addEventListener('click', () => { gen++; m.draw(); });
+  $('#ki-r').addEventListener('click', () => { gen++; m.sel = null; m.draw(); });
+  const pick = e => { if (!F) return; const [, y] = mouse(c, e); const j = Math.floor(100 * (F.by + F.bh - y) / F.bh); if (j >= 0 && j < 100 && j !== m.sel) { m.sel = j; m.draw(); } };
+  c.addEventListener('mousemove', pick); c.addEventListener('click', pick);
 })();
 </script>

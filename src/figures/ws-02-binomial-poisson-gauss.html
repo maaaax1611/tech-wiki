@@ -3,11 +3,17 @@
 <figure class="fig">
   <canvas id="cv-bp" class="c-ws" role="img" aria-label="Binomialverteilung als Balken, die passende Poisson-Verteilung als Punkte und die Gauß-Näherung als Kurve."></canvas>
   <div class="ctrls">
-    <div class="ctrl"><div class="lab"><label for="bp-n">Versuche n</label><output id="bp-n-o"></output></div><input id="bp-n" type="range" min="1" max="200" step="1" value="20" autocomplete="off"></div>
-    <div class="ctrl"><div class="lab"><label for="bp-p">Erfolgswahrscheinlichkeit p</label><output id="bp-p-o"></output></div><input id="bp-p" type="range" min="0.01" max="0.9" step="0.01" value="0.3" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="bp-n">Versuche n</label><output id="bp-n-o"></output></div><input id="bp-n" type="range" min="1" max="200" step="1" value="200" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="bp-p">Erfolgswahrscheinlichkeit p</label><output id="bp-p-o"></output></div><input id="bp-p" type="range" min="0.01" max="0.9" step="0.01" value="0.02" autocomplete="off"></div>
+  </div>
+  <div class="ctrls">
+    <span style="font-family:var(--font-display);font-size:14px;color:var(--muted)">Beispiele:</span>
+    <button class="btn" type="button" data-np="200,0.02">seltene Ereignisse (p klein)</button>
+    <button class="btn" type="button" data-np="100,0.45">viele Versuche (n groß)</button>
+    <button class="btn" type="button" data-np="8,0.5">wenige Versuche</button>
   </div>
   <div class="readout" id="bp-read"></div>
-  <figcaption><b>Abb.</b> Balken: Binomialverteilung, die Zahl der Erfolge bei \(n\) Versuchen. Punkte: Poisson-Verteilung mit gleichem Mittelwert \(\lambda = np\). Linie: Gaußverteilung mit Mittelwert und Varianz der Binomialverteilung. Bei kleinem \(p\) fallen Binomial und Poisson zusammen, bei großem \(n\) werden alle drei gaußförmig. Bei kleinem Mittelwert ist die Verteilung schief, und die Gauß-Näherung passt schlecht, sie gibt sogar negativen Zählwerten Wahrscheinlichkeit.</figcaption>
+  <figcaption><b>Abb.</b> Balken: die exakte Binomialverteilung, die Zahl der Erfolge bei \(n\) Versuchen. Punkte und Linie sind zwei Näherungen dafür. Die Poisson-Verteilung (Punkte) hat denselben Mittelwert, aber immer Varianz = Mittelwert, also \(np\) statt \(np(1-p)\). Sie passt deshalb nur, wenn \(p\) klein ist, und ist sonst zu breit. Die Gauß-Näherung (Linie) übernimmt Mittelwert und Varianz exakt, ist aber symmetrisch. Sie passt, wenn die Verteilung breit genug ist, grob ab \(np(1-p) \approx 10\). Bei wenigen Erfolgen ist die Verteilung schief, und Gauß gibt sogar negativen Zählwerten Wahrscheinlichkeit.</figcaption>
 </figure>
 <script>
 /* ---------- Binomial, Poisson, Gauß ---------- */
@@ -29,8 +35,10 @@
     legend(ctx, f.bx + 4, narrow ? 12 : f.by + 4, [['Binomial(n, p)', tok('--accent')], ['Poisson(λ = np)', tok('--bin2')], ['Gauß(np, np(1−p))', tok('--hole')]], { maxW: w - f.bx - 8 });
     // Abstände (totale Variation)
     let tvP = 0, tvG = 0; for (let k = 0; k <= n; k++) { const b = binomPmf(k, n, p); tvP += Math.abs(b - poisPmf(k, lam)); tvG += Math.abs(b - (normCdf(k + 0.5, lam, sd) - normCdf(k - 0.5, lam, sd))); }
-    $('#bp-read').innerHTML = `<span class="k">Mittelwert</span> np = ${nf(lam, 2)}  <span class="k">Varianz:</span> Binomial np(1−p) = ${nf(v, 2)}, Poisson λ = ${nf(lam, 2)}  <span class="k">·</span>  <span class="k">SNR = μ/σ =</span> ${nf(lam / sd, 2)}<br><span class="k">Abweichung der Binomialverteilung von Poisson:</span> ${nf(50 * tvP, 1)} %  <span class="k">von Gauß:</span> ${nf(50 * tvG, 1)} %  <span class="k">(Anteil der Wahrscheinlichkeit, der verschoben werden müsste)</span>`;
+    const verdict = t => t < 0.02 ? '<b>passt gut</b>' : t < 0.07 ? '<b>passt mäßig</b>' : '<b>passt schlecht</b>';
+    $('#bp-read').innerHTML = `<span class="k">Varianz exakt (Binomial):</span> np(1−p) = <b>${nf(v, 1)}</b>  <span class="k">·</span>  <span class="k">Poisson nimmt:</span> λ = np = ${nf(lam, 1)}  <span class="k">·</span>  <span class="k">Gauß nimmt:</span> ${nf(v, 1)}<br><span class="k">Poisson-Näherung</span> ${verdict(tvP / 2)}${p > 0.1 ? ' (p nicht klein, Poisson zu breit)' : ''}  <span class="k">·</span>  <span class="k">Gauß-Näherung</span> ${verdict(tvG / 2)}${v < 10 ? ' (zu wenige Erfolge, Verteilung schief)' : ''}`;
   } });
   [inn, ip].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  c.closest('figure').querySelectorAll('[data-np]').forEach(b => b.addEventListener('click', () => { const [n, p] = b.dataset.np.split(','); inn.value = n; ip.value = p; m.draw(); }));
 })();
 </script>
