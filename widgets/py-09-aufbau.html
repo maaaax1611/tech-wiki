@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aufbau der Pyramiden</title>
+<!-- Erzeugt von build.py aus src/figures/py-09-aufbau.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/bv.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-pa" class="c-bv" role="img" aria-label="Die Gaußsche Pyramide als gestapelte, immer kleinere Bildebenen; daneben die gewählte Ebene vergrößert."></canvas>
+  <div class="readout" id="pa-read"></div>
+  <figcaption><b>Abb. 3</b> Die Gaußsche Pyramide räumlich dargestellt: unten das Original \(G_0\), darüber jede Ebene halb so breit und hoch wie die vorige. Deshalb der Name. Ebene anklicken oder darüberfahren: Rechts erscheint sie auf die Größe des Originals gezogen. Die Pixel werden nach oben gröber, und jede Ebene ist ein geglättetes Abbild des ganzen Bildes, nicht ein Ausschnitt.</figcaption>
+</figure>
+<figure class="fig">
+  <canvas id="cv-pb" class="c-bv-3" role="img" aria-label="Gaußsche und Laplace-Pyramide nebeneinander; Pfeile zeigen, aus welchen Gauß-Ebenen eine Laplace-Ebene entsteht."></canvas>
+  <div class="readout" id="pb-read"></div>
+  <figcaption><b>Abb. 4</b> Gaußsche Pyramide (links) und Laplace-Pyramide (rechts) mit gleicher Form. Jede Laplace-Ebene entsteht aus zwei Gauß-Ebenen: der gleich großen und der nächstkleineren, vergrößert und abgezogen. Was übrig bleibt, sind nur die Details dieser Skala (blau positiv, rot negativ). Die Spitze \(L_4 = G_4\) ist der grobe Rest. Ebene anklicken oder darüberfahren, um die Pfeile für eine andere Ebene zu sehen.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/bv.js"></script>
+<script src="../assets/py.js"></script>
+<script>
+/* ---------- Pyramide räumlich ---------- */
+const PA_DX = 0.5, PA_DY = 0.42, PA_G = 12;
+// Höhe einer Pyramide mit Basisbreite s0 und K Ebenen (ohne Ränder)
+const PA_A = PA_DY / 2 + [0, 1, 2, 3].reduce((a, k) => a + 0.75 * PA_DY / 2 ** k, 0);
+const paBase = (wAvail, hAvail) => Math.min(wAvail / (1 + PA_DX), (hAvail - 4 * PA_G - 4) / PA_A);
+// Ebenen als schräg gesehene Flächen zeichnen; liefert die Flächen für Treffertests
+function paPyramid(ctx, P, cx, yb, s0, o = {}) {
+  let y = yb; const planes = P.map((p, k) => {
+    if (k) y -= 0.75 * PA_DY * s0 / 2 ** (k - 1) + PA_G;
+    const s = s0 / 2 ** k, ex = [s, 0], ed = [PA_DX * s, -PA_DY * s], FL = [cx - (ex[0] + ed[0]) / 2, y - ed[1] / 2];
+    const FR = [FL[0] + ex[0], FL[1]], BL = [FL[0] + ed[0], FL[1] + ed[1]], BR = [FR[0] + ed[0], FR[1] + ed[1]];
+    return { k, p, s, FL, FR, BL, BR, ex, ed, y };
+  });
+  // Kanten der Pyramide
+  ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  for (let k = 0; k + 1 < planes.length; k++) for (const c of ['FL', 'FR', 'BL', 'BR']) { ctx.beginPath(); ctx.moveTo(...planes[k][c]); ctx.lineTo(...planes[k + 1][c]); ctx.stroke(); }
+  ctx.setLineDash([]);
+  for (const q of planes) {
+    const { p, BL, ex, ed } = q, n = p.n;
+    ctx.save(); ctx.transform(ex[0] / n, ex[1] / n, -ed[0] / n, -ed[1] / n, BL[0], BL[1]);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(imgCanvas(p.I, n, (o.style || (() => ({})))(q.k, p)), 0, 0); ctx.restore();
+    const on = o.sel === q.k || (o.mark || []).includes(q.k);
+    ctx.strokeStyle = on ? tok('--accent') : tok('--rule'); ctx.lineWidth = on ? 2.5 : 1;
+    ctx.beginPath(); ctx.moveTo(...q.FL); ctx.lineTo(...q.FR); ctx.lineTo(...q.BR); ctx.lineTo(...q.BL); ctx.closePath(); ctx.stroke();
+    // Beschriftung links oder rechts der Ebene
+    const side = o.labels || 'right', lx = side === 'right' ? q.FR[0] + q.ed[0] / 2 + 10 : q.FL[0] + q.ed[0] / 2 - 10;
+    ctx.textAlign = side === 'right' ? 'left' : 'right'; ctx.font = `600 13px ${DISP}`; ctx.fillStyle = on ? tok('--accent') : tok('--fg');
+    const name = (o.name || (k => `G${k}`))(q.k);
+    ctx.fillText(name, lx, q.y + 4);
+    ctx.font = `11px ${MONO}`; ctx.fillStyle = tok('--muted');
+    ctx.fillText(`${n} × ${n}`, side === 'right' ? lx + 30 : lx - 30, q.y + 4);
+  }
+  return planes;
+}
+// Punkt in Parallelogramm (Ebene) – von oben nach unten prüfen, da obere Ebenen davor liegen
+function paHit(planes, x, y) {
+  for (const q of [...planes].reverse()) {
+    const rx = x - q.BL[0], ry = y - q.BL[1], a = q.ex, b = [-q.ed[0], -q.ed[1]], det = a[0] * b[1] - a[1] * b[0];
+    const u = (rx * b[1] - ry * b[0]) / det, v = (a[0] * ry - a[1] * rx) / det;
+    if (u >= -0.05 && u <= 1.05 && v >= -0.15 && v <= 1.15) return q.k;
+  }
+  return null;
+}
+function paHover(c, m, get) {
+  const pick = e => { const P = get(); if (!P) return; const [x, y] = mouse(c, e); const k = paHit(P, x, y); if (k !== null && k !== m.sel) { m.sel = k; m.draw(); } };
+  c.addEventListener('mousemove', pick); c.addEventListener('click', pick);
+}
+
+/* Teil 1: Gaußsche Pyramide */
+(() => {
+  const c = $('#cv-pa'), n = BV_N, G = gaussPyr(BV_PH, n, 5); let planes = null;
+  const m = reg({ el: c, sel: 2, draw() {
+    const { ctx, w, h } = fit(c), narrow = w < 560, top = 18, pw = narrow ? w : w * 0.64;
+    const S0 = paBase(pw - 100, h * (narrow ? 0.62 : 1) - top - 6);
+    const avail = h * (narrow ? 0.62 : 1) - top - 6, Ht = PA_A * S0 + 4 * PA_G + 4, yb = top + (avail + Ht) / 2 - S0 * PA_DY / 2;
+    planes = paPyramid(ctx, G, pw / 2 - 30, yb, S0, { sel: m.sel });
+    const p = G[m.sel], sz = narrow ? Math.min(w * 0.5, h * 0.34) : Math.min(w - pw - 10, h - 30), x = narrow ? (w - sz) / 2 : pw + 10, y = narrow ? h * 0.64 + 18 : 24;
+    drawImg(ctx, p.I, p.n, x, y, sz, { title: `G${m.sel} auf ${n} × ${n} gezogen` });
+    const sig = Math.sqrt((4 ** m.sel - 1) / 3);
+    $('#pa-read').innerHTML = `<span class="k">G${m.sel}:</span> ${p.n} × ${p.n} = ${(p.n * p.n).toLocaleString('de-DE')} Pixel` + (m.sel ? `  <span class="k">·</span>  entstanden aus G${m.sel - 1} durch REDUCE  <span class="k">·</span>  <span class="k">Glättung gegenüber G0:</span> σ ≈ ${nf(sig, 1)} px, ein Pixel deckt ${2 ** m.sel} × ${2 ** m.sel} Originalpixel ab` : '  <span class="k">·</span>  das Original, Basis der Pyramide');
+  } });
+  paHover(c, m, () => planes);
+})();
+
+/* Teil 2: Gauß- und Laplace-Pyramide nebeneinander */
+(() => {
+  const c = $('#cv-pb'), n = BV_N, G = gaussPyr(BV_PH, n, 5), L = lapPyr(BV_PH, n, 5); let PG = null, PL = null;
+  const lstyle = (k, p) => k < 4 ? { sym: true, hi: maxAbs(p.I) * 0.35 } : {};
+  const m = reg({ el: c, sel: 1, draw() {
+    const { ctx, w, h } = fit(c), narrow = w < 560, top = narrow ? 24 : 16;
+    const regW = narrow ? w : w / 2, regH = narrow ? h / 2 : h;
+    const S0 = paBase(regW - (narrow ? 170 : 110), regH - top - 6);
+    const ybG = regH - 6 - S0 * PA_DY / 2, ybL = (narrow ? h : regH) - 6 - S0 * PA_DY / 2;
+    const k = m.sel, mk = k < 4 ? [k, k + 1] : [k];
+    PG = paPyramid(ctx, G, regW / 2 + (narrow ? 15 : 30), ybG, S0, { labels: 'left', mark: mk });
+    PL = paPyramid(ctx, L, (narrow ? regW / 2 - 25 : regW + regW / 2 - 30), ybL, S0, { sel: k, style: lstyle, name: j => `L${j}` });
+    ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = tok('--muted');
+    ctx.fillText('Gaußsche Pyramide', 0, top - 2); ctx.fillText('Laplace-Pyramide', narrow ? 0 : regW + 10, narrow ? regH + top - 2 : top - 2);
+    // Pfeile: G_k → L_k, G_{k+1} → L_k (mit EXPAND)
+    const tgt = PL[k], tl = [tgt.FL[0] + tgt.ed[0] / 2 - 4, tgt.y], col = tok('--accent');
+    const right = q => [q.FR[0] + q.ed[0] / 2 + 6, q.y];
+    if (narrow) {
+      arrowPx(ctx, PG[k].FR[0], PG[k].FR[1] + 2, tgt.BR[0] - 4, tgt.BR[1] - 2, col);
+    } else {
+      const a = right(PG[k]); arrowPx(ctx, a[0], a[1], tl[0], tl[1] - 2, col, 1.6);
+      if (k < 4) { const b = right(PG[k + 1]); arrowPx(ctx, b[0], b[1], tl[0], tl[1] + 6, col, 1.6);
+        ctx.font = `12px ${DISP}`; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.fillText('− EXPAND', (b[0] + tl[0]) / 2, (b[1] + tl[1]) / 2 - 8); }
+    }
+    $('#pb-read').innerHTML = k < 4
+      ? `<span class="k">L${k} = G${k} − EXPAND(G${k + 1})</span>  <span class="k">·</span>  ${G[k].n} × ${G[k].n} Werte  <span class="k">·</span>  enthält Strukturen zwischen Skala σ ≈ ${2 ** k} und ${2 ** (k + 1)} Originalpixeln`
+      : `<span class="k">L4 = G4</span>  <span class="k">·</span>  ${G[4].n} × ${G[4].n} Werte, der grobe Rest; ohne ihn fehlten Helligkeit und große Flächen`;
+  } });
+  const pick = e => { if (!PG) return; const [x, y] = mouse(c, e); const k = paHit(PL, x, y) ?? paHit(PG, x, y); if (k !== null && k !== m.sel) { m.sel = k; m.draw(); } };
+  c.addEventListener('mousemove', pick); c.addEventListener('click', pick);
+})();
+</script>
+</body>
+</html>

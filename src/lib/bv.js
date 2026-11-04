@@ -120,7 +120,8 @@ function medianFilter(I, n, size, mode = 'reflect') {
 
 /* ---------- Darstellung ---------- */
 // Bild als Graustufen (lo…hi) oder vorzeichenbehaftet (sym = true) in Kasten x,y,size zeichnen
-function drawImg(ctx, I, n, x, y, size, o = {}) {
+// Bild als kleines Offscreen-Canvas (ein Pixel pro Bildpixel), Farbgebung wie drawImg
+function imgCanvas(I, n, o = {}) {
   const off = document.createElement('canvas'); off.width = n; off.height = n;
   const oc = off.getContext('2d'), id = oc.createImageData(n, n);
   const lo = o.lo ?? 0, hi = o.hi ?? 1, A = rgb(tok('--accent')), H = rgb(tok('--hole')), S = rgb(tok('--surface'));
@@ -131,7 +132,10 @@ function drawImg(ctx, I, n, x, y, size, o = {}) {
     else { const t = Math.max(0, Math.min(1, (I[k] - lo) / (hi - lo))) * 255; r = g = b = t; }
     id.data[4 * k] = r; id.data[4 * k + 1] = g; id.data[4 * k + 2] = b; id.data[4 * k + 3] = 255;
   }
-  oc.putImageData(id, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(off, x, y, size, size);
+  oc.putImageData(id, 0, 0); return off;
+}
+function drawImg(ctx, I, n, x, y, size, o = {}) {
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(imgCanvas(I, n, o), x, y, size, size);
   ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
   if (o.title) { ctx.fillStyle = tok('--fg'); ctx.font = `600 13px ${DISP}`; ctx.textAlign = 'left'; ctx.fillText(o.title, x, y - 6); }
 }

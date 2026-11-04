@@ -67,6 +67,8 @@ $$
 
 Die ganze Pyramide braucht nur ein Drittel mehr Speicher als das Original.
 
+::: widget py-09-aufbau part=1
+
 ::: widget py-03-gauss-pyramide
 
 ```python
@@ -104,6 +106,8 @@ G_k = L_k + \operatorname{EXPAND}(G_{k+1})
 $$
 
 Das gilt unabhängig davon, wie gut REDUCE und EXPAND sind, denn jeder Fehler beim Vergrößern steckt ja in $L_k$. Die Laplace-Pyramide ist **übervollständig**, sie hat wie die Gaußsche $\tfrac43 N$ Werte. Dafür sind die meisten Detailwerte nahe null, was sie gut komprimierbar macht. Das war die ursprüngliche Motivation der Erfinder.
+
+::: widget py-09-aufbau part=2
 
 ::: widget py-04-laplace-pyramide
 

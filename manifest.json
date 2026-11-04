@@ -409,6 +409,13 @@
    "height": 640
   },
   {
+   "slug": "py-09-aufbau",
+   "page": "pyramiden",
+   "title": "Aufbau der Pyramiden",
+   "interactive": false,
+   "height": 640
+  },
+  {
    "slug": "py-03-gauss-pyramide",
    "page": "pyramiden",
    "title": "Gaußsche Pyramide",
