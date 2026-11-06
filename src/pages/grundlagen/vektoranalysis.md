@@ -186,71 +186,21 @@ Für Ungleichungen $g(\mathbf x) \le 0$ gibt es eine Erweiterung (Karush-Kuhn-Tu
 
 ## Konvexität {#konvex}
 
-Konvexität ist die wichtigste Eigenschaft, die ein Optimierungsproblem haben kann. Sie entscheidet, ob man dem Ergebnis eines lokalen Verfahrens wie dem Gradientenabstieg trauen darf.
-
-### Konvexe Mengen und Funktionen
-
-Eine Menge $C$ ist **konvex**, wenn mit zwei Punkten auch ihre ganze Verbindungsstrecke in $C$ liegt. Kreisscheiben, Halbräume, Quader und Ellipsoide sind konvex, ein Ring oder eine Mondsichel nicht.
-
-Eine Funktion $f$ ist **konvex**, wenn die Sehne zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt:
+Eine Funktion ist **konvex**, wenn die Sehne zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt:
 
 $$
 f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 - \theta) f(\mathbf y) \qquad \text{für alle } \mathbf x, \mathbf y \text{ und } \theta \in [0, 1]
 $$
 
-Links steht der Funktionswert an einem Punkt zwischen $\mathbf x$ und $\mathbf y$, rechts der Wert der Sehne an derselben Stelle. Gleichwertig: Die Menge aller Punkte oberhalb des Graphen ist eine konvexe Menge. Gilt die Ungleichung für $\mathbf x \ne \mathbf y$ und $0 < \theta < 1$ strikt, heißt $f$ **strikt konvex**.
-
-Für glatte Funktionen gibt es zwei handlichere Tests:
-
-- **Erste Ordnung:** Jede Tangente liegt unter dem Graphen, $f(\mathbf y) \ge f(\mathbf x) + \nabla f(\mathbf x)^\top(\mathbf y - \mathbf x)$. Die lineare Näherung unterschätzt die Funktion also überall.
-- **Zweite Ordnung:** Die Hesse-Matrix ist überall positiv semidefinit, $H(\mathbf x) \succeq 0$. In einer Dimension: $f''(x) \ge 0$, die Funktion ist überall nach oben gekrümmt.
+Für glatte Funktionen ist das gleichbedeutend mit: Jede Tangente liegt unter dem Graphen, $f(\mathbf y) \ge f(\mathbf x) + \nabla f(\mathbf x)^\top(\mathbf y - \mathbf x)$. Oder: Die Hesse-Matrix ist überall positiv semidefinit, in einer Dimension $f'' \ge 0$.
 
 ::: widget va-09-konvex-sehne
 
-### Warum das so wichtig ist
-
-Aus dem Tangententest folgt sofort: Ist $\nabla f(\mathbf x^*) = \mathbf 0$, dann ist $f(\mathbf y) \ge f(\mathbf x^*)$ für **alle** $\mathbf y$. Bei einer konvexen Funktion gilt deshalb:
-
-- Jedes lokale Minimum ist ein **globales** Minimum. Es gibt keine falschen Mulden, in denen ein Verfahren hängen bleiben könnte.
-- Ein Punkt mit Gradient null ist schon das Minimum. Es gibt keine Sattelpunkte und keine Maxima im Inneren.
-- Die Menge aller Minima ist selbst konvex: ein einzelner Punkt, eine Strecke oder eine Fläche, aber nie mehrere getrennte Stellen. Bei strikter Konvexität gibt es höchstens ein Minimum.
-- Der Startpunkt spielt für das Ergebnis keine Rolle, nur für die Rechenzeit.
-
-Für die Geschwindigkeit ist noch eine stärkere Eigenschaft nützlich. $f$ heißt **stark konvex** mit Parameter $\mu > 0$, wenn alle Eigenwerte der Hesse-Matrix mindestens $\mu$ sind, die Funktion also überall mindestens so gekrümmt ist wie eine Parabel $\tfrac\mu2\|\mathbf x\|^2$. Ist die Krümmung zusätzlich nach oben durch $L$ begrenzt, dann konvergiert Gradientenabstieg mit $\eta = 1/L$ **linear**: Der Abstand zum Minimum schrumpft pro Schritt mindestens um den Faktor $1 - \mu/L$. Das ist dieselbe Kondition $\kappa = L/\mu$ wie in Abschnitt 7.
+Wichtig ist das wegen des Tangententests: Ist irgendwo $\nabla f = \mathbf 0$, dann liegt die ganze Funktion über diesem Wert. Bei einer konvexen Funktion ist also **jedes lokale Minimum auch das globale**, es gibt keine Sattelpunkte, und der Startpunkt bestimmt nur den Weg, nicht das Ergebnis. Bei nicht konvexen Funktionen hängt dagegen vom Start ab, in welcher Mulde man landet.
 
 ::: widget va-10-konvex-starts
 
-### Konvexität erkennen
-
-Man prüft selten die Definition, sondern baut Funktionen aus Bausteinen, von denen man weiß, dass sie konvex sind, und benutzt Regeln, die Konvexität erhalten:
-
-| Konvex | Nicht konvex |
-|---|---|
-| lineare und affine Funktionen $\mathbf a^\top\mathbf x + b$ (zugleich konkav) | $\sin x$, $\cos x$ |
-| Normen $\Vert\mathbf x\Vert_1$, $\Vert\mathbf x\Vert_2$, $\Vert\mathbf x\Vert_\infty$ | $x^4 - x^2$ (zwei Mulden) |
-| $\mathbf x^\top A\mathbf x$ mit $A \succeq 0$, z. B. $\Vert A\mathbf x - \mathbf b\Vert^2$ | $\mathbf x^\top A\mathbf x$ mit negativem Eigenwert (Sattel) |
-| $e^x$, $-\log x$, $x\log x$, $\max(0, x)$ | $\log x$, $\sqrt x$ (konkav) |
-| $\log\sum_i e^{x_i}$ (Log-Sum-Exp, steckt in Softmax und Cross-Entropy) | Verlust eines neuronalen Netzes über seine Gewichte |
-
-Regeln, die Konvexität erhalten:
-
-- **Summen mit nichtnegativen Gewichten:** Datenterm plus Regularisierung bleibt konvex, wenn beide es sind.
-- **Einsetzen einer affinen Abbildung:** Ist $g$ konvex, dann auch $g(A\mathbf x + \mathbf b)$. Deshalb sind lineare Modelle mit konvexem Verlust konvex in ihren Parametern.
-- **Maximum:** Das Maximum konvexer Funktionen ist konvex, etwa $\max(0, 1 - y\,\mathbf a^\top\mathbf x)$ bei Support Vector Machines.
-
-Konvex muss nicht glatt heißen. $|x|$ oder die L1-Norm haben Knicke, an denen es keinen Gradienten gibt. Man nimmt dort einen **Subgradienten**, irgendeine Steigung, deren Gerade noch unter dem Graphen bleibt. Für den Knick bei $|x|$ ist das jede Zahl zwischen −1 und 1.
-
-### Konvexe Probleme
-
-Ein Optimierungsproblem ist **konvex**, wenn die Zielfunktion konvex ist und die erlaubte Menge auch: Gleichungen nur affin, Ungleichungen der Form $g(\mathbf x) \le 0$ mit konvexem $g$. Dann gelten alle Vorteile von oben auch mit Nebenbedingungen, und Projektionen auf die erlaubte Menge sind eindeutig.
-
-Konvex sind zum Beispiel:
-
-- kleinste Quadrate $\|A\mathbf x - \mathbf b\|^2$, auch mit Ridge- oder L1-Term (Lasso),
-- logistische Regression und Support Vector Machines,
-- die gewichteten Quadrat- und Poisson-Likelihood-Ziele der statistischen [CT-Rekonstruktion](../physik/rekonstruktion.html), solange das Messmodell linear ist, auch mit Nebenbedingung $\mathbf x \ge 0$ und mit Total-Variation-Regularisierung.
-
-Neuronale Netze sind dagegen nicht konvex. Schon zwei Schichten machen die Verlustlandschaft zu einem Gebirge mit vielen Mulden und Sattelpunkten, allein weil sich Neuronen vertauschen lassen, ohne dass sich die Ausgabe ändert. Dass Gradientenverfahren dort trotzdem gut funktionieren, liegt unter anderem daran, dass in sehr hohen Dimensionen die meisten kritischen Punkte Sattelpunkte sind, die verrauschte Gradienten wieder verlassen, und dass die gefundenen Minima meist ähnlich gut sind. Garantien wie im konvexen Fall gibt es aber nicht.
+Konvex sind zum Beispiel kleinste Quadrate (auch mit Ridge- oder L1-Term), logistische Regression und die Poisson-Likelihood der statistischen [CT-Rekonstruktion](../physik/rekonstruktion.html) bei linearem Messmodell. Summen konvexer Funktionen bleiben konvex, deshalb ändert ein konvexer Regularisierungsterm daran nichts. Neuronale Netze sind nicht konvex. Dass Gradientenverfahren dort trotzdem gut funktionieren, ist eher Erfahrung als Garantie.
 
 ## Formeln {#formeln appendix="A"}
 
@@ -268,7 +218,6 @@ Neuronale Netze sind dagegen nicht konvex. Schon zwei Schichten machen die Verlu
 | Adam | $\mathbf x \leftarrow \mathbf x - \eta\,\hat{\mathbf m}/(\sqrt{\hat{\mathbf s}} + \varepsilon)$ |
 | Lagrange | $\nabla f + \lambda\nabla g = \mathbf 0$, $g(\mathbf x) = 0$ |
 | Konvexität | $f(\theta\mathbf x + (1-\theta)\mathbf y) \le \theta f(\mathbf x) + (1-\theta)f(\mathbf y)$ ⇔ $f(\mathbf y) \ge f(\mathbf x) + \nabla f^\top(\mathbf y - \mathbf x)$ ⇔ $H \succeq 0$ |
-| stark konvex | $H \succeq \mu I$: Gradientenabstieg mit $\eta = 1/L$ schrumpft den Fehler pro Schritt um $1 - \mu/L$ |
 
 ## Befehle {#befehle appendix="B"}
 

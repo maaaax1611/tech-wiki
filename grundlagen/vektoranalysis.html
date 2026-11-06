@@ -310,19 +310,11 @@ H = \nabla^2 f = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} &amp; \cdo
 <section id="konvex">
 <div class="step"><b>10</b><span class="eyebrow">Optimieren</span></div>
 <h2>Konvexität</h2>
-<p>Konvexität ist die wichtigste Eigenschaft, die ein Optimierungsproblem haben kann. Sie entscheidet, ob man dem Ergebnis eines lokalen Verfahrens wie dem Gradientenabstieg trauen darf.</p>
-<h3>Konvexe Mengen und Funktionen</h3>
-<p>Eine Menge <span class="arithmatex">\(C\)</span> ist <strong>konvex</strong>, wenn mit zwei Punkten auch ihre ganze Verbindungsstrecke in <span class="arithmatex">\(C\)</span> liegt. Kreisscheiben, Halbräume, Quader und Ellipsoide sind konvex, ein Ring oder eine Mondsichel nicht.</p>
-<p>Eine Funktion <span class="arithmatex">\(f\)</span> ist <strong>konvex</strong>, wenn die Sehne zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt:</p>
+<p>Eine Funktion ist <strong>konvex</strong>, wenn die Sehne zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt:</p>
 <div class="eq">\[
 f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 - \theta) f(\mathbf y) \qquad \text{für alle } \mathbf x, \mathbf y \text{ und } \theta \in [0, 1]
 \]</div>
-<p>Links steht der Funktionswert an einem Punkt zwischen <span class="arithmatex">\(\mathbf x\)</span> und <span class="arithmatex">\(\mathbf y\)</span>, rechts der Wert der Sehne an derselben Stelle. Gleichwertig: Die Menge aller Punkte oberhalb des Graphen ist eine konvexe Menge. Gilt die Ungleichung für <span class="arithmatex">\(\mathbf x \ne \mathbf y\)</span> und <span class="arithmatex">\(0 &lt; \theta &lt; 1\)</span> strikt, heißt <span class="arithmatex">\(f\)</span> <strong>strikt konvex</strong>.</p>
-<p>Für glatte Funktionen gibt es zwei handlichere Tests:</p>
-<ul class="tight">
-<li><strong>Erste Ordnung:</strong> Jede Tangente liegt unter dem Graphen, <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x) + \nabla f(\mathbf x)^\top(\mathbf y - \mathbf x)\)</span>. Die lineare Näherung unterschätzt die Funktion also überall.</li>
-<li><strong>Zweite Ordnung:</strong> Die Hesse-Matrix ist überall positiv semidefinit, <span class="arithmatex">\(H(\mathbf x) \succeq 0\)</span>. In einer Dimension: <span class="arithmatex">\(f''(x) \ge 0\)</span>, die Funktion ist überall nach oben gekrümmt.</li>
-</ul>
+<p>Für glatte Funktionen ist das gleichbedeutend mit: Jede Tangente liegt unter dem Graphen, <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x) + \nabla f(\mathbf x)^\top(\mathbf y - \mathbf x)\)</span>. Oder: Die Hesse-Matrix ist überall positiv semidefinit, in einer Dimension <span class="arithmatex">\(f'' \ge 0\)</span>.</p>
 <figure class="fig">
 <canvas aria-label="Eine Funktion mit einer Sehne zwischen zwei wählbaren Punkten und einer Tangente; daneben die zweite Ableitung." class="c-va" id="cv-kx" role="img"></canvas>
 <div class="ctrls">
@@ -334,15 +326,7 @@ f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 
 <div class="readout" id="kx-read"></div>
 <figcaption><b>Abb. 9</b> Links die Funktion mit der Sehne zwischen \(x_1\) und \(x_2\) (blau) und der Tangente bei \(x_1\) (gestrichelt). Bei einer konvexen Funktion liegt jede Sehne über dem Graphen und jede Tangente darunter, egal wo man die Punkte wählt. Bei den nicht konvexen Funktionen findet man Lagen, in denen der Graph über die Sehne steigt oder unter die Tangente fällt (rot markiert). Rechts die zweite Ableitung: Wo sie negativ ist (rot), ist die Funktion nach unten gekrümmt, und genau dort scheitern die Tests.</figcaption>
 </figure>
-<h3>Warum das so wichtig ist</h3>
-<p>Aus dem Tangententest folgt sofort: Ist <span class="arithmatex">\(\nabla f(\mathbf x^*) = \mathbf 0\)</span>, dann ist <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x^*)\)</span> für <strong>alle</strong> <span class="arithmatex">\(\mathbf y\)</span>. Bei einer konvexen Funktion gilt deshalb:</p>
-<ul class="tight">
-<li>Jedes lokale Minimum ist ein <strong>globales</strong> Minimum. Es gibt keine falschen Mulden, in denen ein Verfahren hängen bleiben könnte.</li>
-<li>Ein Punkt mit Gradient null ist schon das Minimum. Es gibt keine Sattelpunkte und keine Maxima im Inneren.</li>
-<li>Die Menge aller Minima ist selbst konvex: ein einzelner Punkt, eine Strecke oder eine Fläche, aber nie mehrere getrennte Stellen. Bei strikter Konvexität gibt es höchstens ein Minimum.</li>
-<li>Der Startpunkt spielt für das Ergebnis keine Rolle, nur für die Rechenzeit.</li>
-</ul>
-<p>Für die Geschwindigkeit ist noch eine stärkere Eigenschaft nützlich. <span class="arithmatex">\(f\)</span> heißt <strong>stark konvex</strong> mit Parameter <span class="arithmatex">\(\mu &gt; 0\)</span>, wenn alle Eigenwerte der Hesse-Matrix mindestens <span class="arithmatex">\(\mu\)</span> sind, die Funktion also überall mindestens so gekrümmt ist wie eine Parabel <span class="arithmatex">\(\tfrac\mu2\|\mathbf x\|^2\)</span>. Ist die Krümmung zusätzlich nach oben durch <span class="arithmatex">\(L\)</span> begrenzt, dann konvergiert Gradientenabstieg mit <span class="arithmatex">\(\eta = 1/L\)</span> <strong>linear</strong>: Der Abstand zum Minimum schrumpft pro Schritt mindestens um den Faktor <span class="arithmatex">\(1 - \mu/L\)</span>. Das ist dieselbe Kondition <span class="arithmatex">\(\kappa = L/\mu\)</span> wie in Abschnitt 7.</p>
+<p>Wichtig ist das wegen des Tangententests: Ist irgendwo <span class="arithmatex">\(\nabla f = \mathbf 0\)</span>, dann liegt die ganze Funktion über diesem Wert. Bei einer konvexen Funktion ist also <strong>jedes lokale Minimum auch das globale</strong>, es gibt keine Sattelpunkte, und der Startpunkt bestimmt nur den Weg, nicht das Ergebnis. Bei nicht konvexen Funktionen hängt dagegen vom Start ab, in welcher Mulde man landet.</p>
 <figure class="fig">
 <canvas aria-label="Zwei Landschaften, links konvex, rechts nicht konvex, mit Gradientenabstieg von vielen Startpunkten. Links enden alle Pfade im selben Punkt, rechts in verschiedenen Mulden." class="c-va-2" id="cv-ks" role="img"></canvas>
 <div class="ctrls">
@@ -352,54 +336,7 @@ f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 
 <div class="readout" id="ks-read"></div>
 <figcaption><b>Abb. 10</b> Gradientenabstieg von denselben zufälligen Startpunkten auf zwei Landschaften. Links eine konvexe Funktion: Alle Pfade enden im selben Minimum, der Start bestimmt nur den Weg. Rechts eine nicht konvexe mit zwei Mulden und einem Sattel dazwischen: Wo ein Pfad endet, hängt davon ab, auf welcher Seite er startet. Die Endpunkte sind nach Mulde gefärbt. Ein Verfahren, das nur lokal bergab geht, kann nicht wissen, ob es in der tieferen Mulde gelandet ist.</figcaption>
 </figure>
-<h3>Konvexität erkennen</h3>
-<p>Man prüft selten die Definition, sondern baut Funktionen aus Bausteinen, von denen man weiß, dass sie konvex sind, und benutzt Regeln, die Konvexität erhalten:</p>
-<div class="tbl"><table>
-<thead>
-<tr>
-<th>Konvex</th>
-<th>Nicht konvex</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>lineare und affine Funktionen <span class="arithmatex">\(\mathbf a^\top\mathbf x + b\)</span> (zugleich konkav)</td>
-<td><span class="arithmatex">\(\sin x\)</span>, <span class="arithmatex">\(\cos x\)</span></td>
-</tr>
-<tr>
-<td>Normen <span class="arithmatex">\(\Vert\mathbf x\Vert_1\)</span>, <span class="arithmatex">\(\Vert\mathbf x\Vert_2\)</span>, <span class="arithmatex">\(\Vert\mathbf x\Vert_\infty\)</span></td>
-<td><span class="arithmatex">\(x^4 - x^2\)</span> (zwei Mulden)</td>
-</tr>
-<tr>
-<td><span class="arithmatex">\(\mathbf x^\top A\mathbf x\)</span> mit <span class="arithmatex">\(A \succeq 0\)</span>, z. B. <span class="arithmatex">\(\Vert A\mathbf x - \mathbf b\Vert^2\)</span></td>
-<td><span class="arithmatex">\(\mathbf x^\top A\mathbf x\)</span> mit negativem Eigenwert (Sattel)</td>
-</tr>
-<tr>
-<td><span class="arithmatex">\(e^x\)</span>, <span class="arithmatex">\(-\log x\)</span>, <span class="arithmatex">\(x\log x\)</span>, <span class="arithmatex">\(\max(0, x)\)</span></td>
-<td><span class="arithmatex">\(\log x\)</span>, <span class="arithmatex">\(\sqrt x\)</span> (konkav)</td>
-</tr>
-<tr>
-<td><span class="arithmatex">\(\log\sum_i e^{x_i}\)</span> (Log-Sum-Exp, steckt in Softmax und Cross-Entropy)</td>
-<td>Verlust eines neuronalen Netzes über seine Gewichte</td>
-</tr>
-</tbody>
-</table></div>
-<p>Regeln, die Konvexität erhalten:</p>
-<ul class="tight">
-<li><strong>Summen mit nichtnegativen Gewichten:</strong> Datenterm plus Regularisierung bleibt konvex, wenn beide es sind.</li>
-<li><strong>Einsetzen einer affinen Abbildung:</strong> Ist <span class="arithmatex">\(g\)</span> konvex, dann auch <span class="arithmatex">\(g(A\mathbf x + \mathbf b)\)</span>. Deshalb sind lineare Modelle mit konvexem Verlust konvex in ihren Parametern.</li>
-<li><strong>Maximum:</strong> Das Maximum konvexer Funktionen ist konvex, etwa <span class="arithmatex">\(\max(0, 1 - y\,\mathbf a^\top\mathbf x)\)</span> bei Support Vector Machines.</li>
-</ul>
-<p>Konvex muss nicht glatt heißen. <span class="arithmatex">\(|x|\)</span> oder die L1-Norm haben Knicke, an denen es keinen Gradienten gibt. Man nimmt dort einen <strong>Subgradienten</strong>, irgendeine Steigung, deren Gerade noch unter dem Graphen bleibt. Für den Knick bei <span class="arithmatex">\(|x|\)</span> ist das jede Zahl zwischen −1 und 1.</p>
-<h3>Konvexe Probleme</h3>
-<p>Ein Optimierungsproblem ist <strong>konvex</strong>, wenn die Zielfunktion konvex ist und die erlaubte Menge auch: Gleichungen nur affin, Ungleichungen der Form <span class="arithmatex">\(g(\mathbf x) \le 0\)</span> mit konvexem <span class="arithmatex">\(g\)</span>. Dann gelten alle Vorteile von oben auch mit Nebenbedingungen, und Projektionen auf die erlaubte Menge sind eindeutig.</p>
-<p>Konvex sind zum Beispiel:</p>
-<ul class="tight">
-<li>kleinste Quadrate <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span>, auch mit Ridge- oder L1-Term (Lasso),</li>
-<li>logistische Regression und Support Vector Machines,</li>
-<li>die gewichteten Quadrat- und Poisson-Likelihood-Ziele der statistischen <a href="../physik/rekonstruktion.html">CT-Rekonstruktion</a>, solange das Messmodell linear ist, auch mit Nebenbedingung <span class="arithmatex">\(\mathbf x \ge 0\)</span> und mit Total-Variation-Regularisierung.</li>
-</ul>
-<p>Neuronale Netze sind dagegen nicht konvex. Schon zwei Schichten machen die Verlustlandschaft zu einem Gebirge mit vielen Mulden und Sattelpunkten, allein weil sich Neuronen vertauschen lassen, ohne dass sich die Ausgabe ändert. Dass Gradientenverfahren dort trotzdem gut funktionieren, liegt unter anderem daran, dass in sehr hohen Dimensionen die meisten kritischen Punkte Sattelpunkte sind, die verrauschte Gradienten wieder verlassen, und dass die gefundenen Minima meist ähnlich gut sind. Garantien wie im konvexen Fall gibt es aber nicht.</p>
+<p>Konvex sind zum Beispiel kleinste Quadrate (auch mit Ridge- oder L1-Term), logistische Regression und die Poisson-Likelihood der statistischen <a href="../physik/rekonstruktion.html">CT-Rekonstruktion</a> bei linearem Messmodell. Summen konvexer Funktionen bleiben konvex, deshalb ändert ein konvexer Regularisierungsterm daran nichts. Neuronale Netze sind nicht konvex. Dass Gradientenverfahren dort trotzdem gut funktionieren, ist eher Erfahrung als Garantie.</p>
 </section>
 <section id="formeln">
 <div class="eyebrow">Anhang A</div>
@@ -459,10 +396,6 @@ f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 
 <tr>
 <td>Konvexität</td>
 <td><span class="arithmatex">\(f(\theta\mathbf x + (1-\theta)\mathbf y) \le \theta f(\mathbf x) + (1-\theta)f(\mathbf y)\)</span> ⇔ <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x) + \nabla f^\top(\mathbf y - \mathbf x)\)</span> ⇔ <span class="arithmatex">\(H \succeq 0\)</span></td>
-</tr>
-<tr>
-<td>stark konvex</td>
-<td><span class="arithmatex">\(H \succeq \mu I\)</span>: Gradientenabstieg mit <span class="arithmatex">\(\eta = 1/L\)</span> schrumpft den Fehler pro Schritt um <span class="arithmatex">\(1 - \mu/L\)</span></td>
 </tr>
 </tbody>
 </table></div>
