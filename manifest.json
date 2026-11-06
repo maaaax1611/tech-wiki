@@ -687,6 +687,20 @@
    "height": 640
   },
   {
+   "slug": "va-09-konvex-sehne",
+   "page": "vektoranalysis",
+   "title": "Sehnen- und Tangententest für Konvexität",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-10-konvex-starts",
+   "page": "vektoranalysis",
+   "title": "Konvex oder nicht: viele Startpunkte",
+   "interactive": true,
+   "height": 640
+  },
+  {
    "slug": "ws-01-stichprobe-und-dichte",
    "page": "wahrscheinlichkeit",
    "title": "Stichprobe und Dichte",

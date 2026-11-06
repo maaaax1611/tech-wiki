@@ -310,14 +310,96 @@ H = \nabla^2 f = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} &amp; \cdo
 <section id="konvex">
 <div class="step"><b>10</b><span class="eyebrow">Optimieren</span></div>
 <h2>Konvexität</h2>
-<p>Eine Funktion ist <strong>konvex</strong>, wenn die Verbindungsstrecke zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt. Für zweimal differenzierbare Funktionen heißt das: Die Hesse-Matrix ist überall positiv semidefinit, die Funktion ist überall nach oben gekrümmt.</p>
-<p>Konvexität ist die wichtigste Eigenschaft in der Optimierung, weil dann <strong>jedes lokale Minimum auch das globale</strong> ist. Gradientenabstieg kann nicht in einer falschen Mulde hängen bleiben, und es gibt keine Sattelpunkte. Konvex sind zum Beispiel:</p>
+<p>Konvexität ist die wichtigste Eigenschaft, die ein Optimierungsproblem haben kann. Sie entscheidet, ob man dem Ergebnis eines lokalen Verfahrens wie dem Gradientenabstieg trauen darf.</p>
+<h3>Konvexe Mengen und Funktionen</h3>
+<p>Eine Menge <span class="arithmatex">\(C\)</span> ist <strong>konvex</strong>, wenn mit zwei Punkten auch ihre ganze Verbindungsstrecke in <span class="arithmatex">\(C\)</span> liegt. Kreisscheiben, Halbräume, Quader und Ellipsoide sind konvex, ein Ring oder eine Mondsichel nicht.</p>
+<p>Eine Funktion <span class="arithmatex">\(f\)</span> ist <strong>konvex</strong>, wenn die Sehne zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt:</p>
+<div class="eq">\[
+f\big(\theta\mathbf x + (1 - \theta)\mathbf y\big) \le \theta f(\mathbf x) + (1 - \theta) f(\mathbf y) \qquad \text{für alle } \mathbf x, \mathbf y \text{ und } \theta \in [0, 1]
+\]</div>
+<p>Links steht der Funktionswert an einem Punkt zwischen <span class="arithmatex">\(\mathbf x\)</span> und <span class="arithmatex">\(\mathbf y\)</span>, rechts der Wert der Sehne an derselben Stelle. Gleichwertig: Die Menge aller Punkte oberhalb des Graphen ist eine konvexe Menge. Gilt die Ungleichung für <span class="arithmatex">\(\mathbf x \ne \mathbf y\)</span> und <span class="arithmatex">\(0 &lt; \theta &lt; 1\)</span> strikt, heißt <span class="arithmatex">\(f\)</span> <strong>strikt konvex</strong>.</p>
+<p>Für glatte Funktionen gibt es zwei handlichere Tests:</p>
 <ul class="tight">
-<li>kleinste Quadrate <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span>, auch mit Ridge- oder L1-Term,</li>
-<li>die logistische Regression,</li>
-<li>die gewichteten und Poisson-Likelihood-Ziele der statistischen CT-Rekonstruktion (für lineare Messmodelle).</li>
+<li><strong>Erste Ordnung:</strong> Jede Tangente liegt unter dem Graphen, <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x) + \nabla f(\mathbf x)^\top(\mathbf y - \mathbf x)\)</span>. Die lineare Näherung unterschätzt die Funktion also überall.</li>
+<li><strong>Zweite Ordnung:</strong> Die Hesse-Matrix ist überall positiv semidefinit, <span class="arithmatex">\(H(\mathbf x) \succeq 0\)</span>. In einer Dimension: <span class="arithmatex">\(f''(x) \ge 0\)</span>, die Funktion ist überall nach oben gekrümmt.</li>
 </ul>
-<p>Neuronale Netze sind dagegen nicht konvex, ihre Verlustlandschaft hat unzählige Minima und Sattelpunkte. Dass Gradientenverfahren dort trotzdem so gut funktionieren, liegt unter anderem daran, dass in sehr hohen Dimensionen die meisten kritischen Punkte Sattelpunkte sind und die gefundenen Minima oft ähnlich gut.</p>
+<figure class="fig">
+<canvas aria-label="Eine Funktion mit einer Sehne zwischen zwei wählbaren Punkten und einer Tangente; daneben die zweite Ableitung." class="c-va" id="cv-kx" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="kx-f">Funktion</label></div><select autocomplete="off" id="kx-f" style="width:100%"><option value="sq">½x² (konvex)</option><option value="abs">|x| (konvex, mit Knick)</option><option value="exp">eˣ (konvex)</option><option value="w">x⁴ − 2x² (nicht konvex)</option><option value="s">sin 2x + x² / 3 (nicht konvex)</option></select></div>
+<div class="ctrl"><div class="lab"><label for="kx-a">Punkt x₁</label><output id="kx-a-o"></output></div><input autocomplete="off" id="kx-a" max="2.4" min="-2.4" step="0.01" type="range" value="-1.4"/></div>
+<div class="ctrl"><div class="lab"><label for="kx-b">Punkt x₂</label><output id="kx-b-o"></output></div><input autocomplete="off" id="kx-b" max="2.4" min="-2.4" step="0.01" type="range" value="1.1"/></div>
+<label class="chk"><input autocomplete="off" checked="" id="kx-t" type="checkbox"/> Tangente bei x₁</label>
+</div>
+<div class="readout" id="kx-read"></div>
+<figcaption><b>Abb. 9</b> Links die Funktion mit der Sehne zwischen \(x_1\) und \(x_2\) (blau) und der Tangente bei \(x_1\) (gestrichelt). Bei einer konvexen Funktion liegt jede Sehne über dem Graphen und jede Tangente darunter, egal wo man die Punkte wählt. Bei den nicht konvexen Funktionen findet man Lagen, in denen der Graph über die Sehne steigt oder unter die Tangente fällt (rot markiert). Rechts die zweite Ableitung: Wo sie negativ ist (rot), ist die Funktion nach unten gekrümmt, und genau dort scheitern die Tests.</figcaption>
+</figure>
+<h3>Warum das so wichtig ist</h3>
+<p>Aus dem Tangententest folgt sofort: Ist <span class="arithmatex">\(\nabla f(\mathbf x^*) = \mathbf 0\)</span>, dann ist <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x^*)\)</span> für <strong>alle</strong> <span class="arithmatex">\(\mathbf y\)</span>. Bei einer konvexen Funktion gilt deshalb:</p>
+<ul class="tight">
+<li>Jedes lokale Minimum ist ein <strong>globales</strong> Minimum. Es gibt keine falschen Mulden, in denen ein Verfahren hängen bleiben könnte.</li>
+<li>Ein Punkt mit Gradient null ist schon das Minimum. Es gibt keine Sattelpunkte und keine Maxima im Inneren.</li>
+<li>Die Menge aller Minima ist selbst konvex: ein einzelner Punkt, eine Strecke oder eine Fläche, aber nie mehrere getrennte Stellen. Bei strikter Konvexität gibt es höchstens ein Minimum.</li>
+<li>Der Startpunkt spielt für das Ergebnis keine Rolle, nur für die Rechenzeit.</li>
+</ul>
+<p>Für die Geschwindigkeit ist noch eine stärkere Eigenschaft nützlich. <span class="arithmatex">\(f\)</span> heißt <strong>stark konvex</strong> mit Parameter <span class="arithmatex">\(\mu &gt; 0\)</span>, wenn alle Eigenwerte der Hesse-Matrix mindestens <span class="arithmatex">\(\mu\)</span> sind, die Funktion also überall mindestens so gekrümmt ist wie eine Parabel <span class="arithmatex">\(\tfrac\mu2\|\mathbf x\|^2\)</span>. Ist die Krümmung zusätzlich nach oben durch <span class="arithmatex">\(L\)</span> begrenzt, dann konvergiert Gradientenabstieg mit <span class="arithmatex">\(\eta = 1/L\)</span> <strong>linear</strong>: Der Abstand zum Minimum schrumpft pro Schritt mindestens um den Faktor <span class="arithmatex">\(1 - \mu/L\)</span>. Das ist dieselbe Kondition <span class="arithmatex">\(\kappa = L/\mu\)</span> wie in Abschnitt 7.</p>
+<figure class="fig">
+<canvas aria-label="Zwei Landschaften, links konvex, rechts nicht konvex, mit Gradientenabstieg von vielen Startpunkten. Links enden alle Pfade im selben Punkt, rechts in verschiedenen Mulden." class="c-va-2" id="cv-ks" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="ks-n">Startpunkte</label><output id="ks-n-o"></output></div><input autocomplete="off" id="ks-n" max="40" min="4" step="1" type="range" value="16"/></div>
+<button class="btn" id="ks-r" type="button">Neue Startpunkte</button>
+</div>
+<div class="readout" id="ks-read"></div>
+<figcaption><b>Abb. 10</b> Gradientenabstieg von denselben zufälligen Startpunkten auf zwei Landschaften. Links eine konvexe Funktion: Alle Pfade enden im selben Minimum, der Start bestimmt nur den Weg. Rechts eine nicht konvexe mit zwei Mulden und einem Sattel dazwischen: Wo ein Pfad endet, hängt davon ab, auf welcher Seite er startet. Die Endpunkte sind nach Mulde gefärbt. Ein Verfahren, das nur lokal bergab geht, kann nicht wissen, ob es in der tieferen Mulde gelandet ist.</figcaption>
+</figure>
+<h3>Konvexität erkennen</h3>
+<p>Man prüft selten die Definition, sondern baut Funktionen aus Bausteinen, von denen man weiß, dass sie konvex sind, und benutzt Regeln, die Konvexität erhalten:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Konvex</th>
+<th>Nicht konvex</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lineare und affine Funktionen <span class="arithmatex">\(\mathbf a^\top\mathbf x + b\)</span> (zugleich konkav)</td>
+<td><span class="arithmatex">\(\sin x\)</span>, <span class="arithmatex">\(\cos x\)</span></td>
+</tr>
+<tr>
+<td>Normen <span class="arithmatex">\(\Vert\mathbf x\Vert_1\)</span>, <span class="arithmatex">\(\Vert\mathbf x\Vert_2\)</span>, <span class="arithmatex">\(\Vert\mathbf x\Vert_\infty\)</span></td>
+<td><span class="arithmatex">\(x^4 - x^2\)</span> (zwei Mulden)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathbf x^\top A\mathbf x\)</span> mit <span class="arithmatex">\(A \succeq 0\)</span>, z. B. <span class="arithmatex">\(\Vert A\mathbf x - \mathbf b\Vert^2\)</span></td>
+<td><span class="arithmatex">\(\mathbf x^\top A\mathbf x\)</span> mit negativem Eigenwert (Sattel)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(e^x\)</span>, <span class="arithmatex">\(-\log x\)</span>, <span class="arithmatex">\(x\log x\)</span>, <span class="arithmatex">\(\max(0, x)\)</span></td>
+<td><span class="arithmatex">\(\log x\)</span>, <span class="arithmatex">\(\sqrt x\)</span> (konkav)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\log\sum_i e^{x_i}\)</span> (Log-Sum-Exp, steckt in Softmax und Cross-Entropy)</td>
+<td>Verlust eines neuronalen Netzes über seine Gewichte</td>
+</tr>
+</tbody>
+</table></div>
+<p>Regeln, die Konvexität erhalten:</p>
+<ul class="tight">
+<li><strong>Summen mit nichtnegativen Gewichten:</strong> Datenterm plus Regularisierung bleibt konvex, wenn beide es sind.</li>
+<li><strong>Einsetzen einer affinen Abbildung:</strong> Ist <span class="arithmatex">\(g\)</span> konvex, dann auch <span class="arithmatex">\(g(A\mathbf x + \mathbf b)\)</span>. Deshalb sind lineare Modelle mit konvexem Verlust konvex in ihren Parametern.</li>
+<li><strong>Maximum:</strong> Das Maximum konvexer Funktionen ist konvex, etwa <span class="arithmatex">\(\max(0, 1 - y\,\mathbf a^\top\mathbf x)\)</span> bei Support Vector Machines.</li>
+</ul>
+<p>Konvex muss nicht glatt heißen. <span class="arithmatex">\(|x|\)</span> oder die L1-Norm haben Knicke, an denen es keinen Gradienten gibt. Man nimmt dort einen <strong>Subgradienten</strong>, irgendeine Steigung, deren Gerade noch unter dem Graphen bleibt. Für den Knick bei <span class="arithmatex">\(|x|\)</span> ist das jede Zahl zwischen −1 und 1.</p>
+<h3>Konvexe Probleme</h3>
+<p>Ein Optimierungsproblem ist <strong>konvex</strong>, wenn die Zielfunktion konvex ist und die erlaubte Menge auch: Gleichungen nur affin, Ungleichungen der Form <span class="arithmatex">\(g(\mathbf x) \le 0\)</span> mit konvexem <span class="arithmatex">\(g\)</span>. Dann gelten alle Vorteile von oben auch mit Nebenbedingungen, und Projektionen auf die erlaubte Menge sind eindeutig.</p>
+<p>Konvex sind zum Beispiel:</p>
+<ul class="tight">
+<li>kleinste Quadrate <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span>, auch mit Ridge- oder L1-Term (Lasso),</li>
+<li>logistische Regression und Support Vector Machines,</li>
+<li>die gewichteten Quadrat- und Poisson-Likelihood-Ziele der statistischen <a href="../physik/rekonstruktion.html">CT-Rekonstruktion</a>, solange das Messmodell linear ist, auch mit Nebenbedingung <span class="arithmatex">\(\mathbf x \ge 0\)</span> und mit Total-Variation-Regularisierung.</li>
+</ul>
+<p>Neuronale Netze sind dagegen nicht konvex. Schon zwei Schichten machen die Verlustlandschaft zu einem Gebirge mit vielen Mulden und Sattelpunkten, allein weil sich Neuronen vertauschen lassen, ohne dass sich die Ausgabe ändert. Dass Gradientenverfahren dort trotzdem gut funktionieren, liegt unter anderem daran, dass in sehr hohen Dimensionen die meisten kritischen Punkte Sattelpunkte sind, die verrauschte Gradienten wieder verlassen, und dass die gefundenen Minima meist ähnlich gut sind. Garantien wie im konvexen Fall gibt es aber nicht.</p>
 </section>
 <section id="formeln">
 <div class="eyebrow">Anhang A</div>
@@ -373,6 +455,14 @@ H = \nabla^2 f = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} &amp; \cdo
 <tr>
 <td>Lagrange</td>
 <td><span class="arithmatex">\(\nabla f + \lambda\nabla g = \mathbf 0\)</span>, <span class="arithmatex">\(g(\mathbf x) = 0\)</span></td>
+</tr>
+<tr>
+<td>Konvexität</td>
+<td><span class="arithmatex">\(f(\theta\mathbf x + (1-\theta)\mathbf y) \le \theta f(\mathbf x) + (1-\theta)f(\mathbf y)\)</span> ⇔ <span class="arithmatex">\(f(\mathbf y) \ge f(\mathbf x) + \nabla f^\top(\mathbf y - \mathbf x)\)</span> ⇔ <span class="arithmatex">\(H \succeq 0\)</span></td>
+</tr>
+<tr>
+<td>stark konvex</td>
+<td><span class="arithmatex">\(H \succeq \mu I\)</span>: Gradientenabstieg mit <span class="arithmatex">\(\eta = 1/L\)</span> schrumpft den Fehler pro Schritt um <span class="arithmatex">\(1 - \mu/L\)</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -659,6 +749,78 @@ optimize.minimize(fun, x0, constraints={"type": "eq", "fun": g})     # Nebenbedi
   draggable(c, [{ get: () => { const t = +it.value * Math.PI / 180, r = +ir.value; return [r * Math.cos(t), r * Math.sin(t)]; }, set: (x, y) => { it.value = (Math.atan2(y, x) * 180 / Math.PI).toFixed(1); } }], () => P, () => m.draw());
   [it, ir].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
   $('#lg-o').addEventListener('click', () => { const r = +ir.value; let best = 0, bv = Infinity; for (let k = -1800; k <= 1800; k++) { const t = k / 10 * Math.PI / 180, v = f(r * Math.cos(t), r * Math.sin(t)); if (v < bv) { bv = v; best = k / 10; } } it.value = best; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Konvexität: Sehne und Tangente ---------- */
+(() => {
+  const c = $('#cv-kx'), iff = $('#kx-f'), ia = $('#kx-a'), ib = $('#kx-b'), it = $('#kx-t');
+  const F = {
+    sq: { f: x => 0.5 * x * x, d: x => x, dd: x => 1, y: [-0.6, 3.4] },
+    abs: { f: x => Math.abs(x), d: x => Math.sign(x), dd: x => 0, y: [-0.6, 2.8], kink: 0 },
+    exp: { f: x => 0.3 * Math.exp(x), d: x => 0.3 * Math.exp(x), dd: x => 0.3 * Math.exp(x), y: [-0.6, 3.8] },
+    w: { f: x => x ** 4 - 2 * x * x, d: x => 4 * x ** 3 - 4 * x, dd: x => 12 * x * x - 4, y: [-1.6, 3] },
+    s: { f: x => Math.sin(2 * x) + x * x / 3, d: x => 2 * Math.cos(2 * x) + 2 * x / 3, dd: x => -4 * Math.sin(2 * x) + 2 / 3, y: [-1.4, 3] },
+  };
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value], f = fn.f, x1 = +ia.value, x2 = +ib.value; $('#kx-a-o').textContent = nf(x1, 2); $('#kx-b-o').textContent = nf(x2, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const r1 = narrow ? [0, 0, w, h * 0.62] : [0, 0, w * 0.64, h], r2 = narrow ? [0, h * 0.64, w, h * 0.36] : [w * 0.64 + 16, 0, w * 0.36 - 16, h];
+    const X0 = -2.5, X1 = 2.5, fr = frame(ctx, ...r1, { x0: X0, x1: X1, y0: fn.y[0], y1: fn.y[1], xt: [-2, -1, 0, 1, 2], yt: [0], xl: 'x', l: 22, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(fr.bx, fr.by, fr.bw, fr.bh); ctx.clip();
+    const lo = Math.min(x1, x2), hi = Math.max(x1, x2), chord = x => f(x1) + (f(x2) - f(x1)) * (x - x1) / ((x2 - x1) || 1e-9);
+    // Bereiche, in denen der Graph über der Sehne liegt
+    let bad = 0, tot = 0; ctx.fillStyle = rgba(H, 0.28);
+    for (let i = 0; i < 300; i++) { const x = lo + (hi - lo) * (i + 0.5) / 300; tot++; if (f(x) > chord(x) + 1e-9) { bad++; ctx.fillRect(fr.X(lo + (hi - lo) * i / 300), fr.Y(f(x)), fr.bw * (hi - lo) / (X1 - X0) / 300 + 0.6, fr.Y(chord(x)) - fr.Y(f(x))); } }
+    // Tangente
+    const tg = x => f(x1) + fn.d(x1) * (x - x1); let tbad = 0;
+    if (it.checked) { for (let i = 0; i <= 400; i++) { const x = X0 + (X1 - X0) * i / 400; if (tg(x) > f(x) + 1e-6) { tbad++; ctx.fillStyle = rgba(H, 0.18); ctx.fillRect(fr.X(x) - 0.7, fr.Y(tg(x)), fr.bw / 400 + 1.4, fr.Y(f(x)) - fr.Y(tg(x))); } }
+      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6; ctx.setLineDash([6, 4]); curve(ctx, tg, fr.X, fr.Y, X0, X1, 2); ctx.setLineDash([]); }
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.4; curve(ctx, f, fr.X, fr.Y, X0, X1, 500);
+    ctx.strokeStyle = bad ? H : A; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(fr.X(x1), fr.Y(f(x1))); ctx.lineTo(fr.X(x2), fr.Y(f(x2))); ctx.stroke();
+    ctx.restore();
+    [x1, x2].forEach((x, i) => { ctx.fillStyle = A; ctx.beginPath(); ctx.arc(fr.X(x), fr.Y(f(x)), 5, 0, 2 * Math.PI); ctx.fill(); ctx.font = `600 12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText(`x${'₁₂'[i]}`, fr.X(x), fr.Y(f(x)) + 18); });
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('f(x), Sehne und Tangente', r1[0], r1[1] + 13);
+    // zweite Ableitung
+    let dmin = Infinity, dmax = -Infinity; for (let i = 0; i <= 200; i++) { const v = fn.dd(X0 + (X1 - X0) * i / 200); dmin = Math.min(dmin, v); dmax = Math.max(dmax, v); }
+    const ylo = Math.min(-1, dmin * 1.1), yhi = Math.max(1, dmax * 1.1), g = frame(ctx, ...r2, { x0: X0, x1: X1, y0: ylo, y1: yhi, xt: [-2, 0, 2], yt: [0], xl: 'x', l: 22, t: 20 });
+    ctx.fillStyle = rgba(H, 0.25); for (let i = 0; i < 200; i++) { const x = X0 + (X1 - X0) * (i + 0.5) / 200, v = fn.dd(x); if (v < 0) ctx.fillRect(g.X(X0 + (X1 - X0) * i / 200), g.Y(0), g.bw / 200 + 0.6, g.Y(v) - g.Y(0)); }
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2; curve(ctx, fn.dd, g.X, g.Y, X0, X1, 300);
+    if (fn.kink !== undefined) { ctx.fillStyle = A; ctx.font = `12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText('Knick: f″ unendlich', g.X(0), g.by + 12); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(g.X(0), g.by + 18); ctx.lineTo(g.X(0), g.Y(0)); ctx.stroke(); }
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('Krümmung f″(x)', r2[0], r2[1] + 13);
+    const convex = dmin >= -1e-9;
+    $('#kx-read').innerHTML = `<span class="k">Sehne:</span> ${bad ? `<b>Graph liegt auf ${nf(100 * bad / tot, 0)} % der Strecke darüber</b>` : 'liegt überall über dem Graphen'}  <span class="k">·</span>  <span class="k">Tangente:</span> ${!it.checked ? '–' : tbad ? '<b>liegt stellenweise über dem Graphen</b>' : 'liegt überall darunter'}<br><span class="k">f″ ≥ 0 überall:</span> ${convex ? 'ja → konvex' : `nein, kleinster Wert ${nf(dmin, 2)} → <b>nicht konvex</b>`}`;
+  } });
+  [iff, ia, ib, it].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Konvex: viele Startpunkte ---------- */
+(() => {
+  const c = $('#cv-ks'), inn = $('#ks-n'); let gen = 1;
+  const fc = (x, y) => Math.log(Math.exp(0.9 * (x - 0.3)) + Math.exp(-0.7 * (x - 0.3))) + 0.35 * (y + 0.2) ** 2 + 0.1 * (x - 0.3) * (y + 0.2), fn = LANDS.mulden.f;
+  const descend = (f, p, eta, N) => { const path = [p.slice()]; for (let k = 0; k < N; k++) { const g = grad2(f, ...p); p = [p[0] - eta * g[0], p[1] - eta * g[1]]; path.push(p.slice()); } return path; };
+  const m = reg({ el: c, draw() {
+    const n = +inn.value; $('#ks-n-o').textContent = n; setSeed(97 * gen + 13);
+    const starts = Array.from({ length: n }, () => [-2.7 + 5.4 * rnd(), -2.2 + 4.4 * rnd()]);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w / 2 - 8, ph = narrow ? h / 2 - 8 : h;
+    const cols = [tok('--accent'), tok('--bin2'), tok('--hole')], out = [];
+    [[fc, 0, 0, 'konvex', 0, 3.2], [fn, narrow ? 0 : w / 2 + 8, narrow ? h / 2 + 8 : 0, 'nicht konvex', 0, 2.8]].forEach(([f, x0, y0, title, lo, hi], idx) => {
+      const P = view(ctx, x0, y0 + 18, pw, ph - 18, 3); P.clip();
+      const G = sample(P, f, 4); shade(P, G, lo, hi, tok('--accent'), 0.25); contours(P, G, linLevels(lo, hi, 14), rgba(tok('--fg'), 0.35), 1);
+      const ends = starts.map(s => { const path = descend(f, s.slice(), 0.35, 260); poly(P, path); ctx.strokeStyle = rgba(tok('--fg'), 0.55); ctx.lineWidth = 1.2; ctx.stroke(); dot(P, ...s, rgba(tok('--fg'), 0.7), 2.5); return path.at(-1); });
+      // Endpunkte nach Ziel gruppieren
+      const cl = []; ends.forEach(e => { let k = cl.findIndex(q => Math.hypot(q.p[0] - e[0], q.p[1] - e[1]) < 0.15); if (k < 0) { cl.push({ p: e, n: 0 }); k = cl.length - 1; } cl[k].n++; });
+      cl.sort((a, b) => f(...a.p) - f(...b.p)); cl.forEach((q, k) => { dot(P, ...q.p, cols[k % 3], 7); ctx.fillStyle = tok('--surface'); ctx.font = `600 10px ${DISP}`; ctx.textAlign = 'center'; const [px, py] = P.S(...q.p); ctx.fillText(q.n, px, py + 3.5); });
+      P.unclip(); ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 18.5, pw - 1, ph - 19);
+      ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText(title, x0, y0 + 13);
+      out.push(cl.map(q => ({ n: q.n, f: f(...q.p) })));
+    });
+    const [a, b] = out;
+    $('#ks-read').innerHTML = `<span class="k">konvex:</span> alle ${n} Pfade enden im selben Punkt (f = ${nf(a[0].f, 3)})  <span class="k">·</span>  <span class="k">nicht konvex:</span> ` + b.map((q, k) => `${q.n} in ${k === 0 ? 'der tieferen Mulde' : k === 1 ? 'der flacheren Mulde' : 'einem weiteren Punkt'} (f = ${nf(q.f, 3)})`).join(', ');
+  } });
+  inn.addEventListener('input', rafDebounce(() => m.draw()));
+  $('#ks-r').addEventListener('click', () => { gen++; m.draw(); });
 })();
 </script>
 </body>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sehnen- und Tangententest für Konvexität</title>
+<!-- Erzeugt von build.py aus src/figures/va-09-konvex-sehne.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/va.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-kx" class="c-va" role="img" aria-label="Eine Funktion mit einer Sehne zwischen zwei wählbaren Punkten und einer Tangente; daneben die zweite Ableitung."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="kx-f">Funktion</label></div><select id="kx-f" autocomplete="off" style="width:100%"><option value="sq">½x² (konvex)</option><option value="abs">|x| (konvex, mit Knick)</option><option value="exp">eˣ (konvex)</option><option value="w">x⁴ − 2x² (nicht konvex)</option><option value="s">sin 2x + x² / 3 (nicht konvex)</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="kx-a">Punkt x₁</label><output id="kx-a-o"></output></div><input id="kx-a" type="range" min="-2.4" max="2.4" step="0.01" value="-1.4" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="kx-b">Punkt x₂</label><output id="kx-b-o"></output></div><input id="kx-b" type="range" min="-2.4" max="2.4" step="0.01" value="1.1" autocomplete="off"></div>
+    <label class="chk"><input id="kx-t" type="checkbox" checked autocomplete="off"> Tangente bei x₁</label>
+  </div>
+  <div class="readout" id="kx-read"></div>
+  <figcaption><b>Abb. 9</b> Links die Funktion mit der Sehne zwischen \(x_1\) und \(x_2\) (blau) und der Tangente bei \(x_1\) (gestrichelt). Bei einer konvexen Funktion liegt jede Sehne über dem Graphen und jede Tangente darunter, egal wo man die Punkte wählt. Bei den nicht konvexen Funktionen findet man Lagen, in denen der Graph über die Sehne steigt oder unter die Tangente fällt (rot markiert). Rechts die zweite Ableitung: Wo sie negativ ist (rot), ist die Funktion nach unten gekrümmt, und genau dort scheitern die Tests.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/va.js"></script>
+<script>
+/* ---------- Konvexität: Sehne und Tangente ---------- */
+(() => {
+  const c = $('#cv-kx'), iff = $('#kx-f'), ia = $('#kx-a'), ib = $('#kx-b'), it = $('#kx-t');
+  const F = {
+    sq: { f: x => 0.5 * x * x, d: x => x, dd: x => 1, y: [-0.6, 3.4] },
+    abs: { f: x => Math.abs(x), d: x => Math.sign(x), dd: x => 0, y: [-0.6, 2.8], kink: 0 },
+    exp: { f: x => 0.3 * Math.exp(x), d: x => 0.3 * Math.exp(x), dd: x => 0.3 * Math.exp(x), y: [-0.6, 3.8] },
+    w: { f: x => x ** 4 - 2 * x * x, d: x => 4 * x ** 3 - 4 * x, dd: x => 12 * x * x - 4, y: [-1.6, 3] },
+    s: { f: x => Math.sin(2 * x) + x * x / 3, d: x => 2 * Math.cos(2 * x) + 2 * x / 3, dd: x => -4 * Math.sin(2 * x) + 2 / 3, y: [-1.4, 3] },
+  };
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value], f = fn.f, x1 = +ia.value, x2 = +ib.value; $('#kx-a-o').textContent = nf(x1, 2); $('#kx-b-o').textContent = nf(x2, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const r1 = narrow ? [0, 0, w, h * 0.62] : [0, 0, w * 0.64, h], r2 = narrow ? [0, h * 0.64, w, h * 0.36] : [w * 0.64 + 16, 0, w * 0.36 - 16, h];
+    const X0 = -2.5, X1 = 2.5, fr = frame(ctx, ...r1, { x0: X0, x1: X1, y0: fn.y[0], y1: fn.y[1], xt: [-2, -1, 0, 1, 2], yt: [0], xl: 'x', l: 22, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(fr.bx, fr.by, fr.bw, fr.bh); ctx.clip();
+    const lo = Math.min(x1, x2), hi = Math.max(x1, x2), chord = x => f(x1) + (f(x2) - f(x1)) * (x - x1) / ((x2 - x1) || 1e-9);
+    // Bereiche, in denen der Graph über der Sehne liegt
+    let bad = 0, tot = 0; ctx.fillStyle = rgba(H, 0.28);
+    for (let i = 0; i < 300; i++) { const x = lo + (hi - lo) * (i + 0.5) / 300; tot++; if (f(x) > chord(x) + 1e-9) { bad++; ctx.fillRect(fr.X(lo + (hi - lo) * i / 300), fr.Y(f(x)), fr.bw * (hi - lo) / (X1 - X0) / 300 + 0.6, fr.Y(chord(x)) - fr.Y(f(x))); } }
+    // Tangente
+    const tg = x => f(x1) + fn.d(x1) * (x - x1); let tbad = 0;
+    if (it.checked) { for (let i = 0; i <= 400; i++) { const x = X0 + (X1 - X0) * i / 400; if (tg(x) > f(x) + 1e-6) { tbad++; ctx.fillStyle = rgba(H, 0.18); ctx.fillRect(fr.X(x) - 0.7, fr.Y(tg(x)), fr.bw / 400 + 1.4, fr.Y(f(x)) - fr.Y(tg(x))); } }
+      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6; ctx.setLineDash([6, 4]); curve(ctx, tg, fr.X, fr.Y, X0, X1, 2); ctx.setLineDash([]); }
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.4; curve(ctx, f, fr.X, fr.Y, X0, X1, 500);
+    ctx.strokeStyle = bad ? H : A; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(fr.X(x1), fr.Y(f(x1))); ctx.lineTo(fr.X(x2), fr.Y(f(x2))); ctx.stroke();
+    ctx.restore();
+    [x1, x2].forEach((x, i) => { ctx.fillStyle = A; ctx.beginPath(); ctx.arc(fr.X(x), fr.Y(f(x)), 5, 0, 2 * Math.PI); ctx.fill(); ctx.font = `600 12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText(`x${'₁₂'[i]}`, fr.X(x), fr.Y(f(x)) + 18); });
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('f(x), Sehne und Tangente', r1[0], r1[1] + 13);
+    // zweite Ableitung
+    let dmin = Infinity, dmax = -Infinity; for (let i = 0; i <= 200; i++) { const v = fn.dd(X0 + (X1 - X0) * i / 200); dmin = Math.min(dmin, v); dmax = Math.max(dmax, v); }
+    const ylo = Math.min(-1, dmin * 1.1), yhi = Math.max(1, dmax * 1.1), g = frame(ctx, ...r2, { x0: X0, x1: X1, y0: ylo, y1: yhi, xt: [-2, 0, 2], yt: [0], xl: 'x', l: 22, t: 20 });
+    ctx.fillStyle = rgba(H, 0.25); for (let i = 0; i < 200; i++) { const x = X0 + (X1 - X0) * (i + 0.5) / 200, v = fn.dd(x); if (v < 0) ctx.fillRect(g.X(X0 + (X1 - X0) * i / 200), g.Y(0), g.bw / 200 + 0.6, g.Y(v) - g.Y(0)); }
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2; curve(ctx, fn.dd, g.X, g.Y, X0, X1, 300);
+    if (fn.kink !== undefined) { ctx.fillStyle = A; ctx.font = `12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText('Knick: f″ unendlich', g.X(0), g.by + 12); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(g.X(0), g.by + 18); ctx.lineTo(g.X(0), g.Y(0)); ctx.stroke(); }
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = Fg; ctx.textAlign = 'left'; ctx.fillText('Krümmung f″(x)', r2[0], r2[1] + 13);
+    const convex = dmin >= -1e-9;
+    $('#kx-read').innerHTML = `<span class="k">Sehne:</span> ${bad ? `<b>Graph liegt auf ${nf(100 * bad / tot, 0)} % der Strecke darüber</b>` : 'liegt überall über dem Graphen'}  <span class="k">·</span>  <span class="k">Tangente:</span> ${!it.checked ? '–' : tbad ? '<b>liegt stellenweise über dem Graphen</b>' : 'liegt überall darunter'}<br><span class="k">f″ ≥ 0 überall:</span> ${convex ? 'ja → konvex' : `nein, kleinster Wert ${nf(dmin, 2)} → <b>nicht konvex</b>`}`;
+  } });
+  [iff, ia, ib, it].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

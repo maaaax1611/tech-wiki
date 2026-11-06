@@ -1,0 +1,40 @@
+<!-- title: Konvex oder nicht: viele Startpunkte
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-ks" class="c-va-2" role="img" aria-label="Zwei Landschaften, links konvex, rechts nicht konvex, mit Gradientenabstieg von vielen Startpunkten. Links enden alle Pfade im selben Punkt, rechts in verschiedenen Mulden."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="ks-n">Startpunkte</label><output id="ks-n-o"></output></div><input id="ks-n" type="range" min="4" max="40" step="1" value="16" autocomplete="off"></div>
+    <button class="btn" type="button" id="ks-r">Neue Startpunkte</button>
+  </div>
+  <div class="readout" id="ks-read"></div>
+  <figcaption><b>Abb.</b> Gradientenabstieg von denselben zufälligen Startpunkten auf zwei Landschaften. Links eine konvexe Funktion: Alle Pfade enden im selben Minimum, der Start bestimmt nur den Weg. Rechts eine nicht konvexe mit zwei Mulden und einem Sattel dazwischen: Wo ein Pfad endet, hängt davon ab, auf welcher Seite er startet. Die Endpunkte sind nach Mulde gefärbt. Ein Verfahren, das nur lokal bergab geht, kann nicht wissen, ob es in der tieferen Mulde gelandet ist.</figcaption>
+</figure>
+<script>
+/* ---------- Konvex: viele Startpunkte ---------- */
+(() => {
+  const c = $('#cv-ks'), inn = $('#ks-n'); let gen = 1;
+  const fc = (x, y) => Math.log(Math.exp(0.9 * (x - 0.3)) + Math.exp(-0.7 * (x - 0.3))) + 0.35 * (y + 0.2) ** 2 + 0.1 * (x - 0.3) * (y + 0.2), fn = LANDS.mulden.f;
+  const descend = (f, p, eta, N) => { const path = [p.slice()]; for (let k = 0; k < N; k++) { const g = grad2(f, ...p); p = [p[0] - eta * g[0], p[1] - eta * g[1]]; path.push(p.slice()); } return path; };
+  const m = reg({ el: c, draw() {
+    const n = +inn.value; $('#ks-n-o').textContent = n; setSeed(97 * gen + 13);
+    const starts = Array.from({ length: n }, () => [-2.7 + 5.4 * rnd(), -2.2 + 4.4 * rnd()]);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w / 2 - 8, ph = narrow ? h / 2 - 8 : h;
+    const cols = [tok('--accent'), tok('--bin2'), tok('--hole')], out = [];
+    [[fc, 0, 0, 'konvex', 0, 3.2], [fn, narrow ? 0 : w / 2 + 8, narrow ? h / 2 + 8 : 0, 'nicht konvex', 0, 2.8]].forEach(([f, x0, y0, title, lo, hi], idx) => {
+      const P = view(ctx, x0, y0 + 18, pw, ph - 18, 3); P.clip();
+      const G = sample(P, f, 4); shade(P, G, lo, hi, tok('--accent'), 0.25); contours(P, G, linLevels(lo, hi, 14), rgba(tok('--fg'), 0.35), 1);
+      const ends = starts.map(s => { const path = descend(f, s.slice(), 0.35, 260); poly(P, path); ctx.strokeStyle = rgba(tok('--fg'), 0.55); ctx.lineWidth = 1.2; ctx.stroke(); dot(P, ...s, rgba(tok('--fg'), 0.7), 2.5); return path.at(-1); });
+      // Endpunkte nach Ziel gruppieren
+      const cl = []; ends.forEach(e => { let k = cl.findIndex(q => Math.hypot(q.p[0] - e[0], q.p[1] - e[1]) < 0.15); if (k < 0) { cl.push({ p: e, n: 0 }); k = cl.length - 1; } cl[k].n++; });
+      cl.sort((a, b) => f(...a.p) - f(...b.p)); cl.forEach((q, k) => { dot(P, ...q.p, cols[k % 3], 7); ctx.fillStyle = tok('--surface'); ctx.font = `600 10px ${DISP}`; ctx.textAlign = 'center'; const [px, py] = P.S(...q.p); ctx.fillText(q.n, px, py + 3.5); });
+      P.unclip(); ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 18.5, pw - 1, ph - 19);
+      ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText(title, x0, y0 + 13);
+      out.push(cl.map(q => ({ n: q.n, f: f(...q.p) })));
+    });
+    const [a, b] = out;
+    $('#ks-read').innerHTML = `<span class="k">konvex:</span> alle ${n} Pfade enden im selben Punkt (f = ${nf(a[0].f, 3)})  <span class="k">·</span>  <span class="k">nicht konvex:</span> ` + b.map((q, k) => `${q.n} in ${k === 0 ? 'der tieferen Mulde' : k === 1 ? 'der flacheren Mulde' : 'einem weiteren Punkt'} (f = ${nf(q.f, 3)})`).join(', ');
+  } });
+  inn.addEventListener('input', rafDebounce(() => m.draw()));
+  $('#ks-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
