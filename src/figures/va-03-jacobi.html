@@ -1,0 +1,51 @@
+<!-- title: Jacobi-Matrix als lokale lineare Näherung
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-jc" class="c-va-2" role="img" aria-label="Links ein Gitter und ein kleines Quadrat, rechts ihr Bild unter einer nichtlinearen Abbildung und das Parallelogramm der Jacobi-Matrix."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 220px"><div class="lab"><label for="jc-f">Abbildung</label></div><select id="jc-f" autocomplete="off" style="width:100%"><option value="welle">Welle</option><option value="polar">Polar → kartesisch</option><option value="quad">Quadrieren (z²)</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="jc-e">Größe des Quadrats</label><output id="jc-e-o"></output></div><input id="jc-e" type="range" min="0.05" max="0.8" step="0.01" value="0.4" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="jc-read"></div>
+  <figcaption><b>Abb.</b> Links die Eingabe mit einem kleinen Quadrat um den Punkt \(\mathbf p\), der sich ziehen lässt. Rechts dasselbe nach der Abbildung \(\mathbf f\): Das Gitter wird verbogen, das Quadrat zu einer krummen Fläche (blau). Gestrichelt das Parallelogramm, das die Jacobi-Matrix \(J\) aus dem Quadrat macht. Je kleiner das Quadrat, desto genauer passen beide: Im Kleinen ist jede glatte Abbildung linear. \(\det J\) gibt an, wie stark sich Flächen dort vergrößern.</figcaption>
+</figure>
+<script>
+/* ---------- Jacobi ---------- */
+(() => {
+  const c = $('#cv-jc'), iff = $('#jc-f'), ie = $('#jc-e'); let PI_ = null;
+  const MAPS = {
+    welle: { f: (x, y) => [x + 0.35 * Math.sin(1.6 * y), y + 0.35 * Math.sin(1.6 * x)], R: [2.6, 0, 0], Ro: [2.8, 0, 0], p: [0.6, 0.4], dom: [[-2.5, 2.5], [-2.5, 2.5]], lx: 'x', ly: 'y' },
+    polar: { f: (r, t) => [r * Math.cos(t), r * Math.sin(t)], R: [1.8, 1.5, 0], Ro: [3, 0, 0], p: [1.6, 0.7], dom: [[0, 3], [-3, 3]], lx: 'r', ly: 'φ' },
+    quad: { f: (x, y) => [0.5 * (x * x - y * y), x * y], R: [2, 0, 0], Ro: [2.2, 0, 0], p: [1.1, 0.6], dom: [[-1.8, 1.8], [-1.8, 1.8]], lx: 'x', ly: 'y' },
+  };
+  let pt = null, last = '';
+  const m = reg({ el: c, draw() {
+    const M = MAPS[iff.value], f = M.f, e = +ie.value; if (last !== iff.value) { last = iff.value; pt = M.p.slice(); } $('#jc-e-o').textContent = nf(e, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w / 2 - 8, ph = narrow ? h / 2 - 8 : h;
+    const Pi = PI_ = view(ctx, 0, 18, pw, ph - 18, M.R[0], M.R[1], M.R[2]), Po = view(ctx, narrow ? 0 : w / 2 + 8, narrow ? h / 2 + 18 : 18, pw, ph - 18, M.Ro[0], M.Ro[1], M.Ro[2]);
+    const [d0, d1] = M.dom, Mu = tok('--muted'), A = tok('--accent'), H = tok('--hole');
+    // Gitterlinien in beiden Ebenen
+    const lines = []; for (let x = Math.ceil(d0[0] * 2) / 2; x <= d0[1] + 1e-9; x += 0.5) lines.push(Array.from({ length: 61 }, (_, k) => [x, d1[0] + (d1[1] - d1[0]) * k / 60]));
+    for (let y = Math.ceil(d1[0] * 2) / 2; y <= d1[1] + 1e-9; y += 0.5) lines.push(Array.from({ length: 61 }, (_, k) => [d0[0] + (d0[1] - d0[0]) * k / 60, y]));
+    [[Pi, p => p], [Po, p => f(...p)]].forEach(([V, T]) => { V.clip(); ctx.strokeStyle = rgba(Mu, 0.45); ctx.lineWidth = 1; lines.forEach(L => { poly(V, L.map(T)); ctx.stroke(); }); V.unclip(); });
+    // Quadrat und sein Bild
+    const [px, py] = pt, sq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [px + a * e / 2, py + b * e / 2]);
+    const edge = []; for (let k = 0; k < 4; k++) for (let i = 0; i < 20; i++) { const [a, b] = sq[k], [c2, d] = sq[(k + 1) % 4]; edge.push([a + (c2 - a) * i / 20, b + (d - b) * i / 20]); }
+    Pi.clip(); poly(Pi, sq, true); ctx.fillStyle = rgba(A, 0.3); ctx.fill(); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke(); Pi.unclip();
+    const h_ = 1e-5, fp = f(px, py), fx = f(px + h_, py), fy = f(px, py + h_), J = [(fx[0] - fp[0]) / h_, (fy[0] - fp[0]) / h_, (fx[1] - fp[1]) / h_, (fy[1] - fp[1]) / h_];
+    Po.clip(); poly(Po, edge.map(p => f(...p)), true); ctx.fillStyle = rgba(A, 0.3); ctx.fill(); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke();
+    const lin = ([x, y]) => [fp[0] + J[0] * (x - px) + J[1] * (y - py), fp[1] + J[2] * (x - px) + J[3] * (y - py)];
+    poly(Po, sq.map(lin), true); ctx.strokeStyle = H; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    dot(Po, ...fp, tok('--fg'), 4); Po.unclip();
+    handle(Pi, px, py, tok('--fg'));
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText(`Eingabe (${M.lx}, ${M.ly})`, Pi.x0, Pi.y0 - 4); ctx.fillText('Bild unter f', Po.x0, Po.y0 - 4);
+    if (!narrow) arrowPx(ctx, w / 2 - 14, h / 2, w / 2 + 6, h / 2, Mu);
+    // Flächenverhältnis
+    let area = 0; const pe = edge.map(p => f(...p)); for (let i = 0; i < pe.length; i++) { const [a, b] = pe[i], [c2, d] = pe[(i + 1) % pe.length]; area += a * d - b * c2; } area = Math.abs(area / 2) / (e * e);
+    const dJ = J[0] * J[3] - J[1] * J[2];
+    $('#jc-read').innerHTML = `<span class="k">J(p) =</span> [${nf(J[0], 2)}  ${nf(J[1], 2)} ; ${nf(J[2], 2)}  ${nf(J[3], 2)}]  <span class="k">det J =</span> <b>${nf(dJ, 3)}</b>  <span class="k">·</span>  <span class="k">tatsächliche Flächenvergrößerung des Quadrats:</span> <b>${nf(area, 3)}</b>`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => PI_, () => m.draw());
+  [iff, ie].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

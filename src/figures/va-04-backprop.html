@@ -1,0 +1,70 @@
+<!-- title: Backpropagation im Rechengraphen
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-bp" class="c-va-g" role="img" aria-label="Rechengraph eines einzelnen Neurons mit Verlust; Werte werden vorwärts, Gradienten rückwärts schrittweise berechnet."></canvas>
+  <div class="ctrls">
+    <button class="btn" type="button" id="bp-back">◀ Schritt zurück</button>
+    <button class="btn" type="button" id="bp-next">Nächster Schritt ▶</button>
+    <button class="btn" type="button" id="bp-reset">Von vorn</button>
+    <button class="btn" type="button" id="bp-upd">Gradientenschritt anwenden</button>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="bp-w">Gewicht w</label><output id="bp-w-o"></output></div><input id="bp-w" type="range" min="-2" max="2" step="0.01" value="-0.5" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="bp-b">Bias b</label><output id="bp-b-o"></output></div><input id="bp-b" type="range" min="-2" max="2" step="0.01" value="0.2" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="bp-read"></div>
+  <figcaption><b>Abb.</b> Ein einzelnes Neuron mit Eingabe \(x = 1{,}5\), Ziel \(t = 1\) und quadratischem Fehler, zerlegt in Elementarschritte. Vorwärts (Schritte 1–4) wird jeder Knoten aus seinen Eingängen berechnet. Rückwärts (Schritte 5–9) bekommt jeder Knoten seinen Gradienten \(\partial L/\partial\,\cdot\) (rot): den seines Nachfolgers mal der lokalen Ableitung an der Kante. Am Ende kennt man die Ableitung nach allen Parametern aus einem einzigen Rückwärtsdurchlauf. „Gradientenschritt anwenden“ setzt \(w \leftarrow w - \partial L/\partial w\) und \(b \leftarrow b - \partial L/\partial b\), danach ist der Verlust kleiner.</figcaption>
+</figure>
+<script>
+/* ---------- Backpropagation ---------- */
+(() => {
+  const c = $('#cv-bp'), iw = $('#bp-w'), ib = $('#bp-b'), X = 1.5, T = 1; let step = 0;
+  const sig = z => 1 / (1 + Math.exp(-z));
+  const N = { x: [0, 0.18, 'x'], w: [0, 0.5, 'w'], b: [0, 0.84, 'b'], u: [1, 0.34, 'u = w·x'], z: [2, 0.55, 'z = u + b'], a: [3, 0.55, 'a = σ(z)'], L: [4, 0.55, 'L = (a − t)²'] };
+  const E = [['x', 'u', v => 'w'], ['w', 'u', v => 'x'], ['u', 'z', v => '1'], ['b', 'z', v => '1'], ['z', 'a', v => 'a(1−a)'], ['a', 'L', v => '2(a − t)']];
+  const FW = { u: 1, z: 2, a: 3, L: 4 }, BW = { L: 5, a: 6, z: 7, u: 8, b: 8, w: 9, x: 9 }, EB = { 'a-L': 6, 'z-a': 7, 'u-z': 8, 'b-z': 8, 'x-u': 9, 'w-u': 9 };
+  const calc = () => { const w = +iw.value, b = +ib.value, u = w * X, z = u + b, a = sig(z), L = (a - T) ** 2, ga = 2 * (a - T), gz = ga * a * (1 - a);
+    return { v: { x: X, w, b, u, z, a, L }, g: { L: 1, a: ga, z: gz, u: gz, b: gz, w: gz * X, x: gz * w } }; };
+  const TXT = [
+    'Start: Eingabe x, Parameter w und b sind bekannt.',
+    'Schritt 1 (vorwärts): u = w·x',
+    'Schritt 2 (vorwärts): z = u + b',
+    'Schritt 3 (vorwärts): a = σ(z) = 1/(1 + e⁻ᶻ)',
+    'Schritt 4 (vorwärts): L = (a − t)²',
+    'Schritt 5 (rückwärts): ∂L/∂L = 1, hier beginnt die Rückrichtung',
+    'Schritt 6: ∂L/∂a = ∂L/∂L · 2(a − t)',
+    'Schritt 7: ∂L/∂z = ∂L/∂a · σ′(z), mit σ′(z) = a(1 − a)',
+    'Schritt 8: ∂L/∂u = ∂L/∂b = ∂L/∂z · 1, die Summe gibt den Gradienten unverändert an beide Eingänge weiter',
+    'Schritt 9: ∂L/∂w = ∂L/∂u · x und ∂L/∂x = ∂L/∂u · w, das Produkt vertauscht die Faktoren',
+  ];
+  const m = reg({ el: c, draw() {
+    const { v, g } = calc(); $('#bp-w-o').textContent = nf(v.w, 2); $('#bp-b-o').textContent = nf(v.b, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted');
+    const bw = Math.min(106, w / 7.2), bh = narrow ? 56 : 60, colX = k => 8 + bw / 2 + k * (w - 16 - bw) / 4, rowY = f => 14 + bh / 2 + f * (h - 28 - bh);
+    const P = k => [colX(N[k][0]), rowY(N[k][1])], known = k => k === 'x' || k === 'w' || k === 'b' || step >= FW[k], gknown = k => step >= BW[k];
+    // Kanten
+    const labs = [];
+    E.forEach(([s, t, lab]) => { const [x1, y1] = P(s), [x2, y2] = P(t), act = step >= EB[s + '-' + t], fwAct = step === FW[t];
+      arrowPx(ctx, x1 + bw / 2, y1, x2 - bw / 2 - 2, y2, fwAct ? A : act ? H : rgba(Mu, 0.6), fwAct || step === EB[s + '-' + t] ? 2.2 : 1.3);
+      if (act) labs.push([lab(), (x1 + bw / 2 + x2 - bw / 2) / 2, (y1 + y2) / 2]); });
+    // Knoten
+    Object.keys(N).forEach(k => { const [x, y] = P(k), cur = step === FW[k] || step === BW[k];
+      ctx.fillStyle = tok('--surface'); ctx.strokeStyle = cur ? (step >= 5 ? H : A) : tok('--rule'); ctx.lineWidth = cur ? 2.4 : 1.2;
+      ctx.beginPath(); ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 6); ctx.fill(); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.font = `600 ${narrow ? 11 : 13}px ${DISP}`; ctx.fillStyle = Fg; ctx.fillText(narrow ? k : N[k][2], x, y - bh / 2 + 16);
+      ctx.font = `${narrow ? 10.5 : 12}px ${MONO}`;
+      if (known(k)) { ctx.fillStyle = A; ctx.fillText(nf(v[k], 3), x, y + 3); }
+      if (gknown(k)) { ctx.fillStyle = H; ctx.fillText(nf(g[k], 3), x, y + bh / 2 - 8); } });
+    // lokale Ableitungen an den Kanten, über allem mit Hintergrund
+    ctx.font = `${narrow ? 10 : 11.5}px ${MONO}`; ctx.textAlign = 'center'; labs.forEach(([t, x, y]) => { const tw = ctx.measureText(t).width + 8; ctx.fillStyle = tok('--surface'); ctx.fillRect(x - tw / 2, y - 9, tw, 16); ctx.strokeStyle = rgba(H, 0.5); ctx.lineWidth = 1; ctx.strokeRect(x - tw / 2 + 0.5, y - 8.5, tw - 1, 15); ctx.fillStyle = H; ctx.fillText(t, x, y + 3.5); });
+    ctx.font = `12px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = A; ctx.fillText('Wert', 8, h - 4); ctx.fillStyle = H; ctx.fillText('Gradient ∂L/∂·', 44, h - 4); ctx.strokeStyle = rgba(H, 0.5); ctx.strokeRect(150.5, h - 15.5, 14, 13); ctx.fillStyle = Mu; ctx.fillText('lokale Ableitung', 170, h - 4);
+    $('#bp-next').disabled = step >= 9; $('#bp-back').disabled = step <= 0; $('#bp-upd').disabled = step < 9;
+    $('#bp-read').innerHTML = `<b>${TXT[step]}</b><br><span class="k">Verlust L =</span> ${nf(v.L, 4)}${step >= 9 ? `  <span class="k">·</span>  <span class="k">∂L/∂w =</span> ${nf(g.w, 4)}, <span class="k">∂L/∂b =</span> ${nf(g.b, 4)}` : ''}`;
+  } });
+  $('#bp-next').addEventListener('click', () => { step = Math.min(9, step + 1); m.draw(); });
+  $('#bp-back').addEventListener('click', () => { step = Math.max(0, step - 1); m.draw(); });
+  $('#bp-reset').addEventListener('click', () => { step = 0; m.draw(); });
+  $('#bp-upd').addEventListener('click', () => { const { g } = calc(); iw.value = Math.max(-2, Math.min(2, +iw.value - g.w)); ib.value = Math.max(-2, Math.min(2, +ib.value - g.b)); step = 4; m.draw(); });
+  [iw, ib].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

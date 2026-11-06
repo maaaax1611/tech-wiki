@@ -1,0 +1,45 @@
+<!-- title: Lagrange-Multiplikatoren
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-lg" class="c-va-2" role="img" aria-label="Höhenlinien einer Zielfunktion und ein Kreis als Nebenbedingung; an einem Punkt auf dem Kreis die Gradienten von Ziel und Nebenbedingung, daneben der Funktionswert entlang des Kreises."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="lg-t">Position auf dem Kreis</label><output id="lg-t-o"></output></div><input id="lg-t" type="range" min="-180" max="180" step="0.1" value="150" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="lg-r">Radius r</label><output id="lg-r-o"></output></div><input id="lg-r" type="range" min="0.5" max="2.6" step="0.05" value="1.4" autocomplete="off"></div>
+    <button class="btn" type="button" id="lg-o">Zum Minimum</button>
+  </div>
+  <div class="readout" id="lg-read"></div>
+  <figcaption><b>Abb.</b> Gesucht ist das Minimum von \(f\) (Höhenlinien), aber nur auf dem Kreis \(g(x, y) = x^2 + y^2 - r^2 = 0\). Der Punkt lässt sich auf dem Kreis ziehen. Blau ist \(-\nabla f\), die Richtung, in die \(f\) am stärksten fällt, gelb \(\nabla g\), die senkrecht auf dem Kreis steht. Solange \(-\nabla f\) einen Anteil entlang des Kreises hat (gestrichelt), kann man noch weiter bergab. Im Minimum verschwindet dieser Anteil, beide Gradienten sind parallel: \(\nabla f + \lambda\nabla g = \mathbf 0\). Rechts \(f\) entlang des Kreises.</figcaption>
+</figure>
+<script>
+/* ---------- Lagrange ---------- */
+(() => {
+  const c = $('#cv-lg'), it = $('#lg-t'), ir = $('#lg-r'); let P = null;
+  const f = (x, y) => 0.5 * ((x - 1.5) ** 2 + 2.5 * (y - 1) ** 2), fg = (x, y) => [x - 1.5, 2.5 * (y - 1)];
+  const m = reg({ el: c, draw() {
+    const th = +it.value * Math.PI / 180, r = +ir.value, x = r * Math.cos(th), y = r * Math.sin(th); $("#lg-t-o").textContent = nf(+it.value, 1) + "°"; $('#lg-r-o').textContent = nf(r, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w * 0.6, ph = narrow ? h * 0.62 : h;
+    P = view(ctx, 0, 0, pw, ph, 2.9, 0.2, 0.2);
+    P.clip(); const G = sample(P, f, 4); shade(P, G, 0, 8, tok('--accent'), 0.28); contours(P, G, linLevels(0, 8, 16), rgba(tok('--fg'), 0.38), 1);
+    const circ = Array.from({ length: 121 }, (_, k) => [r * Math.cos(k / 120 * 2 * Math.PI), r * Math.sin(k / 120 * 2 * Math.PI)]); poly(P, circ, true); ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2.6; ctx.stroke();
+    const gf = fg(x, y), gg = [2 * x, 2 * y], nf_ = Math.hypot(...gf), ng = Math.hypot(...gg), tn = [-Math.sin(th), Math.cos(th)];
+    const sf = Math.min(1.3, 0.8 * nf_) / (nf_ || 1), sg = 0.9 / (ng || 1);
+    arrow(P, x, y, x - sf * gf[0], y - sf * gf[1], tok('--accent'), 3); label(P, x - sf * gf[0], y - sf * gf[1], '−∇f', tok('--accent'));
+    arrow(P, x, y, x + sg * gg[0], y + sg * gg[1], tok('--bin2'), 3); label(P, x + sg * gg[0], y + sg * gg[1], '∇g', tok('--bin2'));
+    const tc = -(gf[0] * tn[0] + gf[1] * tn[1]); if (Math.abs(tc) * sf > 0.05) arrow(P, x, y, x + sf * tc * tn[0], y + sf * tc * tn[1], tok('--accent'), 1.8, [4, 3]);
+    const [mx, my] = P.S(1.5, 1); ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(mx - 5, my - 5); ctx.lineTo(mx + 5, my + 5); ctx.moveTo(mx + 5, my - 5); ctx.lineTo(mx - 5, my + 5); ctx.stroke();
+    handle(P, x, y, tok('--fg')); P.unclip();
+    // f entlang des Kreises
+    const fx = narrow ? 0 : pw + 16, fy = narrow ? ph + 8 : 0, fw = narrow ? w : w - pw - 16, fh = narrow ? h - ph - 8 : h;
+    const vals = Array.from({ length: 361 }, (_, k) => f(r * Math.cos((k - 180) * Math.PI / 180), r * Math.sin((k - 180) * Math.PI / 180))), vmax = Math.max(...vals); let vmin = Infinity; for (let k = 0; k <= 3600; k++) { const t = (k / 10 - 180) * Math.PI / 180; vmin = Math.min(vmin, f(r * Math.cos(t), r * Math.sin(t))); }
+    const F = frame(ctx, fx, fy, fw, fh, { x0: -180, x1: 180, y0: 0, y1: vmax * 1.08, xt: [-180, -90, 0, 90, 180], xf: v => v + '°', yt: [0, Math.round(vmax)], xl: 'Position auf dem Kreis', l: 30, t: 20 });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; ctx.beginPath(); vals.forEach((v, k) => k ? ctx.lineTo(F.X(k - 180), F.Y(v)) : ctx.moveTo(F.X(-180), F.Y(v))); ctx.stroke();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(F.X(+it.value), F.Y(f(x, y)), 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('f auf dem Kreis', fx, fy + 13);
+    const cosang = -(gf[0] * gg[0] + gf[1] * gg[1]) / (nf_ * ng || 1), ang = Math.acos(Math.max(-1, Math.min(1, cosang))) * 180 / Math.PI, lam = -(gf[0] * gg[0] + gf[1] * gg[1]) / (ng * ng);
+    $('#lg-read').innerHTML = `<span class="k">f =</span> ${nf(f(x, y), 3)} (kleinster Wert auf dem Kreis ${nf(vmin, 3)})  <span class="k">·</span>  <span class="k">Winkel zwischen −∇f und ∇g:</span> <b>${nf(ang, 1)}°</b>  <span class="k">Anteil von −∇f entlang des Kreises:</span> ${nf(tc, 3)}` + (Math.abs(tc) < 0.01 ? `<br><span class="k">Gradienten parallel:</span> ∇f + λ∇g = 0 mit λ = <b>${nf(lam, 3)}</b>` : '');
+  } });
+  draggable(c, [{ get: () => { const t = +it.value * Math.PI / 180, r = +ir.value; return [r * Math.cos(t), r * Math.sin(t)]; }, set: (x, y) => { it.value = (Math.atan2(y, x) * 180 / Math.PI).toFixed(1); } }], () => P, () => m.draw());
+  [it, ir].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#lg-o').addEventListener('click', () => { const r = +ir.value; let best = 0, bv = Infinity; for (let k = -1800; k <= 1800; k++) { const t = k / 10 * Math.PI / 180, v = f(r * Math.cos(t), r * Math.sin(t)); if (v < bv) { bv = v; best = k / 10; } } it.value = best; m.draw(); });
+})();
+</script>

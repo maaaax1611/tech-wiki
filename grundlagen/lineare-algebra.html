@@ -654,18 +654,7 @@ A_k = \sum_{i=1}^{k}\sigma_i\,\mathbf u_i\mathbf v_i^\top, \qquad \|A - A_k\|_F^
 </tr>
 </tbody>
 </table></div>
-<h3>Jacobi- und Hesse-Matrix</h3>
-<p>Die <strong>Jacobi-Matrix</strong> einer Funktion <span class="arithmatex">\(\mathbf f: \mathbb R^n \to \mathbb R^m\)</span> enthält alle ersten Ableitungen. Zeile <span class="arithmatex">\(i\)</span> gehört zur Ausgabe <span class="arithmatex">\(f_i\)</span>, Spalte <span class="arithmatex">\(j\)</span> zur Eingabe <span class="arithmatex">\(x_j\)</span>:</p>
-<div class="eq">\[
-J = \begin{pmatrix} \dfrac{\partial f_1}{\partial x_1} &amp; \cdots &amp; \dfrac{\partial f_1}{\partial x_n} \\[1ex] \vdots &amp; \ddots &amp; \vdots \\[1ex] \dfrac{\partial f_m}{\partial x_1} &amp; \cdots &amp; \dfrac{\partial f_m}{\partial x_n} \end{pmatrix} \in \mathbb R^{m\times n}
-\]</div>
-<p>Sie ist die beste lineare Näherung von <span class="arithmatex">\(\mathbf f\)</span> an einer Stelle, <span class="arithmatex">\(\mathbf f(\mathbf x + \boldsymbol\delta) \approx \mathbf f(\mathbf x) + J\boldsymbol\delta\)</span>. Lokal verhält sich die Funktion also wie eine Matrix. Die Kettenregel wird zum Produkt der Jacobi-Matrizen, und genau das rechnet Backpropagation.</p>
-<p>Die <strong>Hesse-Matrix</strong> einer skalaren Funktion <span class="arithmatex">\(f: \mathbb R^n \to \mathbb R\)</span> enthält alle zweiten Ableitungen:</p>
-<div class="eq">\[
-H = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} &amp; \cdots &amp; \dfrac{\partial^2 f}{\partial x_1\,\partial x_n} \\[1ex] \vdots &amp; \ddots &amp; \vdots \\[1ex] \dfrac{\partial^2 f}{\partial x_n\,\partial x_1} &amp; \cdots &amp; \dfrac{\partial^2 f}{\partial x_n^2} \end{pmatrix} \in \mathbb R^{n\times n}
-\]</div>
-<p>Sie beschreibt die Krümmung und ist symmetrisch. Am Punkt mit <span class="arithmatex">\(\nabla f = \mathbf 0\)</span> entscheiden ihre Eigenwerte: alle positiv heißt Minimum, alle negativ Maximum, gemischt Sattelpunkt. Für <span class="arithmatex">\(f = \tfrac12\|A\mathbf x - \mathbf b\|^2\)</span> ist <span class="arithmatex">\(H = A^\top A\)</span>, und deren Eigenwerte bestimmen die Höhenlinien und die Konvergenz in Abbildung 7.</p>
-<p>Ausführlicher, mit Kettenregel, Backpropagation, Taylor-Entwicklung und Optimierung, soll das eine eigene Seite „Vektoranalysis und Optimierung“ werden.</p>
+<p>Jacobi- und Hesse-Matrix, Kettenregel, Backpropagation und Optimierungsverfahren stehen ausführlich auf der Seite <a href="vektoranalysis.html">Vektoranalysis und Optimierung</a>.</p>
 <p>Eine Faustregel zum Prüfen: Die Dimensionen müssen passen. Ist <span class="arithmatex">\(\mathbf x \in \mathbb R^n\)</span>, muss der Gradient auch in <span class="arithmatex">\(\mathbb R^n\)</span> liegen. Bei <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span> mit <span class="arithmatex">\(A \in \mathbb R^{m\times n}\)</span> ist <span class="arithmatex">\(A\mathbf x - \mathbf b \in \mathbb R^m\)</span>, und erst <span class="arithmatex">\(A^\top\)</span> bringt es zurück nach <span class="arithmatex">\(\mathbb R^n\)</span>.</p>
 </section>
 <section id="formeln">

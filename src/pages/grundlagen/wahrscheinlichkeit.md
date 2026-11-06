@@ -205,7 +205,7 @@ $$
 \sigma_y \approx |f'(\mu)|\,\sigma_x
 $$
 
-Mehrere Eingänge mit Kovarianzmatrix $\Sigma_x$ und mehrere Ausgänge gehen genauso, mit der [Jacobi-Matrix](lineare-algebra.html#kalkuel) $J$ statt der Ableitung:
+Mehrere Eingänge mit Kovarianzmatrix $\Sigma_x$ und mehrere Ausgänge gehen genauso, mit der [Jacobi-Matrix](vektoranalysis.html#jacobi) $J$ statt der Ableitung:
 
 $$
 \Sigma_y \approx J\,\Sigma_x\,J^\top, \qquad J_{ij} = \frac{\partial f_i}{\partial x_j}

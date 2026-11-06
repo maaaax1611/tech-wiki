@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hesse-Matrix und quadratische Näherung</title>
+<!-- Erzeugt von build.py aus src/figures/va-05-hesse.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/va.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-hs" class="c-va-sq" role="img" aria-label="Höhenlinien einer Funktion; am ziehbaren Punkt die Höhenlinien der quadratischen Taylor-Näherung und die Eigenvektoren der Hesse-Matrix."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="hs-f">Funktion</label></div><select id="hs-f" autocomplete="off" style="width:100%"><option value="mulden" selected>zwei Mulden</option><option value="sattel">Sattel</option><option value="schale">Schale (quadratisch)</option></select></div>
+    <button class="btn" type="button" id="hs-n">Newton-Schritt</button>
+  </div>
+  <div class="readout" id="hs-read"></div>
+  <figcaption><b>Abb. 5</b> Grau die Höhenlinien der Funktion, rot gestrichelt, im Kreis um den ziehbaren Punkt, die der quadratischen Taylor-Näherung \(f(\mathbf p) + \nabla f^\top\mathbf d + \tfrac12\mathbf d^\top H\mathbf d\). Die Pfeile sind die Eigenvektoren der Hesse-Matrix \(H\), ihre Länge zeigt die Krümmung (blau positiv, rot negativ). Sind beide Eigenwerte positiv, ist die Näherung eine Schale mit Ellipsen als Höhenlinien, bei gemischten Vorzeichen ein Sattel. Der Newton-Schritt springt zum Mittelpunkt der Näherung und findet so in wenigen Schritten einen Punkt mit \(\nabla f = \mathbf 0\), allerdings auch einen Sattelpunkt.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/va.js"></script>
+<script>
+/* ---------- Hesse ---------- */
+(() => {
+  const c = $('#cv-hs'), iff = $('#hs-f'); let P = null, pt = [0.2, 0.4];
+  const m = reg({ el: c, draw() {
+    const L = LANDS[iff.value], f = L.f, [x, y] = pt, z = f(x, y), g = grad2(f, x, y), Hm = hess2(f, x, y), E = eigSym2(Hm);
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, 3);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.22); const lv = linLevels(L.lo, L.hi, 16); contours(P, G, lv, rgba(tok('--fg'), 0.4), 1);
+    const q = (X, Y) => { const dx = X - x, dy = Y - y; return z + g[0] * dx + g[1] * dy + 0.5 * (Hm[0] * dx * dx + 2 * Hm[1] * dx * dy + Hm[3] * dy * dy); };
+    const Q = sample(P, q, 4); const [cx, cy] = P.S(x, y); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 1.4 * P.s, 0, 2 * Math.PI); ctx.clip(); ctx.setLineDash([5, 4]); contours(P, Q, lv, tok('--hole'), 1.6); ctx.setLineDash([]); ctx.restore();
+    ctx.strokeStyle = rgba(tok('--hole'), 0.35); ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(cx, cy, 1.4 * P.s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    E.v.forEach((v, i) => { const l = E.l[i], len = Math.min(1.6, 0.35 + 0.6 * Math.abs(l)), col = l >= 0 ? tok('--accent') : tok('--hole');
+      arrow(P, x, y, x + len * v[0], y + len * v[1], col, 2.6); arrow(P, x, y, x - len * v[0], y - len * v[1], col, 2.6); label(P, x + len * v[0], y + len * v[1], `λ${'₁₂'[i]} = ${nf(l, 2)}`, col, 8, -6, `600 12px ${DISP}`); });
+    handle(P, x, y, tok('--fg'));
+    const [l1, l2] = E.l, cls = l1 > 1e-3 && l2 > 1e-3 ? 'beide Eigenwerte positiv: lokal eine Schale (konvex)' : l1 < -1e-3 && l2 < -1e-3 ? 'beide negativ: lokal eine Kuppe' : (l1 > 1e-3 && l2 < -1e-3) ? 'Vorzeichen gemischt: lokal ein Sattel' : 'ein Eigenwert fast null: in einer Richtung flach';
+    const gn = Math.hypot(...g);
+    $('#hs-read').innerHTML = `<span class="k">H =</span> [${nf(Hm[0], 2)}  ${nf(Hm[1], 2)} ; ${nf(Hm[2], 2)}  ${nf(Hm[3], 2)}]  <span class="k">Eigenwerte</span> ${nf(l1, 2)} und ${nf(l2, 2)}: ${cls}<br><span class="k">|∇f| =</span> ${nf(gn, 4)}${gn < 1e-3 ? ' → kritischer Punkt: <b>' + (l1 > 0 && l2 > 0 ? 'Minimum' : l1 < 0 && l2 < 0 ? 'Maximum' : 'Sattelpunkt') + '</b>' : ''}`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => P, () => m.draw());
+  iff.addEventListener('input', () => m.draw());
+  $('#hs-n').addEventListener('click', () => { const f = LANDS[iff.value].f, [x, y] = pt, g = grad2(f, x, y), [a, b, , d] = hess2(f, x, y), det = a * d - b * b; if (Math.abs(det) < 1e-9) return;
+    let dx = -(d * g[0] - b * g[1]) / det, dy = -(-b * g[0] + a * g[1]) / det; const n = Math.hypot(dx, dy); if (n > 1.5) { dx *= 1.5 / n; dy *= 1.5 / n; } pt = [x + dx, y + dy]; m.draw(); });
+})();
+</script>
+</body>
+</html>

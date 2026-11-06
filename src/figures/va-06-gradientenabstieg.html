@@ -1,0 +1,34 @@
+<!-- title: Gradientenabstieg
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-ga" class="c-va-sq" role="img" aria-label="Höhenlinien mit dem Pfad des Gradientenabstiegs von einem ziehbaren Startpunkt."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="ga-f">Landschaft</label></div><select id="ga-f" autocomplete="off" style="width:100%"><option value="gut">gut konditioniert</option><option value="schlecht" selected>schlecht konditioniert</option><option value="rosen">Rosenbrock-Tal</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="ga-e">Schrittweite η</label><output id="ga-e-o"></output></div><input id="ga-e" type="range" min="-3" max="0.4" step="0.01" value="-0.7" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="ga-n">Schritte</label><output id="ga-n-o"></output></div><input id="ga-n" type="range" min="1" max="200" step="1" value="40" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="ga-read"></div>
+  <figcaption><b>Abb.</b> Gradientenabstieg \(\mathbf x_{k+1} = \mathbf x_k - \eta\,\nabla f(\mathbf x_k)\) vom ziehbaren Startpunkt aus. Jeder Schritt geht senkrecht zur Höhenlinie bergab. In der runden Schale führt das direkt zum Minimum. Im langgezogenen Tal zeigt der Gradient fast quer zum Tal: Der Pfad springt im Zickzack zwischen den steilen Wänden hin und her und kommt entlang des flachen Talbodens nur langsam voran. Ist η zu groß, schaukelt er sich auf und läuft davon. Die Grenze dafür setzt die stärkste Krümmung, \(\eta < 2/\lambda_{\max}\), das Tempo die schwächste.</figcaption>
+</figure>
+<script>
+/* ---------- Gradientenabstieg ---------- */
+(() => {
+  const c = $('#cv-ga'), iff = $('#ga-f'), ie = $('#ga-e'), inn = $('#ga-n'); let P = null, st = { gut: [-2.3, 1.8], schlecht: [-2.6, 1.2], rosen: [-1.4, 1.6] };
+  const VIEW = { gut: [3, 0, 0], schlecht: [3, 0, 0], rosen: [2.1, 0, 0.7] };
+  const m = reg({ el: c, draw() {
+    const key = iff.value, L = LANDS[key], f = L.f, eta = 10 ** +ie.value, N = +inn.value; $('#ga-e-o').textContent = nf(eta, eta < 0.01 ? 4 : 3); $('#ga-n-o').textContent = N;
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, ...VIEW[key]);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.3);
+    const lv = key === 'rosen' ? [0.005, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.1, 1.6, 2.4, 3.5, 5] : linLevels(0, L.hi, 14); contours(P, G, lv, rgba(tok('--fg'), 0.38), 1);
+    let p = st[key].slice(); const path = [p.slice()]; let div = false;
+    for (let k = 0; k < N; k++) { const g = grad2(f, ...p); p = [p[0] - eta * g[0], p[1] - eta * g[1]]; if (!isFinite(p[0]) || Math.hypot(...p) > 50) { div = true; break; } path.push(p.slice()); }
+    P.clip(); poly(P, path); ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 1.8; ctx.stroke(); path.forEach(q => dot(P, ...q, tok('--hole'), 2.6)); P.unclip();
+    const opt = key === 'rosen' ? [1, 1] : [0, 0]; ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; const [ox, oy] = P.S(...opt); ctx.beginPath(); ctx.moveTo(ox - 6, oy - 6); ctx.lineTo(ox + 6, oy + 6); ctx.moveTo(ox + 6, oy - 6); ctx.lineTo(ox - 6, oy + 6); ctx.stroke();
+    handle(P, ...st[key], tok('--fg'));
+    const Hm = hess2(f, ...opt), E = eigSym2(Hm), lmax = Math.max(...E.l), lmin = Math.min(...E.l), last = path.at(-1);
+    $('#ga-read').innerHTML = `<span class="k">nach ${path.length - 1} Schritten:</span> f = <b>${div ? 'divergiert' : ex(f(...last), 2)}</b>, Abstand zum Minimum ${div ? '∞' : nf(Math.hypot(last[0] - opt[0], last[1] - opt[1]), 3)}<br><span class="k">Krümmung am Minimum:</span> λ = ${nf(lmin, 2)} … ${nf(lmax, 2)}, <span class="k">Kondition</span> ${nf(lmax / lmin, 1)}  <span class="k">·</span>  <span class="k">stabil für η <</span> 2/λmax = ${nf(2 / lmax, 3)}${eta > 2 / lmax ? ' <b>(überschritten)</b>' : ''}`;
+  } });
+  draggable(c, [{ get: () => st[iff.value], set: (x, y) => { st[iff.value] = [x, y]; } }], () => P, () => m.draw());
+  [iff, ie, inn].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

@@ -111,8 +111,7 @@
     "Optimierung",
     "Konvex",
     "Lagrange"
-   ],
-   "status": "geplant"
+   ]
   },
   {
    "id": "roentgen",
@@ -628,6 +627,62 @@
    "slug": "la-12-pca",
    "page": "lineare-algebra",
    "title": "PCA",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-01-taylor",
+   "page": "vektoranalysis",
+   "title": "Taylor-Näherung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-02-gradient",
+   "page": "vektoranalysis",
+   "title": "Gradient und Höhenlinien",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-03-jacobi",
+   "page": "vektoranalysis",
+   "title": "Jacobi-Matrix als lokale lineare Näherung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-04-backprop",
+   "page": "vektoranalysis",
+   "title": "Backpropagation im Rechengraphen",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-05-hesse",
+   "page": "vektoranalysis",
+   "title": "Hesse-Matrix und quadratische Näherung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-06-gradientenabstieg",
+   "page": "vektoranalysis",
+   "title": "Gradientenabstieg",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-07-optimierer",
+   "page": "vektoranalysis",
+   "title": "Momentum, SGD und Adam",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "va-08-lagrange",
+   "page": "vektoranalysis",
+   "title": "Lagrange-Multiplikatoren",
    "interactive": true,
    "height": 640
   },

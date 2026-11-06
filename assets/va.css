@@ -1,0 +1,2 @@
+.c-va { aspect-ratio: 2.1 / 1; } .c-va-sq { aspect-ratio: 1.5 / 1; touch-action: none; } .c-va-2 { aspect-ratio: 2.2 / 1; touch-action: none; } .c-va-g { aspect-ratio: 2.4 / 1; }
+@media (max-width: 560px) { .c-va { aspect-ratio: 1.2 / 1; } .c-va-sq { aspect-ratio: 1 / 1; } .c-va-2 { aspect-ratio: 0.75 / 1; } .c-va-g { aspect-ratio: 0.85 / 1; } }

@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vektoranalysis und Optimierung</title>
+<!-- Erzeugt von build.py aus src/pages/grundlagen/vektoranalysis.md. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/va.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Inhalt">
+    <div class="eyebrow">Inhalt</div>
+    <ol>
+      <li class="lv">Ableiten</li>
+      <li><a href="#taylor"><span class="n">1</span><span>Ableitung und Taylor-Reihe</span></a></li>
+      <li><a href="#gradient"><span class="n">2</span><span>Partielle Ableitungen und Gradient</span></a></li>
+      <li><a href="#jacobi"><span class="n">3</span><span>Jacobi-Matrix und Kettenregel</span></a></li>
+      <li><a href="#regeln"><span class="n">4</span><span>Ableitungsregeln</span></a></li>
+      <li class="lv">Rechnen lassen</li>
+      <li><a href="#backprop"><span class="n">5</span><span>Backpropagation</span></a></li>
+      <li><a href="#hesse"><span class="n">6</span><span>Hesse-Matrix</span></a></li>
+      <li class="lv">Optimieren</li>
+      <li><a href="#gd"><span class="n">7</span><span>Gradientenabstieg</span></a></li>
+      <li><a href="#optimierer"><span class="n">8</span><span>Momentum, SGD und Adam</span></a></li>
+      <li><a href="#lagrange"><span class="n">9</span><span>Lagrange-Multiplikatoren</span></a></li>
+      <li><a href="#konvex"><span class="n">10</span><span>Konvexität</span></a></li>
+      <li class="lv">Anhang</li>
+      <li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li>
+      <li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li>
+    </ol>
+  </nav>
+  <main>
+    <header id="ueberblick">
+      <p class="backlink"><a href="../index.html">← Wiki</a> · <a href="../index.html#grundlagen">Grundlagen</a></p>
+      <div class="topbar"><div class="eyebrow">Grundlagen · Mathematik</div>
+        <div class="theme" role="group" aria-label="Darstellung"><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button><button type="button" data-t="system">System</button></div></div>
+      <h1>Vektoranalysis und Optimierung</h1>
+      <p class="lede">Ableitungen von Funktionen mehrerer Variablen und wie man damit Minima findet. Das ist die Mathematik hinter dem Training jedes neuronalen Netzes und hinter iterativer Rekonstruktion: eine Verlustfunktion aufstellen, ihren Gradienten berechnen und bergab gehen.</p>
+    </header>
+    <details class="toc-mobile"><summary><span class="lab">Inhalt</span><span class="cur"></span></summary><ol><li><a href="#taylor"><span class="n">1</span><span>Ableitung und Taylor-Reihe</span></a></li><li><a href="#gradient"><span class="n">2</span><span>Partielle Ableitungen und Gradient</span></a></li><li><a href="#jacobi"><span class="n">3</span><span>Jacobi-Matrix und Kettenregel</span></a></li><li><a href="#regeln"><span class="n">4</span><span>Ableitungsregeln</span></a></li><li><a href="#backprop"><span class="n">5</span><span>Backpropagation</span></a></li><li><a href="#hesse"><span class="n">6</span><span>Hesse-Matrix</span></a></li><li><a href="#gd"><span class="n">7</span><span>Gradientenabstieg</span></a></li><li><a href="#optimierer"><span class="n">8</span><span>Momentum, SGD und Adam</span></a></li><li><a href="#lagrange"><span class="n">9</span><span>Lagrange-Multiplikatoren</span></a></li><li><a href="#konvex"><span class="n">10</span><span>Konvexität</span></a></li><li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li><li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li></ol></details>
+<section id="taylor">
+<div class="step"><b>1</b><span class="eyebrow">Ableiten</span></div>
+<h2>Ableitung und Taylor-Reihe</h2>
+<p>Die <strong>Ableitung</strong> <span class="arithmatex">\(f'(x_0)\)</span> ist die Steigung der Tangente. Sie liefert die beste lineare Näherung in der Nähe von <span class="arithmatex">\(x_0\)</span>:</p>
+<div class="eq">\[
+f(x_0 + h) \approx f(x_0) + f'(x_0)\,h
+\]</div>
+<p>Nimmt man höhere Ableitungen dazu, wird daraus die <strong>Taylor-Reihe</strong>. Das Polynom vom Grad <span class="arithmatex">\(n\)</span> stimmt am Punkt <span class="arithmatex">\(x_0\)</span> in Wert und den ersten <span class="arithmatex">\(n\)</span> Ableitungen mit <span class="arithmatex">\(f\)</span> überein:</p>
+<div class="eq">\[
+T_n(x) = \sum_{k=0}^{n} \frac{f^{(k)}(x_0)}{k!}\,(x - x_0)^k = f(x_0) + f'(x_0)(x - x_0) + \tfrac12 f''(x_0)(x - x_0)^2 + \dots
+\]</div>
+<p>Fast alle Verfahren dieser Seite benutzen nur die ersten beiden Glieder (Gradientenabstieg, Fehlerfortpflanzung) oder die ersten drei (Newton-Verfahren). Wichtig ist deshalb weniger die ganze Reihe als die Idee: Im Kleinen ist eine glatte Funktion fast linear, und ein Stück weiter fast quadratisch.</p>
+<p>Zwei Regeln braucht man ständig. Die <strong>Produktregel</strong> <span class="arithmatex">\((fg)' = f'g + fg'\)</span> und die <strong>Kettenregel</strong> für verschachtelte Funktionen:</p>
+<div class="eq">\[
+\frac{\mathrm d}{\mathrm dx} f\big(g(x)\big) = f'\big(g(x)\big)\cdot g'(x)
+\]</div>
+<figure class="fig">
+<canvas aria-label="Eine Funktion und ihre Taylor-Polynome um einen verschiebbaren Entwicklungspunkt." class="c-va" id="cv-ty" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 160px"><div class="lab"><label for="ty-f">Funktion</label></div><select autocomplete="off" id="ty-f" style="width:100%"><option value="sin">sin x</option><option value="exp">eˣ</option><option value="ln">ln x</option></select></div>
+<div class="ctrl"><div class="lab"><label for="ty-n">Ordnung</label><output id="ty-n-o"></output></div><input autocomplete="off" id="ty-n" max="7" min="1" step="1" type="range" value="1"/></div>
+<div class="ctrl"><div class="lab"><label for="ty-x">Entwicklungspunkt x₀</label><output id="ty-x-o"></output></div><input autocomplete="off" id="ty-x" max="3" min="-3" step="0.05" type="range" value="0.8"/></div>
+</div>
+<div class="readout" id="ty-read"></div>
+<figcaption><b>Abb. 1</b> Die Funktion (schwarz) und ihr Taylor-Polynom der gewählten Ordnung um \(x_0\) (blau), niedrigere Ordnungen blass. Ordnung 1 ist die Tangente, die lineare Näherung. Jede weitere Ordnung passt eine Ableitung mehr an und reicht weiter, bevor sie abweicht. Bei \(\ln x\) hilft das nur bis zur Polstelle bei 0: Weiter als \(|x - x_0| &lt; x_0\) konvergiert die Reihe nicht, egal wie hoch die Ordnung ist.</figcaption>
+</figure>
+</section>
+<section id="gradient">
+<div class="step"><b>2</b><span class="eyebrow">Ableiten</span></div>
+<h2>Partielle Ableitungen und Gradient</h2>
+<p>Hängt <span class="arithmatex">\(f\)</span> von mehreren Variablen ab, <span class="arithmatex">\(f: \mathbb R^n \to \mathbb R\)</span>, dann hält die <strong>partielle Ableitung</strong> <span class="arithmatex">\(\partial f/\partial x_i\)</span> alle anderen Variablen fest und leitet nur nach <span class="arithmatex">\(x_i\)</span> ab. Alle zusammen bilden den <strong>Gradienten</strong>:</p>
+<div class="eq">\[
+\nabla f(\mathbf x) = \begin{pmatrix} \partial f/\partial x_1 \\ \vdots \\ \partial f/\partial x_n \end{pmatrix}, \qquad f(\mathbf x + \mathbf h) \approx f(\mathbf x) + \nabla f(\mathbf x)^\top\mathbf h
+\]</div>
+<p>Die Steigung in eine beliebige Richtung <span class="arithmatex">\(\mathbf u\)</span> (mit <span class="arithmatex">\(\|\mathbf u\| = 1\)</span>) ist die <strong>Richtungsableitung</strong> <span class="arithmatex">\(\nabla f^\top\mathbf u = \|\nabla f\|\cos\theta\)</span>. Daraus folgen die beiden Eigenschaften, die man sich merken sollte:</p>
+<ul class="tight">
+<li>Der Gradient zeigt in die Richtung des <strong>steilsten Anstiegs</strong> (<span class="arithmatex">\(\theta = 0\)</span>), seine Länge ist diese Steigung. <span class="arithmatex">\(-\nabla f\)</span> ist die Richtung des steilsten Abstiegs.</li>
+<li>Er steht <strong>senkrecht auf den Höhenlinien</strong>, denn entlang einer Höhenlinie ändert sich <span class="arithmatex">\(f\)</span> nicht (<span class="arithmatex">\(\theta = 90°\)</span>).</li>
+</ul>
+<p>In der Bildverarbeitung ist der Bildgradient genau das: <span class="arithmatex">\(f\)</span> ist die Helligkeit, und <span class="arithmatex">\(\nabla f\)</span> zeigt quer zur Kante (siehe <a href="../bildverarbeitung/filter.html#gradient">Filter</a>).</p>
+<figure class="fig">
+<canvas aria-label="Höhenlinien einer Funktion zweier Variablen mit dem Gradienten an einem ziehbaren Punkt und einer wählbaren Richtung." class="c-va-sq" id="cv-gd" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="gd-f">Funktion</label></div><select autocomplete="off" id="gd-f" style="width:100%"><option value="schale">Schale (quadratisch)</option><option selected="" value="mulden">zwei Mulden</option><option value="sattel">Sattel</option></select></div>
+<div class="ctrl"><div class="lab"><label for="gd-a">Richtung u</label><output id="gd-a-o"></output></div><input autocomplete="off" id="gd-a" max="360" min="0" step="1" type="range" value="20"/></div>
+</div>
+<div class="readout" id="gd-read"></div>
+<figcaption><b>Abb. 2</b> Höhenlinien einer Funktion \(f(x, y)\), dunklere Flächen liegen tiefer. Den Punkt kann man ziehen. Der blaue Pfeil ist der Gradient \(\nabla f\): Er zeigt bergauf in die steilste Richtung und steht senkrecht auf der Höhenlinie (gestrichelt die Tangente). Der gelbe Pfeil ist eine frei wählbare Richtung \(\mathbf u\). Die Steigung in dieser Richtung ist \(\nabla f^\top\mathbf u\): am größten parallel zum Gradienten, null entlang der Höhenlinie, negativ dagegen.</figcaption>
+</figure>
+</section>
+<section id="jacobi">
+<div class="step"><b>3</b><span class="eyebrow">Ableiten</span></div>
+<h2>Jacobi-Matrix und Kettenregel</h2>
+<p>Hat die Funktion selbst mehrere Ausgänge, <span class="arithmatex">\(\mathbf f: \mathbb R^n \to \mathbb R^m\)</span>, dann gibt es für jeden Ausgang einen Gradienten. Als Zeilen untereinander geschrieben ergeben sie die <strong>Jacobi-Matrix</strong>:</p>
+<div class="eq">\[
+J = \frac{\partial\mathbf f}{\partial\mathbf x} = \begin{pmatrix} \dfrac{\partial f_1}{\partial x_1} &amp; \cdots &amp; \dfrac{\partial f_1}{\partial x_n} \\[1ex] \vdots &amp; \ddots &amp; \vdots \\[1ex] \dfrac{\partial f_m}{\partial x_1} &amp; \cdots &amp; \dfrac{\partial f_m}{\partial x_n} \end{pmatrix} \in \mathbb R^{m\times n}, \qquad \mathbf f(\mathbf x + \mathbf h) \approx \mathbf f(\mathbf x) + J\mathbf h
+\]</div>
+<p>Zeile <span class="arithmatex">\(i\)</span> gehört zum Ausgang <span class="arithmatex">\(f_i\)</span>, Spalte <span class="arithmatex">\(j\)</span> zur Eingabe <span class="arithmatex">\(x_j\)</span>. Lokal verhält sich jede glatte Abbildung wie die Matrix <span class="arithmatex">\(J\)</span>. Deshalb gilt alles aus der <a href="lineare-algebra.html#matrizen">linearen Algebra</a> im Kleinen auch für nichtlineare Abbildungen. Zum Beispiel misst <span class="arithmatex">\(|\det J|\)</span>, wie stark Flächen oder Volumina an dieser Stelle vergrößert werden. Für skalares <span class="arithmatex">\(f\)</span> ist <span class="arithmatex">\(J\)</span> eine einzige Zeile, nämlich <span class="arithmatex">\(\nabla f^\top\)</span>.</p>
+<p>Die <strong>Kettenregel</strong> wird zum Matrixprodukt. Für <span class="arithmatex">\(\mathbf y = \mathbf g(\mathbf x)\)</span> und <span class="arithmatex">\(\mathbf z = \mathbf f(\mathbf y)\)</span>:</p>
+<div class="eq">\[
+\frac{\partial\mathbf z}{\partial\mathbf x} = \frac{\partial\mathbf z}{\partial\mathbf y}\,\frac{\partial\mathbf y}{\partial\mathbf x} = J_{\mathbf f}\,J_{\mathbf g}
+\]</div>
+<p>Die Dimensionen passen automatisch: <span class="arithmatex">\((m\times k)(k\times n) = m\times n\)</span>. Ein Netz mit vielen Schichten ist eine lange Verkettung, seine Ableitung ein langes Produkt von Jacobi-Matrizen.</p>
+<figure class="fig">
+<canvas aria-label="Links ein Gitter und ein kleines Quadrat, rechts ihr Bild unter einer nichtlinearen Abbildung und das Parallelogramm der Jacobi-Matrix." class="c-va-2" id="cv-jc" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 220px"><div class="lab"><label for="jc-f">Abbildung</label></div><select autocomplete="off" id="jc-f" style="width:100%"><option value="welle">Welle</option><option value="polar">Polar → kartesisch</option><option value="quad">Quadrieren (z²)</option></select></div>
+<div class="ctrl"><div class="lab"><label for="jc-e">Größe des Quadrats</label><output id="jc-e-o"></output></div><input autocomplete="off" id="jc-e" max="0.8" min="0.05" step="0.01" type="range" value="0.4"/></div>
+</div>
+<div class="readout" id="jc-read"></div>
+<figcaption><b>Abb. 3</b> Links die Eingabe mit einem kleinen Quadrat um den Punkt \(\mathbf p\), der sich ziehen lässt. Rechts dasselbe nach der Abbildung \(\mathbf f\): Das Gitter wird verbogen, das Quadrat zu einer krummen Fläche (blau). Gestrichelt das Parallelogramm, das die Jacobi-Matrix \(J\) aus dem Quadrat macht. Je kleiner das Quadrat, desto genauer passen beide: Im Kleinen ist jede glatte Abbildung linear. \(\det J\) gibt an, wie stark sich Flächen dort vergrößern.</figcaption>
+</figure>
+</section>
+<section id="regeln">
+<div class="step"><b>4</b><span class="eyebrow">Ableiten</span></div>
+<h2>Ableiten nach Vektoren und Matrizen</h2>
+<p>Viele Verlustfunktionen bestehen aus Matrix-Vektor-Ausdrücken. Statt jedes Mal komponentenweise abzuleiten, merkt man sich ein paar Regeln. Konvention hier: Der Gradient ist ein Spaltenvektor mit derselben Form wie <span class="arithmatex">\(\mathbf x\)</span>.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Funktion <span class="arithmatex">\(f(\mathbf x)\)</span></th>
+<th>Gradient <span class="arithmatex">\(\nabla_{\mathbf x} f\)</span></th>
+<th>Bemerkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\mathbf a^\top\mathbf x\)</span></td>
+<td><span class="arithmatex">\(\mathbf a\)</span></td>
+<td>wie <span class="arithmatex">\(ax\)</span> im Eindimensionalen</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathbf x^\top\mathbf x = \Vert\mathbf x\Vert^2\)</span></td>
+<td><span class="arithmatex">\(2\mathbf x\)</span></td>
+<td></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathbf x^\top A\mathbf x\)</span></td>
+<td><span class="arithmatex">\((A + A^\top)\mathbf x\)</span></td>
+<td><span class="arithmatex">\(= 2A\mathbf x\)</span> für symmetrisches <span class="arithmatex">\(A\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\Vert A\mathbf x - \mathbf b\Vert^2\)</span></td>
+<td><span class="arithmatex">\(2A^\top(A\mathbf x - \mathbf b)\)</span></td>
+<td>null setzen ergibt die Normalengleichung</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\Vert A\mathbf x - \mathbf b\Vert^2 + \lambda\Vert\mathbf x\Vert^2\)</span></td>
+<td><span class="arithmatex">\(2A^\top(A\mathbf x - \mathbf b) + 2\lambda\mathbf x\)</span></td>
+<td>Ridge-Regression</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(g(A\mathbf x)\)</span></td>
+<td><span class="arithmatex">\(A^\top\nabla g(A\mathbf x)\)</span></td>
+<td>Kettenregel durch eine lineare Schicht</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sum_i \log\big(1 + e^{-y_i\,\mathbf a_i^\top\mathbf x}\big)\)</span></td>
+<td><span class="arithmatex">\(-\sum_i \sigma(-y_i\mathbf a_i^\top\mathbf x)\,y_i\,\mathbf a_i\)</span></td>
+<td>logistische Regression</td>
+</tr>
+</tbody>
+</table></div>
+<p>Für eine lineare Schicht <span class="arithmatex">\(\mathbf y = W\mathbf x\)</span> in einem Netz braucht man auch die Ableitung nach der Gewichtsmatrix. Kommt von oben der Gradient <span class="arithmatex">\(\bar{\mathbf y} = \partial L/\partial\mathbf y\)</span> an, dann ist</p>
+<div class="eq">\[
+\frac{\partial L}{\partial W} = \bar{\mathbf y}\,\mathbf x^\top, \qquad \frac{\partial L}{\partial\mathbf x} = W^\top\bar{\mathbf y}
+\]</div>
+<p>Der Gradient nach <span class="arithmatex">\(W\)</span> hat dieselbe Form wie <span class="arithmatex">\(W\)</span>, ein äußeres Produkt. Der nach <span class="arithmatex">\(\mathbf x\)</span> läuft mit der transponierten Matrix zurück.</p>
+<p>Zum Prüfen hilft eine Faustregel: Die Dimensionen müssen passen. Bei <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span> mit <span class="arithmatex">\(A \in \mathbb R^{m\times n}\)</span> liegt <span class="arithmatex">\(A\mathbf x - \mathbf b\)</span> in <span class="arithmatex">\(\mathbb R^m\)</span>, und erst <span class="arithmatex">\(A^\top\)</span> bringt es zurück nach <span class="arithmatex">\(\mathbb R^n\)</span>, wo der Gradient leben muss.</p>
+</section>
+<section id="backprop">
+<div class="step"><b>5</b><span class="eyebrow">Rechnen lassen</span></div>
+<h2>Backpropagation und automatisches Differenzieren</h2>
+<p>Für ein Netz mit Millionen Parametern schreibt niemand den Gradienten von Hand aus. Stattdessen zerlegt man die Rechnung in einen <strong>Rechengraphen</strong> aus Elementarschritten (Multiplikation, Addition, Aktivierung …), deren Ableitungen bekannt sind, und wendet die Kettenregel mechanisch an. Das heißt <strong>automatisches Differenzieren</strong>.</p>
+<ul class="tight">
+<li><strong>Vorwärts:</strong> Jeder Knoten wird aus seinen Eingängen berechnet. Die Zwischenwerte werden gespeichert.</li>
+<li><strong>Rückwärts:</strong> Man startet am Verlust mit <span class="arithmatex">\(\partial L/\partial L = 1\)</span>. Jeder Knoten gibt seinen Gradienten an seine Eingänge weiter, multipliziert mit der lokalen Ableitung. Hat ein Knoten mehrere Nachfolger, werden deren Beiträge addiert.</li>
+</ul>
+<div class="eq">\[
+\frac{\partial L}{\partial \text{Eingang}} = \frac{\partial L}{\partial \text{Ausgang}} \cdot \frac{\partial\,\text{Ausgang}}{\partial\,\text{Eingang}}
+\]</div>
+<p>Rückwärts heißt <strong>Backpropagation</strong> (Reverse Mode). Ihr Vorteil: Bei einer einzigen skalaren Ausgabe, dem Verlust, liefert ein Rückwärtsdurchlauf die Ableitungen nach <em>allen</em> Parametern auf einmal, und das für etwa den doppelten Aufwand eines Vorwärtsdurchlaufs. Die Gegenrichtung (Forward Mode) bräuchte einen Durchlauf pro Parameter. Der Preis ist Speicher: Alle Zwischenwerte des Vorwärtsdurchlaufs müssen bis zum Rückwärtsdurchlauf aufgehoben werden.</p>
+<p>In Matrixform multipliziert Backpropagation die Jacobi-Matrizen aus Abschnitt 3 von hinten nach vorn, und zwar immer Vektor mal Matrix. Die riesigen Jacobi-Matrizen selbst werden nie aufgestellt.</p>
+<figure class="fig">
+<canvas aria-label="Rechengraph eines einzelnen Neurons mit Verlust; Werte werden vorwärts, Gradienten rückwärts schrittweise berechnet." class="c-va-g" id="cv-bp" role="img"></canvas>
+<div class="ctrls">
+<button class="btn" id="bp-back" type="button">◀ Schritt zurück</button>
+<button class="btn" id="bp-next" type="button">Nächster Schritt ▶</button>
+<button class="btn" id="bp-reset" type="button">Von vorn</button>
+<button class="btn" id="bp-upd" type="button">Gradientenschritt anwenden</button>
+</div>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="bp-w">Gewicht w</label><output id="bp-w-o"></output></div><input autocomplete="off" id="bp-w" max="2" min="-2" step="0.01" type="range" value="-0.5"/></div>
+<div class="ctrl"><div class="lab"><label for="bp-b">Bias b</label><output id="bp-b-o"></output></div><input autocomplete="off" id="bp-b" max="2" min="-2" step="0.01" type="range" value="0.2"/></div>
+</div>
+<div class="readout" id="bp-read"></div>
+<figcaption><b>Abb. 4</b> Ein einzelnes Neuron mit Eingabe \(x = 1{,}5\), Ziel \(t = 1\) und quadratischem Fehler, zerlegt in Elementarschritte. Vorwärts (Schritte 1–4) wird jeder Knoten aus seinen Eingängen berechnet. Rückwärts (Schritte 5–9) bekommt jeder Knoten seinen Gradienten \(\partial L/\partial\,\cdot\) (rot): den seines Nachfolgers mal der lokalen Ableitung an der Kante. Am Ende kennt man die Ableitung nach allen Parametern aus einem einzigen Rückwärtsdurchlauf. „Gradientenschritt anwenden“ setzt \(w \leftarrow w - \partial L/\partial w\) und \(b \leftarrow b - \partial L/\partial b\), danach ist der Verlust kleiner.</figcaption>
+</figure>
+</section>
+<section id="hesse">
+<div class="step"><b>6</b><span class="eyebrow">Rechnen lassen</span></div>
+<h2>Hesse-Matrix</h2>
+<p>Die zweiten Ableitungen einer skalaren Funktion bilden die <strong>Hesse-Matrix</strong>. Sie beschreibt die Krümmung und ist symmetrisch:</p>
+<div class="eq">\[
+H = \nabla^2 f = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} &amp; \cdots &amp; \dfrac{\partial^2 f}{\partial x_1\,\partial x_n} \\[1ex] \vdots &amp; \ddots &amp; \vdots \\[1ex] \dfrac{\partial^2 f}{\partial x_n\,\partial x_1} &amp; \cdots &amp; \dfrac{\partial^2 f}{\partial x_n^2} \end{pmatrix}, \qquad f(\mathbf x + \mathbf d) \approx f(\mathbf x) + \nabla f^\top\mathbf d + \tfrac12\,\mathbf d^\top H\mathbf d
+\]</div>
+<p>Die rechte Formel ist die Taylor-Näherung zweiter Ordnung in mehreren Dimensionen. Ihre Form lesen die Eigenwerte von <span class="arithmatex">\(H\)</span> ab: In Richtung eines Eigenvektors ist die Krümmung gleich dem Eigenwert. An einem <strong>kritischen Punkt</strong> mit <span class="arithmatex">\(\nabla f = \mathbf 0\)</span> heißt das:</p>
+<ul class="tight">
+<li>alle Eigenwerte positiv: <strong>Minimum</strong></li>
+<li>alle negativ: <strong>Maximum</strong></li>
+<li>gemischte Vorzeichen: <strong>Sattelpunkt</strong></li>
+</ul>
+<p>Setzt man die Ableitung der quadratischen Näherung null, erhält man den <strong>Newton-Schritt</strong> <span class="arithmatex">\(\mathbf d = -H^{-1}\nabla f\)</span>. Er springt direkt in den Mittelpunkt der Näherung und konvergiert in der Nähe eines Minimums sehr schnell. Für große Netze ist <span class="arithmatex">\(H\)</span> aber viel zu groß, um sie aufzustellen oder zu invertieren. Außerdem zieht Newton ebenso zu Sattelpunkten wie zu Minima.</p>
+<figure class="fig">
+<canvas aria-label="Höhenlinien einer Funktion; am ziehbaren Punkt die Höhenlinien der quadratischen Taylor-Näherung und die Eigenvektoren der Hesse-Matrix." class="c-va-sq" id="cv-hs" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="hs-f">Funktion</label></div><select autocomplete="off" id="hs-f" style="width:100%"><option selected="" value="mulden">zwei Mulden</option><option value="sattel">Sattel</option><option value="schale">Schale (quadratisch)</option></select></div>
+<button class="btn" id="hs-n" type="button">Newton-Schritt</button>
+</div>
+<div class="readout" id="hs-read"></div>
+<figcaption><b>Abb. 5</b> Grau die Höhenlinien der Funktion, rot gestrichelt, im Kreis um den ziehbaren Punkt, die der quadratischen Taylor-Näherung \(f(\mathbf p) + \nabla f^\top\mathbf d + \tfrac12\mathbf d^\top H\mathbf d\). Die Pfeile sind die Eigenvektoren der Hesse-Matrix \(H\), ihre Länge zeigt die Krümmung (blau positiv, rot negativ). Sind beide Eigenwerte positiv, ist die Näherung eine Schale mit Ellipsen als Höhenlinien, bei gemischten Vorzeichen ein Sattel. Der Newton-Schritt springt zum Mittelpunkt der Näherung und findet so in wenigen Schritten einen Punkt mit \(\nabla f = \mathbf 0\), allerdings auch einen Sattelpunkt.</figcaption>
+</figure>
+</section>
+<section id="gd">
+<div class="step"><b>7</b><span class="eyebrow">Optimieren</span></div>
+<h2>Gradientenabstieg</h2>
+<p>Das einfachste Verfahren, ein Minimum zu finden: kleine Schritte in Richtung des steilsten Abstiegs.</p>
+<div class="eq">\[
+\mathbf x_{k+1} = \mathbf x_k - \eta\,\nabla f(\mathbf x_k)
+\]</div>
+<p>Die <strong>Schrittweite</strong> <span class="arithmatex">\(\eta\)</span> (im ML: Lernrate) entscheidet alles. Zu klein, und es dauert ewig. Zu groß, und das Verfahren springt über das Minimum hinweg und schaukelt sich auf. Für eine quadratische Funktion mit Hesse-Matrix <span class="arithmatex">\(H\)</span> lässt sich das genau angeben: stabil für <span class="arithmatex">\(\eta &lt; 2/\lambda_{\max}\)</span>, und die langsamste Richtung schrumpft pro Schritt nur um den Faktor <span class="arithmatex">\(1 - \eta\lambda_{\min}\)</span>.</p>
+<p>Das Verhältnis <span class="arithmatex">\(\kappa = \lambda_{\max}/\lambda_{\min}\)</span>, die <strong>Kondition</strong> (vgl. <a href="lineare-algebra.html#kondition">lineare Algebra</a>), bestimmt also, wie viele Schritte nötig sind, grob proportional zu <span class="arithmatex">\(\kappa\)</span>. Bildlich: In einem langgezogenen Tal zeigt der Gradient fast quer zum Tal statt entlang, und der Pfad läuft im Zickzack. Gegenmittel sind gute Skalierung der Eingangsdaten (Normalisierung), Vorkonditionierung und die Verfahren aus dem nächsten Abschnitt.</p>
+<figure class="fig">
+<canvas aria-label="Höhenlinien mit dem Pfad des Gradientenabstiegs von einem ziehbaren Startpunkt." class="c-va-sq" id="cv-ga" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="ga-f">Landschaft</label></div><select autocomplete="off" id="ga-f" style="width:100%"><option value="gut">gut konditioniert</option><option selected="" value="schlecht">schlecht konditioniert</option><option value="rosen">Rosenbrock-Tal</option></select></div>
+<div class="ctrl"><div class="lab"><label for="ga-e">Schrittweite η</label><output id="ga-e-o"></output></div><input autocomplete="off" id="ga-e" max="0.4" min="-3" step="0.01" type="range" value="-0.7"/></div>
+<div class="ctrl"><div class="lab"><label for="ga-n">Schritte</label><output id="ga-n-o"></output></div><input autocomplete="off" id="ga-n" max="200" min="1" step="1" type="range" value="40"/></div>
+</div>
+<div class="readout" id="ga-read"></div>
+<figcaption><b>Abb. 6</b> Gradientenabstieg \(\mathbf x_{k+1} = \mathbf x_k - \eta\,\nabla f(\mathbf x_k)\) vom ziehbaren Startpunkt aus. Jeder Schritt geht senkrecht zur Höhenlinie bergab. In der runden Schale führt das direkt zum Minimum. Im langgezogenen Tal zeigt der Gradient fast quer zum Tal: Der Pfad springt im Zickzack zwischen den steilen Wänden hin und her und kommt entlang des flachen Talbodens nur langsam voran. Ist η zu groß, schaukelt er sich auf und läuft davon. Die Grenze dafür setzt die stärkste Krümmung, \(\eta &lt; 2/\lambda_{\max}\), das Tempo die schwächste.</figcaption>
+</figure>
+</section>
+<section id="optimierer">
+<div class="step"><b>8</b><span class="eyebrow">Optimieren</span></div>
+<h2>Momentum, SGD und Adam</h2>
+<p>Drei Erweiterungen, die beim Training neuronaler Netze Standard sind:</p>
+<p><strong>Stochastischer Gradientenabstieg (SGD).</strong> Der Verlust ist eine Summe über alle Trainingsbeispiele. Statt den vollen Gradienten zu berechnen, nimmt man ihn auf einem kleinen zufälligen Datenpaket (Mini-Batch). Der Gradient ist dann verrauscht, aber im Mittel richtig und viel billiger. Das Rauschen schadet weniger als gedacht und hilft sogar, flache Bereiche und Sattelpunkte zu verlassen.</p>
+<p><strong>Momentum.</strong> Man merkt sich eine laufende Summe der vergangenen Gradienten, eine Art Geschwindigkeit:</p>
+<div class="eq">\[
+\mathbf v_{k+1} = \beta\,\mathbf v_k + \nabla f(\mathbf x_k), \qquad \mathbf x_{k+1} = \mathbf x_k - \eta\,\mathbf v_{k+1}, \qquad \beta \approx 0{,}9
+\]</div>
+<p>Komponenten, die ihr Vorzeichen ständig wechseln (das Zickzack quer zum Tal), heben sich auf. Komponenten, die immer in dieselbe Richtung zeigen (entlang des Tals), summieren sich auf bis zum <span class="arithmatex">\(1/(1-\beta)\)</span>-fachen.</p>
+<p><strong>Adam.</strong> Kombiniert Momentum mit einer Skalierung pro Koordinate. Neben dem gleitenden Mittel <span class="arithmatex">\(\mathbf m\)</span> der Gradienten führt es ein gleitendes Mittel <span class="arithmatex">\(\mathbf s\)</span> ihrer Quadrate und teilt dadurch:</p>
+<div class="eq">\[
+\mathbf x_{k+1} = \mathbf x_k - \eta\,\frac{\hat{\mathbf m}_k}{\sqrt{\hat{\mathbf s}_k} + \varepsilon}
+\]</div>
+<p>(elementweise, <span class="arithmatex">\(\hat{\ }\)</span> bezeichnet eine Korrektur für die ersten Schritte). Jede Koordinate macht so Schritte der Größenordnung <span class="arithmatex">\(\eta\)</span>, egal wie steil oder flach sie ist. Das gleicht schlechte Kondition entlang der Achsen weitgehend aus. Adam ist der übliche Startpunkt, wenn man nicht weiß, was man nehmen soll. <strong>AdamW</strong> trennt zusätzlich den Weight Decay sauber davon ab.</p>
+<figure class="fig">
+<canvas aria-label="Pfade von Gradientenabstieg, Momentum und Adam auf derselben Landschaft." class="c-va-sq" id="cv-op" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="op-f">Landschaft</label></div><select autocomplete="off" id="op-f" style="width:100%"><option selected="" value="schlecht">schlecht konditioniert</option><option value="rosen">Rosenbrock-Tal</option><option value="mulden">zwei Mulden</option></select></div>
+<div class="ctrl"><div class="lab"><label for="op-e">Lernrate η</label><output id="op-e-o"></output></div><input autocomplete="off" id="op-e" max="-0.5" min="-2.5" step="0.01" type="range" value="-1.52"/></div>
+<div class="ctrl"><div class="lab"><label for="op-n">Schritte</label><output id="op-n-o"></output></div><input autocomplete="off" id="op-n" max="150" min="0" step="1" type="range" value="60"/></div>
+</div>
+<div class="ctrls">
+<label class="chk"><input autocomplete="off" id="op-s" type="checkbox"/> verrauschte Gradienten (SGD)</label>
+<button class="btn" id="op-p" type="button">Abspielen</button>
+</div>
+<div class="readout" id="op-read"></div>
+<figcaption><b>Abb. 7</b> Drei Verfahren mit derselben Lernrate vom selben Startpunkt (ziehbar). Gradientenabstieg (rot) läuft im Zickzack. Momentum (gelb) mittelt die Schritte über die Zeit: Das Hin und Her quer zum Tal hebt sich auf, die Bewegung entlang des Tals summiert sich und wird schneller, schießt aber auch über. Adam (blau) teilt jede Koordinate durch ihre typische Gradientengröße, macht damit in steilen und flachen Richtungen ähnlich große Schritte und kommt mit schlechter Kondition gut zurecht. Mit verrauschten Gradienten, wie beim Training mit kleinen Datenpaketen (SGD), zittern alle Pfade, erreichen aber trotzdem die Nähe des Minimums.</figcaption>
+</figure>
+</section>
+<section id="lagrange">
+<div class="step"><b>9</b><span class="eyebrow">Optimieren</span></div>
+<h2>Nebenbedingungen und Lagrange-Multiplikatoren</h2>
+<p>Oft ist das Minimum nicht überall gesucht, sondern nur auf einer Menge, die eine Gleichung <span class="arithmatex">\(g(\mathbf x) = 0\)</span> festlegt. Etwa: kleinster Fehler bei fester Gesamtdosis, oder ein Vektor mit Länge 1.</p>
+<p>Am gesuchten Punkt darf <span class="arithmatex">\(f\)</span> entlang der Nebenbedingung weder steigen noch fallen. Also darf <span class="arithmatex">\(\nabla f\)</span> keinen Anteil in Richtung der Nebenbedingung haben, er muss senkrecht auf ihr stehen, genau wie <span class="arithmatex">\(\nabla g\)</span>. Die beiden Gradienten sind dort parallel:</p>
+<div class="eq">\[
+\nabla f(\mathbf x) + \lambda\,\nabla g(\mathbf x) = \mathbf 0, \qquad g(\mathbf x) = 0
+\]</div>
+<p>Die Zahl <span class="arithmatex">\(\lambda\)</span> heißt <strong>Lagrange-Multiplikator</strong>. Man kann beide Gleichungen bequem als Nullstelle des Gradienten einer einzigen Funktion schreiben, der <strong>Lagrange-Funktion</strong> <span class="arithmatex">\(\mathcal L(\mathbf x, \lambda) = f(\mathbf x) + \lambda\,g(\mathbf x)\)</span>. Der Multiplikator hat auch eine Bedeutung: Er gibt an, wie stark sich der optimale Wert von <span class="arithmatex">\(f\)</span> ändert, wenn man die Nebenbedingung ein wenig lockert.</p>
+<p>Ein bekanntes Ergebnis auf diesem Weg: Maximiert man <span class="arithmatex">\(\mathbf x^\top C\mathbf x\)</span> unter <span class="arithmatex">\(\|\mathbf x\| = 1\)</span>, ergibt sich <span class="arithmatex">\(C\mathbf x = \lambda\mathbf x\)</span>. Die beste Richtung ist ein Eigenvektor, und genau so begründet man die <a href="lineare-algebra.html#svd">Hauptkomponentenanalyse</a>.</p>
+<p>Für Ungleichungen <span class="arithmatex">\(g(\mathbf x) \le 0\)</span> gibt es eine Erweiterung (Karush-Kuhn-Tucker-Bedingungen). In der Praxis behilft man sich oft einfacher: Strafterme zur Verlustfunktion addieren oder nach jedem Schritt zurück auf die erlaubte Menge projizieren, etwa negative Werte auf null setzen.</p>
+<figure class="fig">
+<canvas aria-label="Höhenlinien einer Zielfunktion und ein Kreis als Nebenbedingung; an einem Punkt auf dem Kreis die Gradienten von Ziel und Nebenbedingung, daneben der Funktionswert entlang des Kreises." class="c-va-2" id="cv-lg" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="lg-t">Position auf dem Kreis</label><output id="lg-t-o"></output></div><input autocomplete="off" id="lg-t" max="180" min="-180" step="0.1" type="range" value="150"/></div>
+<div class="ctrl"><div class="lab"><label for="lg-r">Radius r</label><output id="lg-r-o"></output></div><input autocomplete="off" id="lg-r" max="2.6" min="0.5" step="0.05" type="range" value="1.4"/></div>
+<button class="btn" id="lg-o" type="button">Zum Minimum</button>
+</div>
+<div class="readout" id="lg-read"></div>
+<figcaption><b>Abb. 8</b> Gesucht ist das Minimum von \(f\) (Höhenlinien), aber nur auf dem Kreis \(g(x, y) = x^2 + y^2 - r^2 = 0\). Der Punkt lässt sich auf dem Kreis ziehen. Blau ist \(-\nabla f\), die Richtung, in die \(f\) am stärksten fällt, gelb \(\nabla g\), die senkrecht auf dem Kreis steht. Solange \(-\nabla f\) einen Anteil entlang des Kreises hat (gestrichelt), kann man noch weiter bergab. Im Minimum verschwindet dieser Anteil, beide Gradienten sind parallel: \(\nabla f + \lambda\nabla g = \mathbf 0\). Rechts \(f\) entlang des Kreises.</figcaption>
+</figure>
+</section>
+<section id="konvex">
+<div class="step"><b>10</b><span class="eyebrow">Optimieren</span></div>
+<h2>Konvexität</h2>
+<p>Eine Funktion ist <strong>konvex</strong>, wenn die Verbindungsstrecke zwischen zwei Punkten ihres Graphen nie unter dem Graphen liegt. Für zweimal differenzierbare Funktionen heißt das: Die Hesse-Matrix ist überall positiv semidefinit, die Funktion ist überall nach oben gekrümmt.</p>
+<p>Konvexität ist die wichtigste Eigenschaft in der Optimierung, weil dann <strong>jedes lokale Minimum auch das globale</strong> ist. Gradientenabstieg kann nicht in einer falschen Mulde hängen bleiben, und es gibt keine Sattelpunkte. Konvex sind zum Beispiel:</p>
+<ul class="tight">
+<li>kleinste Quadrate <span class="arithmatex">\(\|A\mathbf x - \mathbf b\|^2\)</span>, auch mit Ridge- oder L1-Term,</li>
+<li>die logistische Regression,</li>
+<li>die gewichteten und Poisson-Likelihood-Ziele der statistischen CT-Rekonstruktion (für lineare Messmodelle).</li>
+</ul>
+<p>Neuronale Netze sind dagegen nicht konvex, ihre Verlustlandschaft hat unzählige Minima und Sattelpunkte. Dass Gradientenverfahren dort trotzdem so gut funktionieren, liegt unter anderem daran, dass in sehr hohen Dimensionen die meisten kritischen Punkte Sattelpunkte sind und die gefundenen Minima oft ähnlich gut.</p>
+</section>
+<section id="formeln">
+<div class="eyebrow">Anhang A</div>
+<h2>Formeln</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Thema</th>
+<th>Formel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Taylor</td>
+<td><span class="arithmatex">\(f(x_0 + h) \approx f(x_0) + f'(x_0)h + \tfrac12 f''(x_0)h^2\)</span></td>
+</tr>
+<tr>
+<td>Kettenregel</td>
+<td><span class="arithmatex">\((f\circ g)' = f'(g)\,g'\)</span>, mehrdimensional <span class="arithmatex">\(J_{f\circ g} = J_f\,J_g\)</span></td>
+</tr>
+<tr>
+<td>Gradient</td>
+<td><span class="arithmatex">\(f(\mathbf x + \mathbf h) \approx f(\mathbf x) + \nabla f^\top\mathbf h\)</span>, Richtungsableitung <span class="arithmatex">\(\nabla f^\top\mathbf u\)</span></td>
+</tr>
+<tr>
+<td>Jacobi</td>
+<td><span class="arithmatex">\(J_{ij} = \partial f_i/\partial x_j \in \mathbb R^{m\times n}\)</span>, <span class="arithmatex">\(\mathbf f(\mathbf x + \mathbf h) \approx \mathbf f(\mathbf x) + J\mathbf h\)</span></td>
+</tr>
+<tr>
+<td>lineare Schicht</td>
+<td><span class="arithmatex">\(\mathbf y = W\mathbf x\)</span>: <span class="arithmatex">\(\partial L/\partial W = \bar{\mathbf y}\mathbf x^\top\)</span>, <span class="arithmatex">\(\partial L/\partial\mathbf x = W^\top\bar{\mathbf y}\)</span></td>
+</tr>
+<tr>
+<td>Hesse</td>
+<td><span class="arithmatex">\(f(\mathbf x + \mathbf d) \approx f + \nabla f^\top\mathbf d + \tfrac12\mathbf d^\top H\mathbf d\)</span></td>
+</tr>
+<tr>
+<td>Newton</td>
+<td><span class="arithmatex">\(\mathbf x_{k+1} = \mathbf x_k - H^{-1}\nabla f(\mathbf x_k)\)</span></td>
+</tr>
+<tr>
+<td>Gradientenabstieg</td>
+<td><span class="arithmatex">\(\mathbf x_{k+1} = \mathbf x_k - \eta\nabla f\)</span>, stabil für <span class="arithmatex">\(\eta &lt; 2/\lambda_{\max}\)</span></td>
+</tr>
+<tr>
+<td>Momentum</td>
+<td><span class="arithmatex">\(\mathbf v \leftarrow \beta\mathbf v + \nabla f\)</span>, <span class="arithmatex">\(\mathbf x \leftarrow \mathbf x - \eta\mathbf v\)</span></td>
+</tr>
+<tr>
+<td>Adam</td>
+<td><span class="arithmatex">\(\mathbf x \leftarrow \mathbf x - \eta\,\hat{\mathbf m}/(\sqrt{\hat{\mathbf s}} + \varepsilon)\)</span></td>
+</tr>
+<tr>
+<td>Lagrange</td>
+<td><span class="arithmatex">\(\nabla f + \lambda\nabla g = \mathbf 0\)</span>, <span class="arithmatex">\(g(\mathbf x) = 0\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section id="befehle">
+<div class="eyebrow">Anhang B</div>
+<h2>Befehle</h2>
+<pre><code class="language-python">import torch
+from scipy import optimize
+
+# Automatisches Differenzieren
+x = torch.tensor([1.0, 2.0], requires_grad=True)
+f = (x ** 2).sum() + torch.sin(x[0])
+f.backward()
+x.grad                                          # ∇f an der Stelle x
+
+torch.autograd.functional.jacobian(fn, x)       # Jacobi-Matrix
+torch.autograd.functional.hessian(fn, x)        # Hesse-Matrix
+
+# Optimierer beim Training
+opt = torch.optim.Adam(model.parameters(), lr=1e-3)   # oder SGD(..., momentum=0.9), AdamW
+loss.backward(); opt.step(); opt.zero_grad()
+
+# Klassische Optimierung
+optimize.minimize(fun, x0, jac=grad, method="L-BFGS-B")             # mit Gradient, Schranken möglich
+optimize.minimize(fun, x0, constraints={"type": "eq", "fun": g})     # Nebenbedingung g(x) = 0
+</code></pre>
+</section>
+    <footer>Alle Abbildungen rechnen live im Browser, Ableitungen dort numerisch über kleine Differenzen. In der Praxis übernimmt das automatische Differenzieren, etwa in PyTorch oder JAX.</footer>
+  </main>
+</div>
+<script src="../assets/ui.js"></script>
+<script src="../assets/va.js"></script>
+<script>
+/* ---------- Taylor ---------- */
+(() => {
+  const c = $('#cv-ty'), iff = $('#ty-f'), inn = $('#ty-n'), ix = $('#ty-x');
+  const fact = k => k <= 1 ? 1 : k * fact(k - 1);
+  const F = {
+    sin: { f: Math.sin, d: (k, x) => [Math.sin, Math.cos, x => -Math.sin(x), x => -Math.cos(x)][k % 4](x), x0: -4, x1: 4, y0: -2, y1: 2, lo: -3, hi: 3 },
+    exp: { f: Math.exp, d: (k, x) => Math.exp(x), x0: -4, x1: 3, y0: -1, y1: 8, lo: -3, hi: 2 },
+    ln: { f: x => x > 0 ? Math.log(x) : NaN, d: (k, x) => k === 0 ? Math.log(x) : (k % 2 ? 1 : -1) * fact(k - 1) / x ** k, x0: -0.5, x1: 5, y0: -3, y1: 2.5, lo: 0.3, hi: 4 },
+  };
+  let last = '';
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value]; if (last !== iff.value) { last = iff.value; ix.min = fn.lo; ix.max = fn.hi; if (+ix.value < fn.lo || +ix.value > fn.hi) ix.value = (fn.lo + fn.hi) / 2; }
+    const N = +inn.value, x0 = +ix.value; $('#ty-n-o').textContent = N; $('#ty-x-o').textContent = nf(x0, 2);
+    const co = Array.from({ length: N + 1 }, (_, k) => fn.d(k, x0) / fact(k)), T = (x, n) => { let s = 0; for (let k = n; k >= 0; k--) s = s * (x - x0) + co[k]; return s; };
+    const { ctx, w, h } = fit(c);
+    const fr = frame(ctx, 0, 0, w, h, { x0: fn.x0, x1: fn.x1, y0: fn.y0, y1: fn.y1, xt: Array.from({ length: Math.floor(fn.x1) - Math.ceil(fn.x0) + 1 }, (_, i) => Math.ceil(fn.x0) + i), yt: [Math.ceil(fn.y0), 0, Math.floor(fn.y1)], xl: 'x', l: 30, t: 10 });
+    ctx.save(); ctx.beginPath(); ctx.rect(fr.bx, fr.by, fr.bw, fr.bh); ctx.clip();
+    const plot = (g, col, lw, dash) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath(); let on = false; for (let i = 0; i <= 500; i++) { const x = fn.x0 + (fn.x1 - fn.x0) * i / 500, y = g(x); if (!isFinite(y)) { on = false; continue; } const Y = fr.Y(Math.max(fn.y0 - 5, Math.min(fn.y1 + 5, y))); on ? ctx.lineTo(fr.X(x), Y) : ctx.moveTo(fr.X(x), Y); on = true; } ctx.stroke(); ctx.setLineDash([]); };
+    for (let n = 1; n < N; n++) plot(x => T(x, n), rgba(tok('--accent'), 0.22), 1.4);
+    plot(fn.f, tok('--fg'), 2.4); plot(x => T(x, N), tok('--accent'), 2.4);
+    if (iff.value === 'ln') { ctx.fillStyle = rgba(tok('--hole'), 0.08); ctx.fillRect(fr.X(2 * x0), fr.by, fr.X(fn.x1) - fr.X(2 * x0), fr.bh); ctx.fillRect(fr.X(fn.x0), fr.by, fr.X(0) - fr.X(fn.x0), fr.bh); }
+    ctx.restore();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(fr.X(x0), fr.Y(fn.f(x0)), 5, 0, 2 * Math.PI); ctx.fill();
+    // Bereich, in dem die Näherung auf 0,05 genau ist
+    let a = x0, b = x0; const ok = x => isFinite(fn.f(x)) && Math.abs(T(x, N) - fn.f(x)) < 0.05; while (a > fn.x0 && ok(a - 0.01)) a -= 0.01; while (b < fn.x1 && ok(b + 0.01)) b += 0.01;
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(fr.X(a), fr.by + fr.bh - 2); ctx.lineTo(fr.X(b), fr.by + fr.bh - 2); ctx.stroke();
+    const terms = co.map((v, k) => k === 0 ? nf(v, 2) : `${v < 0 ? '−' : '+'} ${nf(Math.abs(v), k > 3 ? 4 : 3)}·(x − x₀)${k > 1 ? '⁰¹²³⁴⁵⁶⁷'[k] : ''}`).join(' ');
+    $('#ty-read').innerHTML = `<span class="k">T${'₀₁₂₃₄₅₆₇'[N]}(x) =</span> ${terms}<br><span class="k">auf 0,05 genau (Balken unten) von</span> ${nf(a, 2)} <span class="k">bis</span> ${nf(b, 2)}, <span class="k">Breite</span> <b>${nf(b - a, 2)}</b>`;
+  } });
+  [iff, inn, ix].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Gradient ---------- */
+(() => {
+  const c = $('#cv-gd'), iff = $('#gd-f'), ia = $('#gd-a'); let P = null, pt = [0.4, 0.9];
+  const m = reg({ el: c, draw() {
+    const L = LANDS[iff.value], f = L.f, ang = +ia.value * Math.PI / 180, u = [Math.cos(ang), Math.sin(ang)]; $('#gd-a-o').textContent = ia.value + '°';
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, 3);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.32); contours(P, G, linLevels(L.lo, L.hi, 16), rgba(tok('--fg'), 0.35), 1);
+    const [x, y] = pt, g = grad2(f, x, y), gn = Math.hypot(...g), z = f(x, y);
+    contours(P, G, [z], tok('--fg'), 2);
+    if (gn > 1e-6) { const t = [-g[1] / gn, g[0] / gn]; line(P, x - 1.2 * t[0], y - 1.2 * t[1], x + 1.2 * t[0], y + 1.2 * t[1], tok('--muted'), 1.4, [5, 4]); }
+    const sc = Math.min(1.6, 0.9 * gn) / Math.max(gn, 1e-9);
+    if (gn > 1e-6) { arrow(P, x, y, x + sc * g[0], y + sc * g[1], tok('--accent'), 3); label(P, x + sc * g[0], y + sc * g[1], '∇f', tok('--accent')); }
+    arrow(P, x, y, x + 0.9 * u[0], y + 0.9 * u[1], tok('--bin2'), 2.6); label(P, x + 0.9 * u[0], y + 0.9 * u[1], 'u', tok('--bin2'));
+    handle(P, x, y, tok('--fg'));
+    const du = g[0] * u[0] + g[1] * u[1], th = gn > 1e-6 ? Math.acos(Math.max(-1, Math.min(1, du / gn))) * 180 / Math.PI : 0;
+    $('#gd-read').innerHTML = `<span class="k">Punkt</span> (${nf(x, 2)}; ${nf(y, 2)})  <span class="k">f =</span> ${nf(z, 3)}  <span class="k">∇f =</span> (${nf(g[0], 3)}; ${nf(g[1], 3)}), <span class="k">|∇f| =</span> ${nf(gn, 3)}<br><span class="k">Steigung in Richtung u:</span> ∇fᵀu = |∇f|·cos ${nf(th, 0)}° = <b>${nf(du, 3)}</b>`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => P, () => m.draw());
+  [iff, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Jacobi ---------- */
+(() => {
+  const c = $('#cv-jc'), iff = $('#jc-f'), ie = $('#jc-e'); let PI_ = null;
+  const MAPS = {
+    welle: { f: (x, y) => [x + 0.35 * Math.sin(1.6 * y), y + 0.35 * Math.sin(1.6 * x)], R: [2.6, 0, 0], Ro: [2.8, 0, 0], p: [0.6, 0.4], dom: [[-2.5, 2.5], [-2.5, 2.5]], lx: 'x', ly: 'y' },
+    polar: { f: (r, t) => [r * Math.cos(t), r * Math.sin(t)], R: [1.8, 1.5, 0], Ro: [3, 0, 0], p: [1.6, 0.7], dom: [[0, 3], [-3, 3]], lx: 'r', ly: 'φ' },
+    quad: { f: (x, y) => [0.5 * (x * x - y * y), x * y], R: [2, 0, 0], Ro: [2.2, 0, 0], p: [1.1, 0.6], dom: [[-1.8, 1.8], [-1.8, 1.8]], lx: 'x', ly: 'y' },
+  };
+  let pt = null, last = '';
+  const m = reg({ el: c, draw() {
+    const M = MAPS[iff.value], f = M.f, e = +ie.value; if (last !== iff.value) { last = iff.value; pt = M.p.slice(); } $('#jc-e-o').textContent = nf(e, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w / 2 - 8, ph = narrow ? h / 2 - 8 : h;
+    const Pi = PI_ = view(ctx, 0, 18, pw, ph - 18, M.R[0], M.R[1], M.R[2]), Po = view(ctx, narrow ? 0 : w / 2 + 8, narrow ? h / 2 + 18 : 18, pw, ph - 18, M.Ro[0], M.Ro[1], M.Ro[2]);
+    const [d0, d1] = M.dom, Mu = tok('--muted'), A = tok('--accent'), H = tok('--hole');
+    // Gitterlinien in beiden Ebenen
+    const lines = []; for (let x = Math.ceil(d0[0] * 2) / 2; x <= d0[1] + 1e-9; x += 0.5) lines.push(Array.from({ length: 61 }, (_, k) => [x, d1[0] + (d1[1] - d1[0]) * k / 60]));
+    for (let y = Math.ceil(d1[0] * 2) / 2; y <= d1[1] + 1e-9; y += 0.5) lines.push(Array.from({ length: 61 }, (_, k) => [d0[0] + (d0[1] - d0[0]) * k / 60, y]));
+    [[Pi, p => p], [Po, p => f(...p)]].forEach(([V, T]) => { V.clip(); ctx.strokeStyle = rgba(Mu, 0.45); ctx.lineWidth = 1; lines.forEach(L => { poly(V, L.map(T)); ctx.stroke(); }); V.unclip(); });
+    // Quadrat und sein Bild
+    const [px, py] = pt, sq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [px + a * e / 2, py + b * e / 2]);
+    const edge = []; for (let k = 0; k < 4; k++) for (let i = 0; i < 20; i++) { const [a, b] = sq[k], [c2, d] = sq[(k + 1) % 4]; edge.push([a + (c2 - a) * i / 20, b + (d - b) * i / 20]); }
+    Pi.clip(); poly(Pi, sq, true); ctx.fillStyle = rgba(A, 0.3); ctx.fill(); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke(); Pi.unclip();
+    const h_ = 1e-5, fp = f(px, py), fx = f(px + h_, py), fy = f(px, py + h_), J = [(fx[0] - fp[0]) / h_, (fy[0] - fp[0]) / h_, (fx[1] - fp[1]) / h_, (fy[1] - fp[1]) / h_];
+    Po.clip(); poly(Po, edge.map(p => f(...p)), true); ctx.fillStyle = rgba(A, 0.3); ctx.fill(); ctx.strokeStyle = A; ctx.lineWidth = 2; ctx.stroke();
+    const lin = ([x, y]) => [fp[0] + J[0] * (x - px) + J[1] * (y - py), fp[1] + J[2] * (x - px) + J[3] * (y - py)];
+    poly(Po, sq.map(lin), true); ctx.strokeStyle = H; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    dot(Po, ...fp, tok('--fg'), 4); Po.unclip();
+    handle(Pi, px, py, tok('--fg'));
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText(`Eingabe (${M.lx}, ${M.ly})`, Pi.x0, Pi.y0 - 4); ctx.fillText('Bild unter f', Po.x0, Po.y0 - 4);
+    if (!narrow) arrowPx(ctx, w / 2 - 14, h / 2, w / 2 + 6, h / 2, Mu);
+    // Flächenverhältnis
+    let area = 0; const pe = edge.map(p => f(...p)); for (let i = 0; i < pe.length; i++) { const [a, b] = pe[i], [c2, d] = pe[(i + 1) % pe.length]; area += a * d - b * c2; } area = Math.abs(area / 2) / (e * e);
+    const dJ = J[0] * J[3] - J[1] * J[2];
+    $('#jc-read').innerHTML = `<span class="k">J(p) =</span> [${nf(J[0], 2)}  ${nf(J[1], 2)} ; ${nf(J[2], 2)}  ${nf(J[3], 2)}]  <span class="k">det J =</span> <b>${nf(dJ, 3)}</b>  <span class="k">·</span>  <span class="k">tatsächliche Flächenvergrößerung des Quadrats:</span> <b>${nf(area, 3)}</b>`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => PI_, () => m.draw());
+  [iff, ie].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Backpropagation ---------- */
+(() => {
+  const c = $('#cv-bp'), iw = $('#bp-w'), ib = $('#bp-b'), X = 1.5, T = 1; let step = 0;
+  const sig = z => 1 / (1 + Math.exp(-z));
+  const N = { x: [0, 0.18, 'x'], w: [0, 0.5, 'w'], b: [0, 0.84, 'b'], u: [1, 0.34, 'u = w·x'], z: [2, 0.55, 'z = u + b'], a: [3, 0.55, 'a = σ(z)'], L: [4, 0.55, 'L = (a − t)²'] };
+  const E = [['x', 'u', v => 'w'], ['w', 'u', v => 'x'], ['u', 'z', v => '1'], ['b', 'z', v => '1'], ['z', 'a', v => 'a(1−a)'], ['a', 'L', v => '2(a − t)']];
+  const FW = { u: 1, z: 2, a: 3, L: 4 }, BW = { L: 5, a: 6, z: 7, u: 8, b: 8, w: 9, x: 9 }, EB = { 'a-L': 6, 'z-a': 7, 'u-z': 8, 'b-z': 8, 'x-u': 9, 'w-u': 9 };
+  const calc = () => { const w = +iw.value, b = +ib.value, u = w * X, z = u + b, a = sig(z), L = (a - T) ** 2, ga = 2 * (a - T), gz = ga * a * (1 - a);
+    return { v: { x: X, w, b, u, z, a, L }, g: { L: 1, a: ga, z: gz, u: gz, b: gz, w: gz * X, x: gz * w } }; };
+  const TXT = [
+    'Start: Eingabe x, Parameter w und b sind bekannt.',
+    'Schritt 1 (vorwärts): u = w·x',
+    'Schritt 2 (vorwärts): z = u + b',
+    'Schritt 3 (vorwärts): a = σ(z) = 1/(1 + e⁻ᶻ)',
+    'Schritt 4 (vorwärts): L = (a − t)²',
+    'Schritt 5 (rückwärts): ∂L/∂L = 1, hier beginnt die Rückrichtung',
+    'Schritt 6: ∂L/∂a = ∂L/∂L · 2(a − t)',
+    'Schritt 7: ∂L/∂z = ∂L/∂a · σ′(z), mit σ′(z) = a(1 − a)',
+    'Schritt 8: ∂L/∂u = ∂L/∂b = ∂L/∂z · 1, die Summe gibt den Gradienten unverändert an beide Eingänge weiter',
+    'Schritt 9: ∂L/∂w = ∂L/∂u · x und ∂L/∂x = ∂L/∂u · w, das Produkt vertauscht die Faktoren',
+  ];
+  const m = reg({ el: c, draw() {
+    const { v, g } = calc(); $('#bp-w-o').textContent = nf(v.w, 2); $('#bp-b-o').textContent = nf(v.b, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg'), Mu = tok('--muted');
+    const bw = Math.min(106, w / 7.2), bh = narrow ? 56 : 60, colX = k => 8 + bw / 2 + k * (w - 16 - bw) / 4, rowY = f => 14 + bh / 2 + f * (h - 28 - bh);
+    const P = k => [colX(N[k][0]), rowY(N[k][1])], known = k => k === 'x' || k === 'w' || k === 'b' || step >= FW[k], gknown = k => step >= BW[k];
+    // Kanten
+    const labs = [];
+    E.forEach(([s, t, lab]) => { const [x1, y1] = P(s), [x2, y2] = P(t), act = step >= EB[s + '-' + t], fwAct = step === FW[t];
+      arrowPx(ctx, x1 + bw / 2, y1, x2 - bw / 2 - 2, y2, fwAct ? A : act ? H : rgba(Mu, 0.6), fwAct || step === EB[s + '-' + t] ? 2.2 : 1.3);
+      if (act) labs.push([lab(), (x1 + bw / 2 + x2 - bw / 2) / 2, (y1 + y2) / 2]); });
+    // Knoten
+    Object.keys(N).forEach(k => { const [x, y] = P(k), cur = step === FW[k] || step === BW[k];
+      ctx.fillStyle = tok('--surface'); ctx.strokeStyle = cur ? (step >= 5 ? H : A) : tok('--rule'); ctx.lineWidth = cur ? 2.4 : 1.2;
+      ctx.beginPath(); ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 6); ctx.fill(); ctx.stroke();
+      ctx.textAlign = 'center'; ctx.font = `600 ${narrow ? 11 : 13}px ${DISP}`; ctx.fillStyle = Fg; ctx.fillText(narrow ? k : N[k][2], x, y - bh / 2 + 16);
+      ctx.font = `${narrow ? 10.5 : 12}px ${MONO}`;
+      if (known(k)) { ctx.fillStyle = A; ctx.fillText(nf(v[k], 3), x, y + 3); }
+      if (gknown(k)) { ctx.fillStyle = H; ctx.fillText(nf(g[k], 3), x, y + bh / 2 - 8); } });
+    // lokale Ableitungen an den Kanten, über allem mit Hintergrund
+    ctx.font = `${narrow ? 10 : 11.5}px ${MONO}`; ctx.textAlign = 'center'; labs.forEach(([t, x, y]) => { const tw = ctx.measureText(t).width + 8; ctx.fillStyle = tok('--surface'); ctx.fillRect(x - tw / 2, y - 9, tw, 16); ctx.strokeStyle = rgba(H, 0.5); ctx.lineWidth = 1; ctx.strokeRect(x - tw / 2 + 0.5, y - 8.5, tw - 1, 15); ctx.fillStyle = H; ctx.fillText(t, x, y + 3.5); });
+    ctx.font = `12px ${DISP}`; ctx.textAlign = 'left'; ctx.fillStyle = A; ctx.fillText('Wert', 8, h - 4); ctx.fillStyle = H; ctx.fillText('Gradient ∂L/∂·', 44, h - 4); ctx.strokeStyle = rgba(H, 0.5); ctx.strokeRect(150.5, h - 15.5, 14, 13); ctx.fillStyle = Mu; ctx.fillText('lokale Ableitung', 170, h - 4);
+    $('#bp-next').disabled = step >= 9; $('#bp-back').disabled = step <= 0; $('#bp-upd').disabled = step < 9;
+    $('#bp-read').innerHTML = `<b>${TXT[step]}</b><br><span class="k">Verlust L =</span> ${nf(v.L, 4)}${step >= 9 ? `  <span class="k">·</span>  <span class="k">∂L/∂w =</span> ${nf(g.w, 4)}, <span class="k">∂L/∂b =</span> ${nf(g.b, 4)}` : ''}`;
+  } });
+  $('#bp-next').addEventListener('click', () => { step = Math.min(9, step + 1); m.draw(); });
+  $('#bp-back').addEventListener('click', () => { step = Math.max(0, step - 1); m.draw(); });
+  $('#bp-reset').addEventListener('click', () => { step = 0; m.draw(); });
+  $('#bp-upd').addEventListener('click', () => { const { g } = calc(); iw.value = Math.max(-2, Math.min(2, +iw.value - g.w)); ib.value = Math.max(-2, Math.min(2, +ib.value - g.b)); step = 4; m.draw(); });
+  [iw, ib].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Hesse ---------- */
+(() => {
+  const c = $('#cv-hs'), iff = $('#hs-f'); let P = null, pt = [0.2, 0.4];
+  const m = reg({ el: c, draw() {
+    const L = LANDS[iff.value], f = L.f, [x, y] = pt, z = f(x, y), g = grad2(f, x, y), Hm = hess2(f, x, y), E = eigSym2(Hm);
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, 3);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.22); const lv = linLevels(L.lo, L.hi, 16); contours(P, G, lv, rgba(tok('--fg'), 0.4), 1);
+    const q = (X, Y) => { const dx = X - x, dy = Y - y; return z + g[0] * dx + g[1] * dy + 0.5 * (Hm[0] * dx * dx + 2 * Hm[1] * dx * dy + Hm[3] * dy * dy); };
+    const Q = sample(P, q, 4); const [cx, cy] = P.S(x, y); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 1.4 * P.s, 0, 2 * Math.PI); ctx.clip(); ctx.setLineDash([5, 4]); contours(P, Q, lv, tok('--hole'), 1.6); ctx.setLineDash([]); ctx.restore();
+    ctx.strokeStyle = rgba(tok('--hole'), 0.35); ctx.lineWidth = 1; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(cx, cy, 1.4 * P.s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    E.v.forEach((v, i) => { const l = E.l[i], len = Math.min(1.6, 0.35 + 0.6 * Math.abs(l)), col = l >= 0 ? tok('--accent') : tok('--hole');
+      arrow(P, x, y, x + len * v[0], y + len * v[1], col, 2.6); arrow(P, x, y, x - len * v[0], y - len * v[1], col, 2.6); label(P, x + len * v[0], y + len * v[1], `λ${'₁₂'[i]} = ${nf(l, 2)}`, col, 8, -6, `600 12px ${DISP}`); });
+    handle(P, x, y, tok('--fg'));
+    const [l1, l2] = E.l, cls = l1 > 1e-3 && l2 > 1e-3 ? 'beide Eigenwerte positiv: lokal eine Schale (konvex)' : l1 < -1e-3 && l2 < -1e-3 ? 'beide negativ: lokal eine Kuppe' : (l1 > 1e-3 && l2 < -1e-3) ? 'Vorzeichen gemischt: lokal ein Sattel' : 'ein Eigenwert fast null: in einer Richtung flach';
+    const gn = Math.hypot(...g);
+    $('#hs-read').innerHTML = `<span class="k">H =</span> [${nf(Hm[0], 2)}  ${nf(Hm[1], 2)} ; ${nf(Hm[2], 2)}  ${nf(Hm[3], 2)}]  <span class="k">Eigenwerte</span> ${nf(l1, 2)} und ${nf(l2, 2)}: ${cls}<br><span class="k">|∇f| =</span> ${nf(gn, 4)}${gn < 1e-3 ? ' → kritischer Punkt: <b>' + (l1 > 0 && l2 > 0 ? 'Minimum' : l1 < 0 && l2 < 0 ? 'Maximum' : 'Sattelpunkt') + '</b>' : ''}`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => P, () => m.draw());
+  iff.addEventListener('input', () => m.draw());
+  $('#hs-n').addEventListener('click', () => { const f = LANDS[iff.value].f, [x, y] = pt, g = grad2(f, x, y), [a, b, , d] = hess2(f, x, y), det = a * d - b * b; if (Math.abs(det) < 1e-9) return;
+    let dx = -(d * g[0] - b * g[1]) / det, dy = -(-b * g[0] + a * g[1]) / det; const n = Math.hypot(dx, dy); if (n > 1.5) { dx *= 1.5 / n; dy *= 1.5 / n; } pt = [x + dx, y + dy]; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Gradientenabstieg ---------- */
+(() => {
+  const c = $('#cv-ga'), iff = $('#ga-f'), ie = $('#ga-e'), inn = $('#ga-n'); let P = null, st = { gut: [-2.3, 1.8], schlecht: [-2.6, 1.2], rosen: [-1.4, 1.6] };
+  const VIEW = { gut: [3, 0, 0], schlecht: [3, 0, 0], rosen: [2.1, 0, 0.7] };
+  const m = reg({ el: c, draw() {
+    const key = iff.value, L = LANDS[key], f = L.f, eta = 10 ** +ie.value, N = +inn.value; $('#ga-e-o').textContent = nf(eta, eta < 0.01 ? 4 : 3); $('#ga-n-o').textContent = N;
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, ...VIEW[key]);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.3);
+    const lv = key === 'rosen' ? [0.005, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.1, 1.6, 2.4, 3.5, 5] : linLevels(0, L.hi, 14); contours(P, G, lv, rgba(tok('--fg'), 0.38), 1);
+    let p = st[key].slice(); const path = [p.slice()]; let div = false;
+    for (let k = 0; k < N; k++) { const g = grad2(f, ...p); p = [p[0] - eta * g[0], p[1] - eta * g[1]]; if (!isFinite(p[0]) || Math.hypot(...p) > 50) { div = true; break; } path.push(p.slice()); }
+    P.clip(); poly(P, path); ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 1.8; ctx.stroke(); path.forEach(q => dot(P, ...q, tok('--hole'), 2.6)); P.unclip();
+    const opt = key === 'rosen' ? [1, 1] : [0, 0]; ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; const [ox, oy] = P.S(...opt); ctx.beginPath(); ctx.moveTo(ox - 6, oy - 6); ctx.lineTo(ox + 6, oy + 6); ctx.moveTo(ox + 6, oy - 6); ctx.lineTo(ox - 6, oy + 6); ctx.stroke();
+    handle(P, ...st[key], tok('--fg'));
+    const Hm = hess2(f, ...opt), E = eigSym2(Hm), lmax = Math.max(...E.l), lmin = Math.min(...E.l), last = path.at(-1);
+    $('#ga-read').innerHTML = `<span class="k">nach ${path.length - 1} Schritten:</span> f = <b>${div ? 'divergiert' : ex(f(...last), 2)}</b>, Abstand zum Minimum ${div ? '∞' : nf(Math.hypot(last[0] - opt[0], last[1] - opt[1]), 3)}<br><span class="k">Krümmung am Minimum:</span> λ = ${nf(lmin, 2)} … ${nf(lmax, 2)}, <span class="k">Kondition</span> ${nf(lmax / lmin, 1)}  <span class="k">·</span>  <span class="k">stabil für η <</span> 2/λmax = ${nf(2 / lmax, 3)}${eta > 2 / lmax ? ' <b>(überschritten)</b>' : ''}`;
+  } });
+  draggable(c, [{ get: () => st[iff.value], set: (x, y) => { st[iff.value] = [x, y]; } }], () => P, () => m.draw());
+  [iff, ie, inn].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Optimierer ---------- */
+(() => {
+  const c = $('#cv-op'), iff = $('#op-f'), ie = $('#op-e'), inn = $('#op-n'), is = $('#op-s'), bp = $('#op-p'); let P = null;
+  const st = { schlecht: [-2.6, 1.2], rosen: [-1.4, 1.6], mulden: [2.2, -1.8] }, VIEW = { schlecht: [3, 0, 0], rosen: [2.1, 0, 0.7], mulden: [3, 0, 0] };
+  const run = (f, p0, eta, N, kind, noise) => { setSeed(4711); let p = p0.slice(), v = [0, 0], s = [0, 0]; const path = [p.slice()];
+    for (let k = 1; k <= N; k++) { let g = grad2(f, ...p); if (noise) g = [g[0] + 0.6 * gauss(), g[1] + 0.6 * gauss()];
+      if (kind === 'gd') p = [p[0] - eta * g[0], p[1] - eta * g[1]];
+      else if (kind === 'mom') { v = [0.9 * v[0] + g[0], 0.9 * v[1] + g[1]]; p = [p[0] - eta * v[0], p[1] - eta * v[1]]; }
+      else { v = [0.9 * v[0] + 0.1 * g[0], 0.9 * v[1] + 0.1 * g[1]]; s = [0.999 * s[0] + 0.001 * g[0] ** 2, 0.999 * s[1] + 0.001 * g[1] ** 2];
+        const mh = v.map(x => x / (1 - 0.9 ** k)), sh = s.map(x => x / (1 - 0.999 ** k)); p = [p[0] - 3 * eta * mh[0] / (Math.sqrt(sh[0]) + 1e-8), p[1] - 3 * eta * mh[1] / (Math.sqrt(sh[1]) + 1e-8)]; }
+      if (!isFinite(p[0]) || Math.hypot(...p) > 50) break; path.push(p.slice()); } return path; };
+  const m = reg({ el: c, playing: false, anim: true, t: 0, step(dt) { this.t += dt * 30; if (this.t >= 150) { this.t = 150; this.playing = false; bp.textContent = 'Abspielen'; } inn.value = Math.floor(this.t); }, draw() {
+    const key = iff.value, L = LANDS[key], f = L.f, eta = 10 ** +ie.value, N = +inn.value; $('#op-e-o').textContent = nf(eta, 3); $('#op-n-o').textContent = N;
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, ...VIEW[key]);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.25);
+    contours(P, G, key === 'rosen' ? [0.005, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.1, 1.6, 2.4, 3.5, 5] : linLevels(L.lo, L.hi, 14), rgba(tok('--fg'), 0.35), 1);
+    const M = [['gd', 'Gradientenabstieg', tok('--hole')], ['mom', 'Momentum (β = 0,9)', tok('--bin2')], ['adam', 'Adam', tok('--accent')]], res = [];
+    P.clip(); M.forEach(([k, , col]) => { const path = run(f, st[key], eta, N, k, is.checked); res.push(path); poly(P, path); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); dot(P, ...path.at(-1), col, 4.5); }); P.unclip();
+    handle(P, ...st[key], tok('--fg'));
+    legend(ctx, 10, 18, M.map(([, n, col]) => [n, col]), { maxW: w - 20 });
+    $('#op-read').innerHTML = `<span class="k">f nach ${N} Schritten:</span> ` + M.map(([, n], i) => `${n} <b>${res[i].length - 1 < N ? 'divergiert' : ex(f(...res[i].at(-1)), 2)}</b>`).join('  <span class="k">·</span>  ');
+  } });
+  draggable(c, [{ get: () => st[iff.value], set: (x, y) => { st[iff.value] = [x, y]; } }], () => P, () => m.draw());
+  [iff, ie, inn, is].forEach(e => e.addEventListener('input', rafDebounce(() => { m.t = +inn.value; m.draw(); })));
+  bp.addEventListener('click', () => { m.playing = !m.playing; if (m.playing && m.t >= 150) m.t = 0; if (m.playing) m.t = 0; bp.textContent = m.playing ? 'Anhalten' : 'Abspielen'; });
+})();
+</script>
+<script>
+/* ---------- Lagrange ---------- */
+(() => {
+  const c = $('#cv-lg'), it = $('#lg-t'), ir = $('#lg-r'); let P = null;
+  const f = (x, y) => 0.5 * ((x - 1.5) ** 2 + 2.5 * (y - 1) ** 2), fg = (x, y) => [x - 1.5, 2.5 * (y - 1)];
+  const m = reg({ el: c, draw() {
+    const th = +it.value * Math.PI / 180, r = +ir.value, x = r * Math.cos(th), y = r * Math.sin(th); $("#lg-t-o").textContent = nf(+it.value, 1) + "°"; $('#lg-r-o').textContent = nf(r, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, pw = narrow ? w : w * 0.6, ph = narrow ? h * 0.62 : h;
+    P = view(ctx, 0, 0, pw, ph, 2.9, 0.2, 0.2);
+    P.clip(); const G = sample(P, f, 4); shade(P, G, 0, 8, tok('--accent'), 0.28); contours(P, G, linLevels(0, 8, 16), rgba(tok('--fg'), 0.38), 1);
+    const circ = Array.from({ length: 121 }, (_, k) => [r * Math.cos(k / 120 * 2 * Math.PI), r * Math.sin(k / 120 * 2 * Math.PI)]); poly(P, circ, true); ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2.6; ctx.stroke();
+    const gf = fg(x, y), gg = [2 * x, 2 * y], nf_ = Math.hypot(...gf), ng = Math.hypot(...gg), tn = [-Math.sin(th), Math.cos(th)];
+    const sf = Math.min(1.3, 0.8 * nf_) / (nf_ || 1), sg = 0.9 / (ng || 1);
+    arrow(P, x, y, x - sf * gf[0], y - sf * gf[1], tok('--accent'), 3); label(P, x - sf * gf[0], y - sf * gf[1], '−∇f', tok('--accent'));
+    arrow(P, x, y, x + sg * gg[0], y + sg * gg[1], tok('--bin2'), 3); label(P, x + sg * gg[0], y + sg * gg[1], '∇g', tok('--bin2'));
+    const tc = -(gf[0] * tn[0] + gf[1] * tn[1]); if (Math.abs(tc) * sf > 0.05) arrow(P, x, y, x + sf * tc * tn[0], y + sf * tc * tn[1], tok('--accent'), 1.8, [4, 3]);
+    const [mx, my] = P.S(1.5, 1); ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(mx - 5, my - 5); ctx.lineTo(mx + 5, my + 5); ctx.moveTo(mx + 5, my - 5); ctx.lineTo(mx - 5, my + 5); ctx.stroke();
+    handle(P, x, y, tok('--fg')); P.unclip();
+    // f entlang des Kreises
+    const fx = narrow ? 0 : pw + 16, fy = narrow ? ph + 8 : 0, fw = narrow ? w : w - pw - 16, fh = narrow ? h - ph - 8 : h;
+    const vals = Array.from({ length: 361 }, (_, k) => f(r * Math.cos((k - 180) * Math.PI / 180), r * Math.sin((k - 180) * Math.PI / 180))), vmax = Math.max(...vals); let vmin = Infinity; for (let k = 0; k <= 3600; k++) { const t = (k / 10 - 180) * Math.PI / 180; vmin = Math.min(vmin, f(r * Math.cos(t), r * Math.sin(t))); }
+    const F = frame(ctx, fx, fy, fw, fh, { x0: -180, x1: 180, y0: 0, y1: vmax * 1.08, xt: [-180, -90, 0, 90, 180], xf: v => v + '°', yt: [0, Math.round(vmax)], xl: 'Position auf dem Kreis', l: 30, t: 20 });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; ctx.beginPath(); vals.forEach((v, k) => k ? ctx.lineTo(F.X(k - 180), F.Y(v)) : ctx.moveTo(F.X(-180), F.Y(v))); ctx.stroke();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(F.X(+it.value), F.Y(f(x, y)), 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = `600 13px ${DISP}`; ctx.fillStyle = tok('--fg'); ctx.textAlign = 'left'; ctx.fillText('f auf dem Kreis', fx, fy + 13);
+    const cosang = -(gf[0] * gg[0] + gf[1] * gg[1]) / (nf_ * ng || 1), ang = Math.acos(Math.max(-1, Math.min(1, cosang))) * 180 / Math.PI, lam = -(gf[0] * gg[0] + gf[1] * gg[1]) / (ng * ng);
+    $('#lg-read').innerHTML = `<span class="k">f =</span> ${nf(f(x, y), 3)} (kleinster Wert auf dem Kreis ${nf(vmin, 3)})  <span class="k">·</span>  <span class="k">Winkel zwischen −∇f und ∇g:</span> <b>${nf(ang, 1)}°</b>  <span class="k">Anteil von −∇f entlang des Kreises:</span> ${nf(tc, 3)}` + (Math.abs(tc) < 0.01 ? `<br><span class="k">Gradienten parallel:</span> ∇f + λ∇g = 0 mit λ = <b>${nf(lam, 3)}</b>` : '');
+  } });
+  draggable(c, [{ get: () => { const t = +it.value * Math.PI / 180, r = +ir.value; return [r * Math.cos(t), r * Math.sin(t)]; }, set: (x, y) => { it.value = (Math.atan2(y, x) * 180 / Math.PI).toFixed(1); } }], () => P, () => m.draw());
+  [it, ir].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#lg-o').addEventListener('click', () => { const r = +ir.value; let best = 0, bv = Infinity; for (let k = -1800; k <= 1800; k++) { const t = k / 10 * Math.PI / 180, v = f(r * Math.cos(t), r * Math.sin(t)); if (v < bv) { bv = v; best = k / 10; } } it.value = best; m.draw(); });
+})();
+</script>
+</body>
+</html>

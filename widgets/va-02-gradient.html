@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradient und Höhenlinien</title>
+<!-- Erzeugt von build.py aus src/figures/va-02-gradient.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/va.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-gd" class="c-va-sq" role="img" aria-label="Höhenlinien einer Funktion zweier Variablen mit dem Gradienten an einem ziehbaren Punkt und einer wählbaren Richtung."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="gd-f">Funktion</label></div><select id="gd-f" autocomplete="off" style="width:100%"><option value="schale">Schale (quadratisch)</option><option value="mulden" selected>zwei Mulden</option><option value="sattel">Sattel</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="gd-a">Richtung u</label><output id="gd-a-o"></output></div><input id="gd-a" type="range" min="0" max="360" step="1" value="20" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="gd-read"></div>
+  <figcaption><b>Abb. 2</b> Höhenlinien einer Funktion \(f(x, y)\), dunklere Flächen liegen tiefer. Den Punkt kann man ziehen. Der blaue Pfeil ist der Gradient \(\nabla f\): Er zeigt bergauf in die steilste Richtung und steht senkrecht auf der Höhenlinie (gestrichelt die Tangente). Der gelbe Pfeil ist eine frei wählbare Richtung \(\mathbf u\). Die Steigung in dieser Richtung ist \(\nabla f^\top\mathbf u\): am größten parallel zum Gradienten, null entlang der Höhenlinie, negativ dagegen.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/va.js"></script>
+<script>
+/* ---------- Gradient ---------- */
+(() => {
+  const c = $('#cv-gd'), iff = $('#gd-f'), ia = $('#gd-a'); let P = null, pt = [0.4, 0.9];
+  const m = reg({ el: c, draw() {
+    const L = LANDS[iff.value], f = L.f, ang = +ia.value * Math.PI / 180, u = [Math.cos(ang), Math.sin(ang)]; $('#gd-a-o').textContent = ia.value + '°';
+    const { ctx, w, h } = fit(c); P = view(ctx, 0, 0, w, h, 3);
+    const G = sample(P, f, 4); shade(P, G, L.lo, L.hi, tok('--accent'), 0.32); contours(P, G, linLevels(L.lo, L.hi, 16), rgba(tok('--fg'), 0.35), 1);
+    const [x, y] = pt, g = grad2(f, x, y), gn = Math.hypot(...g), z = f(x, y);
+    contours(P, G, [z], tok('--fg'), 2);
+    if (gn > 1e-6) { const t = [-g[1] / gn, g[0] / gn]; line(P, x - 1.2 * t[0], y - 1.2 * t[1], x + 1.2 * t[0], y + 1.2 * t[1], tok('--muted'), 1.4, [5, 4]); }
+    const sc = Math.min(1.6, 0.9 * gn) / Math.max(gn, 1e-9);
+    if (gn > 1e-6) { arrow(P, x, y, x + sc * g[0], y + sc * g[1], tok('--accent'), 3); label(P, x + sc * g[0], y + sc * g[1], '∇f', tok('--accent')); }
+    arrow(P, x, y, x + 0.9 * u[0], y + 0.9 * u[1], tok('--bin2'), 2.6); label(P, x + 0.9 * u[0], y + 0.9 * u[1], 'u', tok('--bin2'));
+    handle(P, x, y, tok('--fg'));
+    const du = g[0] * u[0] + g[1] * u[1], th = gn > 1e-6 ? Math.acos(Math.max(-1, Math.min(1, du / gn))) * 180 / Math.PI : 0;
+    $('#gd-read').innerHTML = `<span class="k">Punkt</span> (${nf(x, 2)}; ${nf(y, 2)})  <span class="k">f =</span> ${nf(z, 3)}  <span class="k">∇f =</span> (${nf(g[0], 3)}; ${nf(g[1], 3)}), <span class="k">|∇f| =</span> ${nf(gn, 3)}<br><span class="k">Steigung in Richtung u:</span> ∇fᵀu = |∇f|·cos ${nf(th, 0)}° = <b>${nf(du, 3)}</b>`;
+  } });
+  draggable(c, [{ get: () => pt, set: (x, y) => { pt = [x, y]; } }], () => P, () => m.draw());
+  [iff, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

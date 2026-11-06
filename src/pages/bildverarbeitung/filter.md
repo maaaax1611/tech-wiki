@@ -126,7 +126,7 @@ $$
 S_x = \begin{pmatrix} -1 & 0 & 1 \\ -2 & 0 & 2 \\ -1 & 0 & 1 \end{pmatrix} = \begin{pmatrix} 1 \\ 2 \\ 1 \end{pmatrix}\begin{pmatrix} -1 & 0 & 1 \end{pmatrix}, \qquad S_y = S_x^\top
 $$
 
-Der **Prewitt-Operator** ist dasselbe mit $[1, 1, 1]$ statt $[1, 2, 1]$. Aus den beiden Ableitungen $G_x = S_x \star f$ und $G_y = S_y \star f$ setzt sich der **Gradient** zusammen, ein Vektor, der in Richtung des steilsten Anstiegs zeigt (siehe [Gradient](../grundlagen/lineare-algebra.html#kalkuel)):
+Der **Prewitt-Operator** ist dasselbe mit $[1, 1, 1]$ statt $[1, 2, 1]$. Aus den beiden Ableitungen $G_x = S_x \star f$ und $G_y = S_y \star f$ setzt sich der **Gradient** zusammen, ein Vektor, der in Richtung des steilsten Anstiegs zeigt (siehe [Gradient](../grundlagen/vektoranalysis.html#gradient)):
 
 $$
 \|\nabla f\| = \sqrt{G_x^2 + G_y^2}, \qquad \theta = \operatorname{atan2}(G_y, G_x)

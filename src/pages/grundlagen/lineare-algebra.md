@@ -484,25 +484,7 @@ Für Optimierung braucht man Ableitungen nach Vektoren. Der **Gradient** $\nabla
 | $\Vert A\mathbf x - \mathbf b\Vert ^2 + \lambda\Vert \mathbf x\Vert ^2$ | $2A^\top(A\mathbf x - \mathbf b) + 2\lambda\mathbf x$ | ⇒ Ridge-Lösung |
 | $g(A\mathbf x)$ | $A^\top\nabla g$ | Kettenregel: Backpropagation durch eine lineare Schicht |
 
-### Jacobi- und Hesse-Matrix
-
-Die **Jacobi-Matrix** einer Funktion $\mathbf f: \mathbb R^n \to \mathbb R^m$ enthält alle ersten Ableitungen. Zeile $i$ gehört zur Ausgabe $f_i$, Spalte $j$ zur Eingabe $x_j$:
-
-$$
-J = \begin{pmatrix} \dfrac{\partial f_1}{\partial x_1} & \cdots & \dfrac{\partial f_1}{\partial x_n} \\[1ex] \vdots & \ddots & \vdots \\[1ex] \dfrac{\partial f_m}{\partial x_1} & \cdots & \dfrac{\partial f_m}{\partial x_n} \end{pmatrix} \in \mathbb R^{m\times n}
-$$
-
-Sie ist die beste lineare Näherung von $\mathbf f$ an einer Stelle, $\mathbf f(\mathbf x + \boldsymbol\delta) \approx \mathbf f(\mathbf x) + J\boldsymbol\delta$. Lokal verhält sich die Funktion also wie eine Matrix. Die Kettenregel wird zum Produkt der Jacobi-Matrizen, und genau das rechnet Backpropagation.
-
-Die **Hesse-Matrix** einer skalaren Funktion $f: \mathbb R^n \to \mathbb R$ enthält alle zweiten Ableitungen:
-
-$$
-H = \begin{pmatrix} \dfrac{\partial^2 f}{\partial x_1^2} & \cdots & \dfrac{\partial^2 f}{\partial x_1\,\partial x_n} \\[1ex] \vdots & \ddots & \vdots \\[1ex] \dfrac{\partial^2 f}{\partial x_n\,\partial x_1} & \cdots & \dfrac{\partial^2 f}{\partial x_n^2} \end{pmatrix} \in \mathbb R^{n\times n}
-$$
-
-Sie beschreibt die Krümmung und ist symmetrisch. Am Punkt mit $\nabla f = \mathbf 0$ entscheiden ihre Eigenwerte: alle positiv heißt Minimum, alle negativ Maximum, gemischt Sattelpunkt. Für $f = \tfrac12\|A\mathbf x - \mathbf b\|^2$ ist $H = A^\top A$, und deren Eigenwerte bestimmen die Höhenlinien und die Konvergenz in Abbildung 7.
-
-Ausführlicher, mit Kettenregel, Backpropagation, Taylor-Entwicklung und Optimierung, soll das eine eigene Seite „Vektoranalysis und Optimierung“ werden.
+Jacobi- und Hesse-Matrix, Kettenregel, Backpropagation und Optimierungsverfahren stehen ausführlich auf der Seite [Vektoranalysis und Optimierung](vektoranalysis.html).
 
 Eine Faustregel zum Prüfen: Die Dimensionen müssen passen. Ist $\mathbf x \in \mathbb R^n$, muss der Gradient auch in $\mathbb R^n$ liegen. Bei $\|A\mathbf x - \mathbf b\|^2$ mit $A \in \mathbb R^{m\times n}$ ist $A\mathbf x - \mathbf b \in \mathbb R^m$, und erst $A^\top$ bringt es zurück nach $\mathbb R^n$.
 

@@ -1,0 +1,45 @@
+<!-- title: Taylor-Näherung
+     lib: va -->
+<figure class="fig">
+  <canvas id="cv-ty" class="c-va" role="img" aria-label="Eine Funktion und ihre Taylor-Polynome um einen verschiebbaren Entwicklungspunkt."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 160px"><div class="lab"><label for="ty-f">Funktion</label></div><select id="ty-f" autocomplete="off" style="width:100%"><option value="sin">sin x</option><option value="exp">eˣ</option><option value="ln">ln x</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="ty-n">Ordnung</label><output id="ty-n-o"></output></div><input id="ty-n" type="range" min="1" max="7" step="1" value="1" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="ty-x">Entwicklungspunkt x₀</label><output id="ty-x-o"></output></div><input id="ty-x" type="range" min="-3" max="3" step="0.05" value="0.8" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="ty-read"></div>
+  <figcaption><b>Abb.</b> Die Funktion (schwarz) und ihr Taylor-Polynom der gewählten Ordnung um \(x_0\) (blau), niedrigere Ordnungen blass. Ordnung 1 ist die Tangente, die lineare Näherung. Jede weitere Ordnung passt eine Ableitung mehr an und reicht weiter, bevor sie abweicht. Bei \(\ln x\) hilft das nur bis zur Polstelle bei 0: Weiter als \(|x - x_0| < x_0\) konvergiert die Reihe nicht, egal wie hoch die Ordnung ist.</figcaption>
+</figure>
+<script>
+/* ---------- Taylor ---------- */
+(() => {
+  const c = $('#cv-ty'), iff = $('#ty-f'), inn = $('#ty-n'), ix = $('#ty-x');
+  const fact = k => k <= 1 ? 1 : k * fact(k - 1);
+  const F = {
+    sin: { f: Math.sin, d: (k, x) => [Math.sin, Math.cos, x => -Math.sin(x), x => -Math.cos(x)][k % 4](x), x0: -4, x1: 4, y0: -2, y1: 2, lo: -3, hi: 3 },
+    exp: { f: Math.exp, d: (k, x) => Math.exp(x), x0: -4, x1: 3, y0: -1, y1: 8, lo: -3, hi: 2 },
+    ln: { f: x => x > 0 ? Math.log(x) : NaN, d: (k, x) => k === 0 ? Math.log(x) : (k % 2 ? 1 : -1) * fact(k - 1) / x ** k, x0: -0.5, x1: 5, y0: -3, y1: 2.5, lo: 0.3, hi: 4 },
+  };
+  let last = '';
+  const m = reg({ el: c, draw() {
+    const fn = F[iff.value]; if (last !== iff.value) { last = iff.value; ix.min = fn.lo; ix.max = fn.hi; if (+ix.value < fn.lo || +ix.value > fn.hi) ix.value = (fn.lo + fn.hi) / 2; }
+    const N = +inn.value, x0 = +ix.value; $('#ty-n-o').textContent = N; $('#ty-x-o').textContent = nf(x0, 2);
+    const co = Array.from({ length: N + 1 }, (_, k) => fn.d(k, x0) / fact(k)), T = (x, n) => { let s = 0; for (let k = n; k >= 0; k--) s = s * (x - x0) + co[k]; return s; };
+    const { ctx, w, h } = fit(c);
+    const fr = frame(ctx, 0, 0, w, h, { x0: fn.x0, x1: fn.x1, y0: fn.y0, y1: fn.y1, xt: Array.from({ length: Math.floor(fn.x1) - Math.ceil(fn.x0) + 1 }, (_, i) => Math.ceil(fn.x0) + i), yt: [Math.ceil(fn.y0), 0, Math.floor(fn.y1)], xl: 'x', l: 30, t: 10 });
+    ctx.save(); ctx.beginPath(); ctx.rect(fr.bx, fr.by, fr.bw, fr.bh); ctx.clip();
+    const plot = (g, col, lw, dash) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath(); let on = false; for (let i = 0; i <= 500; i++) { const x = fn.x0 + (fn.x1 - fn.x0) * i / 500, y = g(x); if (!isFinite(y)) { on = false; continue; } const Y = fr.Y(Math.max(fn.y0 - 5, Math.min(fn.y1 + 5, y))); on ? ctx.lineTo(fr.X(x), Y) : ctx.moveTo(fr.X(x), Y); on = true; } ctx.stroke(); ctx.setLineDash([]); };
+    for (let n = 1; n < N; n++) plot(x => T(x, n), rgba(tok('--accent'), 0.22), 1.4);
+    plot(fn.f, tok('--fg'), 2.4); plot(x => T(x, N), tok('--accent'), 2.4);
+    if (iff.value === 'ln') { ctx.fillStyle = rgba(tok('--hole'), 0.08); ctx.fillRect(fr.X(2 * x0), fr.by, fr.X(fn.x1) - fr.X(2 * x0), fr.bh); ctx.fillRect(fr.X(fn.x0), fr.by, fr.X(0) - fr.X(fn.x0), fr.bh); }
+    ctx.restore();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(fr.X(x0), fr.Y(fn.f(x0)), 5, 0, 2 * Math.PI); ctx.fill();
+    // Bereich, in dem die Näherung auf 0,05 genau ist
+    let a = x0, b = x0; const ok = x => isFinite(fn.f(x)) && Math.abs(T(x, N) - fn.f(x)) < 0.05; while (a > fn.x0 && ok(a - 0.01)) a -= 0.01; while (b < fn.x1 && ok(b + 0.01)) b += 0.01;
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(fr.X(a), fr.by + fr.bh - 2); ctx.lineTo(fr.X(b), fr.by + fr.bh - 2); ctx.stroke();
+    const terms = co.map((v, k) => k === 0 ? nf(v, 2) : `${v < 0 ? '−' : '+'} ${nf(Math.abs(v), k > 3 ? 4 : 3)}·(x − x₀)${k > 1 ? '⁰¹²³⁴⁵⁶⁷'[k] : ''}`).join(' ');
+    $('#ty-read').innerHTML = `<span class="k">T${'₀₁₂₃₄₅₆₇'[N]}(x) =</span> ${terms}<br><span class="k">auf 0,05 genau (Balken unten) von</span> ${nf(a, 2)} <span class="k">bis</span> ${nf(b, 2)}, <span class="k">Breite</span> <b>${nf(b - a, 2)}</b>`;
+  } });
+  [iff, inn, ix].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
