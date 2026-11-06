@@ -1,0 +1,47 @@
+<!-- title: Rechnen mit Gaußverteilungen
+     lib: ws -->
+<figure class="fig">
+  <canvas id="cv-gr" class="c-ws" role="img" aria-label="Zwei Gaußverteilungen und ihre Summe, ihr Produkt oder ihre Mischung."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 300px"><div class="lab"><label for="gr-o">Operation</label></div><select id="gr-o" autocomplete="off" style="width:100%"><option value="p">Produkt: zwei Messungen kombinieren</option><option value="s">Summe zweier Zufallsgrößen</option><option value="m">Mischung der Dichten</option></select></div>
+    <div class="ctrl" id="gr-wc"><div class="lab"><label for="gr-w">Anteil π von A</label><output id="gr-w-o"></output></div><input id="gr-w" type="range" min="0" max="1" step="0.05" value="0.5" autocomplete="off"></div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="gr-m1">μ₁ (A)</label><output id="gr-m1-o"></output></div><input id="gr-m1" type="range" min="-4" max="4" step="0.1" value="-1" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="gr-s1">σ₁ (A)</label><output id="gr-s1-o"></output></div><input id="gr-s1" type="range" min="0.3" max="2.5" step="0.05" value="1.2" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="gr-m2">μ₂ (B)</label><output id="gr-m2-o"></output></div><input id="gr-m2" type="range" min="-4" max="4" step="0.1" value="1.5" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="gr-s2">σ₂ (B)</label><output id="gr-s2-o"></output></div><input id="gr-s2" type="range" min="0.3" max="2.5" step="0.05" value="0.6" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="gr-read"></div>
+  <figcaption><b>Abb.</b> Zwei Gaußverteilungen A und B (gestrichelt) und was bei drei Operationen herauskommt (gefüllt). Produkt: Zwei Messungen derselben Größe werden kombiniert. Das Ergebnis liegt näher an der genaueren Messung und ist schmaler als beide. Summe: Zwei unabhängige Größen werden addiert. Die Mittelwerte addieren sich, das Ergebnis ist breiter als beide. Mischung: Jeder Wert stammt mit Wahrscheinlichkeit π aus A, sonst aus B. Bei weit auseinanderliegenden Mittelwerten entstehen zwei Gipfel, und das Ergebnis ist keine Gaußverteilung mehr.</figcaption>
+</figure>
+<script>
+/* ---------- Rechnen mit Gaußverteilungen ---------- */
+(() => {
+  const c = $('#cv-gr'), io = $('#gr-o'), iw = $('#gr-w'), I = ['m1', 's1', 'm2', 's2'].map(k => $('#gr-' + k));
+  const m = reg({ el: c, draw() {
+    const [m1, s1, m2, s2] = I.map(e => +e.value), op = io.value, w = +iw.value;
+    I.forEach(e => $(`#${e.id}-o`).textContent = nf(+e.value, e.id.includes('s') ? 2 : 1)); $('#gr-w-o').textContent = nf(w, 2);
+    $('#gr-wc').hidden = op !== 'm';
+    let R, mu, sd, txt;
+    if (op === 'p') { const v = 1 / (1 / s1 ** 2 + 1 / s2 ** 2); sd = Math.sqrt(v); mu = v * (m1 / s1 ** 2 + m2 / s2 ** 2); R = x => normPdf(x, mu, sd);
+      txt = `<span class="k">Produkt:</span> 1/σ² = 1/σ₁² + 1/σ₂² → σ = <b>${nf(sd, 2)}</b> (kleiner als ${nf(Math.min(s1, s2), 2)})  <span class="k">μ =</span> <b>${nf(mu, 2)}</b>, Gewicht von A: ${nf(100 * v / s1 ** 2, 0)} %, von B: ${nf(100 * v / s2 ** 2, 0)} %`; }
+    else if (op === 's') { mu = m1 + m2; sd = Math.sqrt(s1 ** 2 + s2 ** 2); R = x => normPdf(x, mu, sd);
+      txt = `<span class="k">Summe X + Y:</span> μ = μ₁ + μ₂ = <b>${nf(mu, 2)}</b>  <span class="k">σ =</span> √(σ₁² + σ₂²) = <b>${nf(sd, 2)}</b> (größer als ${nf(Math.max(s1, s2), 2)})`; }
+    else { mu = w * m1 + (1 - w) * m2; sd = Math.sqrt(w * s1 ** 2 + (1 - w) * s2 ** 2 + w * (1 - w) * (m1 - m2) ** 2); R = x => w * normPdf(x, m1, s1) + (1 - w) * normPdf(x, m2, s2);
+      txt = `<span class="k">Mischung:</span> Mittelwert ${nf(mu, 2)}, Streuung <b>${nf(sd, 2)}</b>, davon durch den Abstand der Gipfel: ${nf(100 * w * (1 - w) * (m1 - m2) ** 2 / sd ** 2, 0)} % der Varianz  <span class="k">·</span>  keine Gaußverteilung`; }
+    const x0 = -8, x1 = 8; let ymax = 0; for (let i = 0; i <= 400; i++) { const x = x0 + (x1 - x0) * i / 400; ymax = Math.max(ymax, R(x), normPdf(x, m1, s1), normPdf(x, m2, s2)); }
+    const { ctx, w: W, h } = fit(c);
+    const f = frame(ctx, 0, 0, W, h, { x0, x1, y0: 0, y1: ymax * 1.12, xt: [-8, -6, -4, -2, 0, 2, 4, 6, 8], yt: [], xl: 'x', l: 12, t: 26 });
+    const Hc = tok('--hole');
+    ctx.fillStyle = rgba(Hc, 0.22); ctx.beginPath(); ctx.moveTo(f.X(x0), f.Y(0)); for (let i = 0; i <= 400; i++) { const x = x0 + (x1 - x0) * i / 400; ctx.lineTo(f.X(x), f.Y(R(x))); } ctx.lineTo(f.X(x1), f.Y(0)); ctx.fill();
+    ctx.strokeStyle = Hc; ctx.lineWidth = 2.4; curve(ctx, R, f.X, f.Y, x0, x1, 400);
+    ctx.setLineDash([6, 4]); ctx.lineWidth = 1.8;
+    ctx.strokeStyle = tok('--accent'); curve(ctx, x => normPdf(x, m1, s1), f.X, f.Y, x0, x1, 300);
+    ctx.strokeStyle = tok('--bin2'); curve(ctx, x => normPdf(x, m2, s2), f.X, f.Y, x0, x1, 300); ctx.setLineDash([]);
+    legend(ctx, f.bx + 4, 14, [['A', tok('--accent')], ['B', tok('--bin2')], [{ p: 'Produkt (normiert)', s: 'Summe X + Y', m: 'Mischung' }[op], Hc]]);
+    $('#gr-read').innerHTML = txt;
+  } });
+  [io, iw, ...I].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

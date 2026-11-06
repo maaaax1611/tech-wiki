@@ -148,6 +148,27 @@ Der Ausdruck im Exponenten ist die quadrierte Mahalanobis-Distanz. Bei der Gauß
 
 ::: widget ws-03-gauss-2d
 
+### Rechnen mit Gaußverteilungen
+
+Gaußverteilungen bleiben bei den wichtigsten Rechenoperationen gaußsch. Das macht sie so bequem, man muss nur Mittelwert und Varianz verfolgen.
+
+- **Lineare Abbildung:** Aus $\mathbf x \sim \mathcal N(\boldsymbol\mu, \Sigma)$ folgt $A\mathbf x + \mathbf b \sim \mathcal N(A\boldsymbol\mu + \mathbf b,\ A\Sigma A^\top)$.
+- **Summe unabhängiger Größen:** $X + Y \sim \mathcal N(\mu_1 + \mu_2,\ \sigma_1^2 + \sigma_2^2)$. Die Varianzen addieren sich, das Ergebnis ist breiter als beide. So addieren sich unabhängige Rauschquellen.
+
+**Produkt zweier Dichten.** $\mathcal N(x \mid \mu_1, \sigma_1^2)\cdot\mathcal N(x \mid \mu_2, \sigma_2^2)$ ist, bis auf einen konstanten Faktor, wieder eine Gaußdichte mit
+
+$$
+\frac1{\sigma^2} = \frac1{\sigma_1^2} + \frac1{\sigma_2^2}, \qquad \mu = \sigma^2\left(\frac{\mu_1}{\sigma_1^2} + \frac{\mu_2}{\sigma_2^2}\right)
+$$
+
+Das passiert, wenn man zwei unabhängige Messungen derselben Größe kombiniert, oder bei Bayes, wenn Prior und Likelihood beide gaußsch sind. Das Ergebnis ist schmaler als beide, und jede Messung zählt mit ihrer Genauigkeit $1/\sigma^2$. Auf dieser Regel beruht der Kalman-Filter.
+
+**Mischung.** $\pi\,\mathcal N_1 + (1 - \pi)\,\mathcal N_2$ ist dagegen *keine* Gaußverteilung, sie kann zwei Gipfel haben. Ihre Varianz enthält zusätzlich den Abstand der Mittelwerte: $\pi\sigma_1^2 + (1-\pi)\sigma_2^2 + \pi(1-\pi)(\mu_1 - \mu_2)^2$. Mischungen beschreiben Daten aus mehreren Gruppen (Gaussian Mixture Models).
+
+Leicht zu verwechseln: Die Summe zweier *Zufallsgrößen* ist etwas anderes als die gewichtete Summe zweier *Dichten*. Das Erste verbreitert, das Zweite mischt.
+
+::: widget ws-09-gauss-rechnen
+
 ## Satz von Bayes {#bayes}
 
 Die Produktregel lässt sich auf zwei Arten schreiben, $p(x, y) = p(y \mid x)\,p(x) = p(x \mid y)\,p(y)$. Gleichsetzen ergibt den **Satz von Bayes**. Mit $\theta$ für das Unbekannte und $\mathcal D$ für die Daten:
@@ -275,6 +296,7 @@ Ein **Hypothesentest** stellt die Frage umgekehrt. Man nimmt eine Nullhypothese 
 | lineare Abbildung | $\mathbb E[A\mathbf x] = A\boldsymbol\mu$, $\Sigma_{A\mathbf x} = A\Sigma A^\top$ |
 | Fehlerfortpflanzung | $\Sigma_y \approx J\Sigma_x J^\top$, eindimensional $\sigma_y \approx \vert f'(\mu)\vert\,\sigma_x$ |
 | Poisson | $\mathbb E = \operatorname{Var} = \lambda$, SNR $= \sqrt\lambda$ |
+| Gauß kombinieren | Summe: $\sigma^2 = \sigma_1^2 + \sigma_2^2$, Produkt der Dichten: $1/\sigma^2 = 1/\sigma_1^2 + 1/\sigma_2^2$ |
 | Stichprobenvarianz | $s^2 = \frac1{N-1}\sum (x_i - \bar x)^2$ |
 | MSE | $\mathbb E[(\hat\theta - \theta)^2] = \text{Bias}^2 + \text{Varianz}$ |
 | ML, MAP | $\arg\max \sum\log p(x_i \mid \theta)$, plus $\log p(\theta)$ |

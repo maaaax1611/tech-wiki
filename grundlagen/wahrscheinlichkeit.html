@@ -255,6 +255,34 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <div class="readout" id="g2-read"></div>
 <figcaption><b>Abb. 3</b> 600 Punkte aus einer zweidimensionalen Gaußverteilung mit den Ellipsen für 1σ und 2σ. An den Rändern die Randverteilungen \(p(x)\) und \(p(y)\). Die senkrechte Linie bei \(x_0\) schneidet die Verteilung, auf Fläche 1 normiert ist das die bedingte Verteilung \(p(y \mid x_0)\) (blau). Ihr Mittelwert liegt auf der Regressionsgeraden (gestrichelt), ihre Breite \(\sigma_y\sqrt{1 - \rho^2}\) ist kleiner als die der Randverteilung: Wer \(x\) kennt, weiß mehr über \(y\). Bei \(\rho = 0\) ist jeder Schnitt gleich, \(x\) und \(y\) sind unabhängig.</figcaption>
 </figure>
+<h3>Rechnen mit Gaußverteilungen</h3>
+<p>Gaußverteilungen bleiben bei den wichtigsten Rechenoperationen gaußsch. Das macht sie so bequem, man muss nur Mittelwert und Varianz verfolgen.</p>
+<ul class="tight">
+<li><strong>Lineare Abbildung:</strong> Aus <span class="arithmatex">\(\mathbf x \sim \mathcal N(\boldsymbol\mu, \Sigma)\)</span> folgt <span class="arithmatex">\(A\mathbf x + \mathbf b \sim \mathcal N(A\boldsymbol\mu + \mathbf b,\ A\Sigma A^\top)\)</span>.</li>
+<li><strong>Summe unabhängiger Größen:</strong> <span class="arithmatex">\(X + Y \sim \mathcal N(\mu_1 + \mu_2,\ \sigma_1^2 + \sigma_2^2)\)</span>. Die Varianzen addieren sich, das Ergebnis ist breiter als beide. So addieren sich unabhängige Rauschquellen.</li>
+</ul>
+<p><strong>Produkt zweier Dichten.</strong> <span class="arithmatex">\(\mathcal N(x \mid \mu_1, \sigma_1^2)\cdot\mathcal N(x \mid \mu_2, \sigma_2^2)\)</span> ist, bis auf einen konstanten Faktor, wieder eine Gaußdichte mit</p>
+<div class="eq">\[
+\frac1{\sigma^2} = \frac1{\sigma_1^2} + \frac1{\sigma_2^2}, \qquad \mu = \sigma^2\left(\frac{\mu_1}{\sigma_1^2} + \frac{\mu_2}{\sigma_2^2}\right)
+\]</div>
+<p>Das passiert, wenn man zwei unabhängige Messungen derselben Größe kombiniert, oder bei Bayes, wenn Prior und Likelihood beide gaußsch sind. Das Ergebnis ist schmaler als beide, und jede Messung zählt mit ihrer Genauigkeit <span class="arithmatex">\(1/\sigma^2\)</span>. Auf dieser Regel beruht der Kalman-Filter.</p>
+<p><strong>Mischung.</strong> <span class="arithmatex">\(\pi\,\mathcal N_1 + (1 - \pi)\,\mathcal N_2\)</span> ist dagegen <em>keine</em> Gaußverteilung, sie kann zwei Gipfel haben. Ihre Varianz enthält zusätzlich den Abstand der Mittelwerte: <span class="arithmatex">\(\pi\sigma_1^2 + (1-\pi)\sigma_2^2 + \pi(1-\pi)(\mu_1 - \mu_2)^2\)</span>. Mischungen beschreiben Daten aus mehreren Gruppen (Gaussian Mixture Models).</p>
+<p>Leicht zu verwechseln: Die Summe zweier <em>Zufallsgrößen</em> ist etwas anderes als die gewichtete Summe zweier <em>Dichten</em>. Das Erste verbreitert, das Zweite mischt.</p>
+<figure class="fig">
+<canvas aria-label="Zwei Gaußverteilungen und ihre Summe, ihr Produkt oder ihre Mischung." class="c-ws" id="cv-gr" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 300px"><div class="lab"><label for="gr-o">Operation</label></div><select autocomplete="off" id="gr-o" style="width:100%"><option value="p">Produkt: zwei Messungen kombinieren</option><option value="s">Summe zweier Zufallsgrößen</option><option value="m">Mischung der Dichten</option></select></div>
+<div class="ctrl" id="gr-wc"><div class="lab"><label for="gr-w">Anteil π von A</label><output id="gr-w-o"></output></div><input autocomplete="off" id="gr-w" max="1" min="0" step="0.05" type="range" value="0.5"/></div>
+</div>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="gr-m1">μ₁ (A)</label><output id="gr-m1-o"></output></div><input autocomplete="off" id="gr-m1" max="4" min="-4" step="0.1" type="range" value="-1"/></div>
+<div class="ctrl"><div class="lab"><label for="gr-s1">σ₁ (A)</label><output id="gr-s1-o"></output></div><input autocomplete="off" id="gr-s1" max="2.5" min="0.3" step="0.05" type="range" value="1.2"/></div>
+<div class="ctrl"><div class="lab"><label for="gr-m2">μ₂ (B)</label><output id="gr-m2-o"></output></div><input autocomplete="off" id="gr-m2" max="4" min="-4" step="0.1" type="range" value="1.5"/></div>
+<div class="ctrl"><div class="lab"><label for="gr-s2">σ₂ (B)</label><output id="gr-s2-o"></output></div><input autocomplete="off" id="gr-s2" max="2.5" min="0.3" step="0.05" type="range" value="0.6"/></div>
+</div>
+<div class="readout" id="gr-read"></div>
+<figcaption><b>Abb. 4</b> Zwei Gaußverteilungen A und B (gestrichelt) und was bei drei Operationen herauskommt (gefüllt). Produkt: Zwei Messungen derselben Größe werden kombiniert. Das Ergebnis liegt näher an der genaueren Messung und ist schmaler als beide. Summe: Zwei unabhängige Größen werden addiert. Die Mittelwerte addieren sich, das Ergebnis ist breiter als beide. Mischung: Jeder Wert stammt mit Wahrscheinlichkeit π aus A, sonst aus B. Bei weit auseinanderliegenden Mittelwerten entstehen zwei Gipfel, und das Ergebnis ist keine Gaußverteilung mehr.</figcaption>
+</figure>
 </section>
 <section id="bayes">
 <div class="step"><b>8</b><span class="eyebrow">Mehrere Variablen</span></div>
@@ -273,7 +301,7 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <div class="ctrl"><div class="lab"><label for="by-sp">Spezifität P(− | gesund)</label><output id="by-sp-o"></output></div><input autocomplete="off" id="by-sp" max="0.999" min="0.5" step="0.001" type="range" value="0.95"/></div>
 </div>
 <div class="readout" id="by-read"></div>
-<figcaption><b>Abb. 4</b> 1000 Personen als Kästchen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau die Kranken, die er richtig erkennt, rot die Gesunden, bei denen er sich irrt. Rechts dieselben Zahlen als Baum und nur die Positiven: Wer ein positives Ergebnis bekommt, ist einer der gefüllten Kästchen, und der blaue Anteil davon ist \(P(\text{krank} \mid +)\). Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
+<figcaption><b>Abb. 5</b> 1000 Personen als Kästchen, links die Kranken, rechts die Gesunden. Gefüllt sind alle, die der Test als positiv meldet: blau die Kranken, die er richtig erkennt, rot die Gesunden, bei denen er sich irrt. Rechts dieselben Zahlen als Baum und nur die Positiven: Wer ein positives Ergebnis bekommt, ist einer der gefüllten Kästchen, und der blaue Anteil davon ist \(P(\text{krank} \mid +)\). Ist die Krankheit selten, stellen die Gesunden trotz guter Spezifität die meisten positiven Befunde, einfach weil es so viele von ihnen gibt. Der Posterior \(P(\text{krank} \mid +)\) ist dann klein, obwohl \(P(+ \mid \text{krank})\) groß ist.</figcaption>
 </figure>
 </section>
 <section id="zgs">
@@ -293,7 +321,7 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <button class="btn" id="zg-p" type="button">Abspielen</button>
 </div>
 <div class="readout" id="zg-read"></div>
-<figcaption><b>Abb. 5</b> Aus der Ausgangsverteilung (links) werden immer wieder \(n\) Werte gezogen und gemittelt, 20 000 Mal. Rechts das Histogramm dieser Mittelwerte, standardisiert auf Mittelwert 0 und Streuung 1, mit der Standardnormalverteilung als Linie. Bei \(n = 1\) sieht man die Ausgangsverteilung selbst. Schon ab wenigen Werten wird das Histogramm gaußförmig, bei schiefen Verteilungen dauert es etwas länger. Beim Münzwurf sind die Mittelwerte diskret, und erst mit größerem \(n\) liegen die Stufen dicht genug.</figcaption>
+<figcaption><b>Abb. 6</b> Aus der Ausgangsverteilung (links) werden immer wieder \(n\) Werte gezogen und gemittelt, 20 000 Mal. Rechts das Histogramm dieser Mittelwerte, standardisiert auf Mittelwert 0 und Streuung 1, mit der Standardnormalverteilung als Linie. Bei \(n = 1\) sieht man die Ausgangsverteilung selbst. Schon ab wenigen Werten wird das Histogramm gaußförmig, bei schiefen Verteilungen dauert es etwas länger. Beim Münzwurf sind die Mittelwerte diskret, und erst mit größerem \(n\) liegen die Stufen dicht genug.</figcaption>
 </figure>
 </section>
 <section id="fehler">
@@ -321,7 +349,7 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <div class="ctrl"><div class="lab"><label for="fp-s">Streuung σx</label><output id="fp-s-o"></output></div><input autocomplete="off" id="fp-s" max="0.5" min="0.01" step="0.01" type="range" value="0.06"/></div>
 </div>
 <div class="readout" id="fp-read"></div>
-<figcaption><b>Abb. 6</b> Unten die Eingangsgröße \(x\), gaußverteilt um \(\mu_x\). Jeder Wert wird über die Kurve \(f\) nach links auf \(y\) übertragen. Links in Blau das Histogramm der Ergebnisse aus 40 000 Stichproben, als rote Linie die lineare Näherung \(\mathcal N\big(f(\mu_x), (f'(\mu_x)\,\sigma_x)^2\big)\), die aus der Tangente (gestrichelt) folgt. Bei kleiner Streuung passen beide. Wird \(\sigma_x\) größer oder liegt \(\mu_x\) dort, wo \(f\) stark gekrümmt ist, wird die Ausgangsverteilung schief und ihr Mittelwert verschiebt sich. Beim Logarithmus ist das genau der Fall wenig transmittierter Photonen in der CT.</figcaption>
+<figcaption><b>Abb. 7</b> Unten die Eingangsgröße \(x\), gaußverteilt um \(\mu_x\). Jeder Wert wird über die Kurve \(f\) nach links auf \(y\) übertragen. Links in Blau das Histogramm der Ergebnisse aus 40 000 Stichproben, als rote Linie die lineare Näherung \(\mathcal N\big(f(\mu_x), (f'(\mu_x)\,\sigma_x)^2\big)\), die aus der Tangente (gestrichelt) folgt. Bei kleiner Streuung passen beide. Wird \(\sigma_x\) größer oder liegt \(\mu_x\) dort, wo \(f\) stark gekrümmt ist, wird die Ausgangsverteilung schief und ihr Mittelwert verschiebt sich. Beim Logarithmus ist das genau der Fall wenig transmittierter Photonen in der CT.</figcaption>
 </figure>
 </section>
 <section id="schaetzer">
@@ -370,7 +398,7 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <button class="btn" id="lk-r" type="button">Neue Messung</button>
 </div>
 <div class="readout" id="lk-read"></div>
-<figcaption><b>Abb. 7</b> Links \(N\) Photonenzählungen eines Pixels mit wahrer Rate \(\lambda\), jeder Punkt eine Messung. Mit „λ ausprobieren“ wählt man eine Rate, links erscheint dann als Treppe, wie sich \(N\) Messungen bei dieser Rate im Mittel verteilen würden. Liegt sie neben den Punkten, erklärt dieses \(\lambda\) die Daten schlecht. Rechts wird das für alle \(\lambda\) zugleich bewertet: die Log-Likelihood \(\ell(\lambda) = \sum_i (k_i \log\lambda - \lambda) + \text{const}\), so verschoben, dass ihr Maximum bei 0 liegt. Das Maximum liegt beim Mittelwert der Zählungen. Wo die Kurve um 0,5 abgefallen ist, liegt etwa ±1 Standardfehler (Balken). Mit mehr Messungen wird die Kurve spitzer und der Schätzwert genauer. Mit Prior kommt ein Gamma-Prior um \(\lambda = 5\) dazu, der so viel wiegt wie zwei Messungen. Er zieht den Schätzwert bei wenigen Daten zu sich hin und verliert mit vielen Daten an Gewicht.</figcaption>
+<figcaption><b>Abb. 8</b> Links \(N\) Photonenzählungen eines Pixels mit wahrer Rate \(\lambda\), jeder Punkt eine Messung. Mit „λ ausprobieren“ wählt man eine Rate, links erscheint dann als Treppe, wie sich \(N\) Messungen bei dieser Rate im Mittel verteilen würden. Liegt sie neben den Punkten, erklärt dieses \(\lambda\) die Daten schlecht. Rechts wird das für alle \(\lambda\) zugleich bewertet: die Log-Likelihood \(\ell(\lambda) = \sum_i (k_i \log\lambda - \lambda) + \text{const}\), so verschoben, dass ihr Maximum bei 0 liegt. Das Maximum liegt beim Mittelwert der Zählungen. Wo die Kurve um 0,5 abgefallen ist, liegt etwa ±1 Standardfehler (Balken). Mit mehr Messungen wird die Kurve spitzer und der Schätzwert genauer. Mit Prior kommt ein Gamma-Prior um \(\lambda = 5\) dazu, der so viel wiegt wie zwei Messungen. Er zieht den Schätzwert bei wenigen Daten zu sich hin und verliert mit vielen Daten an Gewicht.</figcaption>
 </figure>
 </section>
 <section id="ki">
@@ -392,7 +420,7 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <button class="btn" id="ki-r" type="button">Neue Experimente</button>
 </div>
 <div class="readout" id="ki-read"></div>
-<figcaption><b>Abb. 8</b> Jede Zeile ist ein eigenes Experiment. Es misst \(N\) Werte (kleine Striche in der markierten Zeile), deren wahrer Mittelwert \(\mu = 0\) ist, berechnet daraus den Mittelwert (Punkt) und das Intervall (Linie). Zeile anklicken oder darüberfahren, um ihre Messwerte zu sehen. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
+<figcaption><b>Abb. 9</b> Jede Zeile ist ein eigenes Experiment. Es misst \(N\) Werte (kleine Striche in der markierten Zeile), deren wahrer Mittelwert \(\mu = 0\) ist, berechnet daraus den Mittelwert (Punkt) und das Intervall (Linie). Zeile anklicken oder darüberfahren, um ihre Messwerte zu sehen. Die meisten Intervalle enthalten \(\mu\), die roten nicht. Bei 95 % sind es im Mittel 5 von 100, welche, ist Zufall. Wird \(\sigma\) aus den Daten geschätzt, aber trotzdem mit dem z-Wert 1,96 gerechnet, sind die Intervalle bei kleinem \(N\) zu schmal und verfehlen \(\mu\) öfter. Der etwas größere t-Wert gleicht das aus.</figcaption>
 </figure>
 </section>
 <section id="formeln">
@@ -441,6 +469,10 @@ P(K = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \qquad \mathbb E[K] = \operatornam
 <tr>
 <td>Poisson</td>
 <td><span class="arithmatex">\(\mathbb E = \operatorname{Var} = \lambda\)</span>, SNR <span class="arithmatex">\(= \sqrt\lambda\)</span></td>
+</tr>
+<tr>
+<td>Gauß kombinieren</td>
+<td>Summe: <span class="arithmatex">\(\sigma^2 = \sigma_1^2 + \sigma_2^2\)</span>, Produkt der Dichten: <span class="arithmatex">\(1/\sigma^2 = 1/\sigma_1^2 + 1/\sigma_2^2\)</span></td>
 </tr>
 <tr>
 <td>Stichprobenvarianz</td>
@@ -591,6 +623,36 @@ stats.t.interval(0.95, df=len(a) - 1, loc=a.mean(), scale=stats.sem(a))  # 95-%-
     $('#g2-read').innerHTML = `<span class="k">Σ =</span> [${nf(c11, 2)}  ${nf(c12, 2)} ; ${nf(c12, 2)}  ${nf(c22, 2)}]  <span class="k">Eigenwerte (Varianzen entlang der Hauptachsen):</span> ${nf(l1, 2)} und ${nf(l2, 2)}<br><span class="k">E[y | x₀] =</span> ρ·σy/σx·x₀ = <b>${nf(cm, 2)}</b>  <span class="k">σ(y | x₀) =</span> σy·√(1 − ρ²) = <b>${nf(cs, 2)}</b> statt σy = ${nf(sy, 2)}`;
   } });
   [isx, isy, ir, ix, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Rechnen mit Gaußverteilungen ---------- */
+(() => {
+  const c = $('#cv-gr'), io = $('#gr-o'), iw = $('#gr-w'), I = ['m1', 's1', 'm2', 's2'].map(k => $('#gr-' + k));
+  const m = reg({ el: c, draw() {
+    const [m1, s1, m2, s2] = I.map(e => +e.value), op = io.value, w = +iw.value;
+    I.forEach(e => $(`#${e.id}-o`).textContent = nf(+e.value, e.id.includes('s') ? 2 : 1)); $('#gr-w-o').textContent = nf(w, 2);
+    $('#gr-wc').hidden = op !== 'm';
+    let R, mu, sd, txt;
+    if (op === 'p') { const v = 1 / (1 / s1 ** 2 + 1 / s2 ** 2); sd = Math.sqrt(v); mu = v * (m1 / s1 ** 2 + m2 / s2 ** 2); R = x => normPdf(x, mu, sd);
+      txt = `<span class="k">Produkt:</span> 1/σ² = 1/σ₁² + 1/σ₂² → σ = <b>${nf(sd, 2)}</b> (kleiner als ${nf(Math.min(s1, s2), 2)})  <span class="k">μ =</span> <b>${nf(mu, 2)}</b>, Gewicht von A: ${nf(100 * v / s1 ** 2, 0)} %, von B: ${nf(100 * v / s2 ** 2, 0)} %`; }
+    else if (op === 's') { mu = m1 + m2; sd = Math.sqrt(s1 ** 2 + s2 ** 2); R = x => normPdf(x, mu, sd);
+      txt = `<span class="k">Summe X + Y:</span> μ = μ₁ + μ₂ = <b>${nf(mu, 2)}</b>  <span class="k">σ =</span> √(σ₁² + σ₂²) = <b>${nf(sd, 2)}</b> (größer als ${nf(Math.max(s1, s2), 2)})`; }
+    else { mu = w * m1 + (1 - w) * m2; sd = Math.sqrt(w * s1 ** 2 + (1 - w) * s2 ** 2 + w * (1 - w) * (m1 - m2) ** 2); R = x => w * normPdf(x, m1, s1) + (1 - w) * normPdf(x, m2, s2);
+      txt = `<span class="k">Mischung:</span> Mittelwert ${nf(mu, 2)}, Streuung <b>${nf(sd, 2)}</b>, davon durch den Abstand der Gipfel: ${nf(100 * w * (1 - w) * (m1 - m2) ** 2 / sd ** 2, 0)} % der Varianz  <span class="k">·</span>  keine Gaußverteilung`; }
+    const x0 = -8, x1 = 8; let ymax = 0; for (let i = 0; i <= 400; i++) { const x = x0 + (x1 - x0) * i / 400; ymax = Math.max(ymax, R(x), normPdf(x, m1, s1), normPdf(x, m2, s2)); }
+    const { ctx, w: W, h } = fit(c);
+    const f = frame(ctx, 0, 0, W, h, { x0, x1, y0: 0, y1: ymax * 1.12, xt: [-8, -6, -4, -2, 0, 2, 4, 6, 8], yt: [], xl: 'x', l: 12, t: 26 });
+    const Hc = tok('--hole');
+    ctx.fillStyle = rgba(Hc, 0.22); ctx.beginPath(); ctx.moveTo(f.X(x0), f.Y(0)); for (let i = 0; i <= 400; i++) { const x = x0 + (x1 - x0) * i / 400; ctx.lineTo(f.X(x), f.Y(R(x))); } ctx.lineTo(f.X(x1), f.Y(0)); ctx.fill();
+    ctx.strokeStyle = Hc; ctx.lineWidth = 2.4; curve(ctx, R, f.X, f.Y, x0, x1, 400);
+    ctx.setLineDash([6, 4]); ctx.lineWidth = 1.8;
+    ctx.strokeStyle = tok('--accent'); curve(ctx, x => normPdf(x, m1, s1), f.X, f.Y, x0, x1, 300);
+    ctx.strokeStyle = tok('--bin2'); curve(ctx, x => normPdf(x, m2, s2), f.X, f.Y, x0, x1, 300); ctx.setLineDash([]);
+    legend(ctx, f.bx + 4, 14, [['A', tok('--accent')], ['B', tok('--bin2')], [{ p: 'Produkt (normiert)', s: 'Summe X + Y', m: 'Mischung' }[op], Hc]]);
+    $('#gr-read').innerHTML = txt;
+  } });
+  [io, iw, ...I].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
 })();
 </script>
 <script>

@@ -653,6 +653,13 @@
    "height": 640
   },
   {
+   "slug": "ws-09-gauss-rechnen",
+   "page": "wahrscheinlichkeit",
+   "title": "Rechnen mit Gaußverteilungen",
+   "interactive": true,
+   "height": 640
+  },
+  {
    "slug": "ws-04-bayes",
    "page": "wahrscheinlichkeit",
    "title": "Satz von Bayes: Test auf eine seltene Krankheit",
