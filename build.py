@@ -196,7 +196,7 @@ def build_page(path, manifest):
             badge = level_badge(int(a['level']), eb) if a.get('level') else f'<div class="step"><b>{esc(mark)}</b><span class="eyebrow">{esc(eb)}</span></div>'
         short = a.get('toc') or h.get_text().strip()
         toc.append(f'<li><a href="#{sid}"><span class="n">{esc(mark)}</span><span>{esc(short)}</span></a></li>')
-        toc_m.append(f'<li><a href="#{sid}">{esc(short)}</a></li>')
+        toc_m.append(f'<li><a href="#{sid}"><span class="n">{esc(mark)}</span><span>{esc(short)}</span></a></li>')
         secs.append(f'<section id="{sid}">\n{badge}\n{h}\n{"".join(str(x) for x in s["nodes"]).strip()}\n</section>')
 
     intro_html = ''.join(str(x) for x in intro).strip()
@@ -218,8 +218,8 @@ def build_page(path, manifest):
         {THEME_BTNS}</div>
       <h1>{esc(fm['title'])}</h1>
       {intro_html}
-      <details class="toc-mobile"><summary>Inhalt</summary><ol>{''.join(toc_m)}</ol></details>
     </header>
+    <details class="toc-mobile"><summary><span class="lab">Inhalt</span><span class="cur"></span></summary><ol>{''.join(toc_m)}</ol></details>
 {chr(10).join(secs)}
     {f'<footer>{fm["footer"]}</footer>' if fm.get('footer') else ''}
   </main>

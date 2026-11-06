@@ -20,20 +20,20 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d131a; --surface: #131b24; --fg: #e2e8ee; --muted: #93a1af; --rule: #263240; --grid: #1c2632;
-    --accent: #7d9cf2; --accent-soft: #1b2a4d; --elec: #5f95f0; --hole: #ef6b78;
+    --bg: #1f1e1d; --surface: #262624; --fg: #ebe9e4; --muted: #a19f97; --rule: #3a3936; --grid: #2e2d2b;
+    --accent: #7d9cf2; --accent-soft: #2a3352; --elec: #5f95f0; --hole: #ef6b78;
     --bin0: #6a96f0; --bin1: #34c2aa; --bin2: #e7b43c; --bin3: #ef6b78;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d131a; --surface: #131b24; --fg: #e2e8ee; --muted: #93a1af; --rule: #263240; --grid: #1c2632;
-  --accent: #7d9cf2; --accent-soft: #1b2a4d; --elec: #5f95f0; --hole: #ef6b78;
+  --bg: #1f1e1d; --surface: #262624; --fg: #ebe9e4; --muted: #a19f97; --rule: #3a3936; --grid: #2e2d2b;
+  --accent: #7d9cf2; --accent-soft: #2a3352; --elec: #5f95f0; --hole: #ef6b78;
   --bin0: #6a96f0; --bin1: #34c2aa; --bin2: #e7b43c; --bin3: #ef6b78;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.62; -webkit-font-smoothing: antialiased; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.62; -webkit-font-smoothing: antialiased; font-optical-sizing: auto; }
 .wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 80px; }
 @media (min-width: 1100px) {
   .wrap { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
@@ -43,9 +43,9 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
 @media (max-width: 1099px) { nav.toc { display: none; } }
 main { min-width: 0; max-width: 800px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.12; margin: 0; }
-h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 700; letter-spacing: -0.01em; }
-h2 { font-size: clamp(1.6rem, 3.6vw, 2.15rem); font-weight: 600; margin-top: 10px; }
-h3 { font-size: 1.22rem; font-weight: 600; margin-top: 1.8em; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 700; line-height: 1.04; letter-spacing: -0.022em; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.15rem); font-weight: 600; line-height: 1.12; letter-spacing: -0.012em; margin-top: 10px; }
+h3 { font-size: 1.22rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.004em; margin-top: 1.8em; }
 p { margin: 0.9em 0; }
 a { color: var(--accent); }
 strong { font-weight: 600; }
@@ -121,7 +121,7 @@ body { margin: 0; }
 @media (max-width: 760px) { .cards { grid-template-columns: minmax(0, 1fr); } }
 .card { display: block; text-decoration: none; color: var(--fg); background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; }
 .card:hover { border-color: var(--accent); }
-.card h2 { font-size: 1.35rem; margin: 6px 0 4px; }
+.card h2 { font-size: 1.35rem; letter-spacing: -0.008em; margin: 6px 0 4px; }
 .card p { margin: 0; font-size: 15px; color: var(--muted); }
 .meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 td.snip { min-width: 0; }
@@ -141,3 +141,10 @@ pre.ex { background: var(--surface); border: 1px solid var(--rule); border-radiu
 .empty { color: var(--muted); font-style: italic; margin-top: 14px; }
 [hidden] { display: none !important; }
 .cat h3.grp { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 26px 0 -6px; }
+
+/* Rückmeldung beim Drücken, weicher Rand beim Überfahren */
+.card, .btn { -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform 100ms ease-out, border-color 120ms ease-out, background-color 100ms ease-out; }
+.card:active { transform: scale(0.985); background: var(--accent-soft); }
+.btn:active { transform: scale(0.97); background: var(--accent-soft); border-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .card, .btn { transition: none; } .card:active, .btn:active { transform: none; } }
+@media (prefers-contrast: more) { :root { --muted: #3c4854; --rule: #8d99a5; } .card { border-color: var(--muted); } }

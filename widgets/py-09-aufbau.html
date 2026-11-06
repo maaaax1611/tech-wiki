@@ -82,7 +82,7 @@ function paHit(planes, x, y) {
 }
 function paHover(c, m, get) {
   const pick = e => { const P = get(); if (!P) return; const [x, y] = mouse(c, e); const k = paHit(P, x, y); if (k !== null && k !== m.sel) { m.sel = k; m.draw(); } };
-  c.addEventListener('mousemove', pick); c.addEventListener('click', pick);
+  c.addEventListener('pointermove', pick); c.addEventListener('pointerdown', pick);
 }
 
 /* Teil 1: Gaußsche Pyramide */
@@ -130,7 +130,7 @@ function paHover(c, m, get) {
       : `<span class="k">L4 = G4</span>  <span class="k">·</span>  ${G[4].n} × ${G[4].n} Werte, der grobe Rest; ohne ihn fehlten Helligkeit und große Flächen`;
   } });
   const pick = e => { if (!PG) return; const [x, y] = mouse(c, e); const k = paHit(PL, x, y) ?? paHit(PG, x, y); if (k !== null && k !== m.sel) { m.sel = k; m.draw(); } };
-  c.addEventListener('mousemove', pick); c.addEventListener('click', pick);
+  c.addEventListener('pointermove', pick); c.addEventListener('pointerdown', pick);
 })();
 </script>
 </body>
