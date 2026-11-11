@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faltung: spiegeln, verschieben, multiplizieren, aufsummieren</title>
+<!-- Erzeugt von build.py aus src/figures/fr-03-faltung.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/fr.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-cv" class="c-fr-t" role="img" aria-label="Oben ein Signal und der gespiegelte, verschobene Faltungskern mit ihrem Produkt als Fläche; unten das Faltungsergebnis, das beim Verschieben entsteht."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 170px"><div class="lab"><label for="cv-f">Signal f</label></div><select id="cv-f" autocomplete="off" style="width:100%"><option value="r">Rechteck</option><option value="p">zwei Pulse</option></select></div>
+    <div class="ctrl" style="flex:0 1 210px"><div class="lab"><label for="cv-g">Kern g</label></div><select id="cv-g" autocomplete="off" style="width:100%"><option value="g">Gauß (Unschärfe)</option><option value="r">Rechteck (Mittelwert)</option><option value="e">abklingend (Nachleuchten)</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="cv-t">Position t</label><output id="cv-t-o"></output></div><input id="cv-t" type="range" min="-2.5" max="5.5" step="0.01" value="0.6" autocomplete="off"></div>
+    <button class="btn" type="button" id="cv-p">Abspielen</button>
+  </div>
+  <div class="readout" id="cv-read"></div>
+  <figcaption><b>Abb. 3</b> Die Faltung \((f * g)(t) = \int f(\tau)\,g(t - \tau)\,\mathrm d\tau\) Schritt für Schritt. Oben das Signal \(f\) (schwarz) und der Kern, gespiegelt und an die Stelle \(t\) geschoben (blau). Ihr Produkt ist die rote Fläche, und deren Inhalt ist der Wert der Faltung an der Stelle \(t\) (Punkt unten). Schiebt man \(t\) durch, entsteht unten die ganze gefaltete Kurve. Beim abklingenden Kern sieht man, warum gespiegelt wird: Jeder Eingangswert wirkt erst danach nach, das Ergebnis läuft dem Signal hinterher.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/fr.js"></script>
+<script>
+/* ---------- Faltung ---------- */
+(() => {
+  const c = $('#cv-cv'), iff = $('#cv-f'), ig = $('#cv-g'), it = $('#cv-t'), bp = $('#cv-p');
+  const F = { r: x => x >= 0 && x <= 2 ? 1 : 0, p: x => (x >= 0 && x <= 0.6) || (x >= 2 && x <= 2.4) ? 1 : 0 };
+  const G = { g: x => Math.exp(-x * x / (2 * 0.35 * 0.35)) / (0.35 * Math.sqrt(2 * Math.PI)), r: x => Math.abs(x) <= 0.5 ? 1 : 0, e: x => x >= 0 ? Math.exp(-x / 0.7) / 0.7 : 0 };
+  const T0 = -2.5, T1 = 5.5, dx = 0.01;
+  const conv = (f, g, t) => { let s = 0; for (let x = -3; x <= 6; x += dx) s += f(x) * g(t - x); return s * dx; };
+  const m = reg({ el: c, playing: false, anim: true, step(dt) { let t = +it.value + dt * 1.4; if (t > T1) { t = T1; this.playing = false; bp.textContent = 'Abspielen'; } it.value = t; }, draw() {
+    const f = F[iff.value], g = G[ig.value], t = +it.value; $('#cv-t-o').textContent = nf(t, 2);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const gmax = Math.max(1.2, g(0) * 1.1);
+    const top = frame(ctx, 0, 0, w, h * 0.54, { x0: T0, x1: T1, y0: 0, y1: gmax, xt: [-2, 0, 2, 4], yt: [0, 1], xl: '', l: 26, t: 20, b: 18 });
+    ctx.fillStyle = rgba(H, 0.35); ctx.beginPath(); ctx.moveTo(top.X(T0), top.Y(0)); for (let x = T0; x <= T1; x += dx) ctx.lineTo(top.X(x), top.Y(Math.min(gmax, f(x) * g(t - x)))); ctx.lineTo(top.X(T1), top.Y(0)); ctx.fill();
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.2; curve(ctx, f, top.X, top.Y, T0, T1, 1600);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.2; curve(ctx, x => Math.min(gmax, g(t - x)), top.X, top.Y, T0, T1, 1600);
+    ctx.strokeStyle = rgba(A, 0.6); ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top.X(t), top.by); ctx.lineTo(top.X(t), top.by + top.bh); ctx.stroke(); ctx.setLineDash([]);
+    title(ctx, 'f(τ) und g(t − τ)', 0, 13); legend(ctx, w, 13, [['f(τ)', Fg], ['g(t − τ)', A], ['Produkt', H]], { right: true });
+    const vals = []; for (let x = T0; x <= T1 + 1e-9; x += 0.02) vals.push([x, conv(f, g, x)]);
+    const ymax = Math.max(...vals.map(v => v[1])) * 1.15 || 1, bot = frame(ctx, 0, h * 0.56, w, h * 0.44, { x0: T0, x1: T1, y0: 0, y1: ymax, xt: [-2, 0, 2, 4], yt: [0], xl: 't', l: 26, t: 20 });
+    ctx.strokeStyle = rgba(Fg, 0.18); ctx.lineWidth = 2; ctx.beginPath(); vals.forEach(([x, v], i) => i ? ctx.lineTo(bot.X(x), bot.Y(v)) : ctx.moveTo(bot.X(x), bot.Y(v))); ctx.stroke();
+    ctx.strokeStyle = H; ctx.lineWidth = 2.4; ctx.beginPath(); vals.filter(([x]) => x <= t).forEach(([x, v], i) => i ? ctx.lineTo(bot.X(x), bot.Y(v)) : ctx.moveTo(bot.X(x), bot.Y(v))); ctx.stroke();
+    const cv = conv(f, g, t); ctx.fillStyle = H; ctx.beginPath(); ctx.arc(bot.X(t), bot.Y(cv), 5, 0, 2 * Math.PI); ctx.fill();
+    title(ctx, '(f * g)(t)', 0, h * 0.56 + 13);
+    $('#cv-read').innerHTML = `<span class="k">(f * g)(${nf(t, 2)}) =</span> Fläche des Produkts = <b>${nf(cv, 3)}</b>`;
+  } });
+  [iff, ig, it].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  bp.addEventListener('click', () => { m.playing = !m.playing; if (m.playing && +it.value >= T1 - 0.01) it.value = T0; bp.textContent = m.playing ? 'Anhalten' : 'Abspielen'; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+.c-fr { aspect-ratio: 2.4 / 1; } .c-fr-t { aspect-ratio: 2 / 1; } .c-fr-3 { aspect-ratio: 3 / 1.12; }
+@media (max-width: 560px) { .c-fr { aspect-ratio: 1.05 / 1; } .c-fr-t { aspect-ratio: 0.85 / 1; } .c-fr-3 { aspect-ratio: 0.95 / 1; } }

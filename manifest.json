@@ -94,8 +94,7 @@
     "Faltung",
     "Abtastung",
     "Spektrum"
-   ],
-   "status": "geplant"
+   ]
   },
   {
    "id": "vektoranalysis",
@@ -543,6 +542,55 @@
    "slug": "et-13-rauschen",
    "page": "e-technik",
    "title": "Rauschen",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-01-fourier-reihe",
+   "page": "fourier",
+   "title": "Fourier-Reihe",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-02-transformation",
+   "page": "fourier",
+   "title": "Fourier-Transformation: Breite und Bandbreite",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-03-faltung",
+   "page": "fourier",
+   "title": "Faltung: spiegeln, verschieben, multiplizieren, aufsummieren",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-04-abtastung",
+   "page": "fourier",
+   "title": "Abtastung und Aliasing",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-05-dft-leckeffekt",
+   "page": "fourier",
+   "title": "DFT, Leckeffekt und Fenster",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-06-fourier-2d",
+   "page": "fourier",
+   "title": "Filtern im Frequenzraum",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "fr-07-leistungsspektrum",
+   "page": "fourier",
+   "title": "Rauschen und Leistungsspektrum",
    "interactive": true,
    "height": 640
   },

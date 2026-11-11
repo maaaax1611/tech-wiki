@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fourier und Signale</title>
+<!-- Erzeugt von build.py aus src/pages/grundlagen/fourier.md. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/fr.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Inhalt">
+    <div class="eyebrow">Inhalt</div>
+    <ol>
+      <li class="lv">Grundidee</li>
+      <li><a href="#reihe"><span class="n">1</span><span>Fourier-Reihe</span></a></li>
+      <li><a href="#transformation"><span class="n">2</span><span>Fourier-Transformation</span></a></li>
+      <li><a href="#faltung"><span class="n">3</span><span>Faltung und Faltungssatz</span></a></li>
+      <li class="lv">Diskrete Signale</li>
+      <li><a href="#abtastung"><span class="n">4</span><span>Abtastung und Aliasing</span></a></li>
+      <li><a href="#dft"><span class="n">5</span><span>DFT und FFT</span></a></li>
+      <li class="lv">Bilder und Rauschen</li>
+      <li><a href="#bilder"><span class="n">6</span><span>2D-Fourier-Transformation</span></a></li>
+      <li><a href="#rauschen"><span class="n">7</span><span>Leistungsspektrum</span></a></li>
+      <li class="lv">Anhang</li>
+      <li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li>
+      <li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li>
+    </ol>
+  </nav>
+  <main>
+    <header id="ueberblick">
+      <p class="backlink"><a href="../index.html">← Wiki</a> · <a href="../index.html#grundlagen">Grundlagen</a></p>
+      <div class="topbar"><div class="eyebrow">Grundlagen · Mathematik</div>
+        <div class="theme" role="group" aria-label="Darstellung"><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button><button type="button" data-t="system">System</button></div></div>
+      <h1>Fourier und Signale</h1>
+      <p class="lede">Signale und Bilder als Summe von Schwingungen. Diese Sicht macht Faltung zur Multiplikation, erklärt, wie fein man abtasten muss, und liefert die Sprache, in der man über Schärfe und Rauschen spricht: Übertragungsfunktion, Grenzfrequenz, Leistungsspektrum.</p>
+    </header>
+    <details class="toc-mobile"><summary><span class="lab">Inhalt</span><span class="cur"></span></summary><ol><li><a href="#reihe"><span class="n">1</span><span>Fourier-Reihe</span></a></li><li><a href="#transformation"><span class="n">2</span><span>Fourier-Transformation</span></a></li><li><a href="#faltung"><span class="n">3</span><span>Faltung und Faltungssatz</span></a></li><li><a href="#abtastung"><span class="n">4</span><span>Abtastung und Aliasing</span></a></li><li><a href="#dft"><span class="n">5</span><span>DFT und FFT</span></a></li><li><a href="#bilder"><span class="n">6</span><span>2D-Fourier-Transformation</span></a></li><li><a href="#rauschen"><span class="n">7</span><span>Leistungsspektrum</span></a></li><li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li><li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li></ol></details>
+<section id="reihe">
+<div class="step"><b>1</b><span class="eyebrow">Grundidee</span></div>
+<h2>Signale als Summe von Schwingungen</h2>
+<p>Ein periodisches Signal mit Periode <span class="arithmatex">\(T\)</span> lässt sich als Summe von Sinus- und Kosinusschwingungen schreiben, deren Frequenzen Vielfache der Grundfrequenz <span class="arithmatex">\(1/T\)</span> sind. Kürzer geht es mit komplexen Exponentialfunktionen, denn <span class="arithmatex">\(e^{i\varphi} = \cos\varphi + i\sin\varphi\)</span>:</p>
+<div class="eq">\[
+f(x) = \sum_{k=-\infty}^{\infty} c_k\,e^{2\pi i k x / T}, \qquad c_k = \frac1T\int_0^T f(x)\,e^{-2\pi i k x / T}\,\mathrm dx
+\]</div>
+<p>Jeder Koeffizient <span class="arithmatex">\(c_k\)</span> ist eine komplexe Zahl. Ihr Betrag sagt, wie stark die Frequenz <span class="arithmatex">\(k/T\)</span> vertreten ist, ihre Phase, wie die Schwingung verschoben ist. Berechnet wird <span class="arithmatex">\(c_k\)</span> als Skalarprodukt von <span class="arithmatex">\(f\)</span> mit der jeweiligen Schwingung: Die Schwingungen bilden eine Orthogonalbasis, und die Fourier-Reihe ist die Darstellung von <span class="arithmatex">\(f\)</span> in dieser Basis (vgl. <a href="lineare-algebra.html#vektoren">lineare Algebra</a>).</p>
+<p>Wie schnell die Koeffizienten abfallen, hängt an der Glattheit des Signals. Sprünge brauchen viele hohe Frequenzen. Bricht man die Summe ab, bleibt an jedem Sprung ein Überschwinger von etwa 9 % stehen, das <strong>Gibbs-Phänomen</strong>. Dasselbe erzeugt im Bild Ringe neben scharfen Kanten, wenn hohe Frequenzen fehlen.</p>
+<figure class="fig">
+<canvas aria-label="Ein periodisches Signal, angenähert durch eine Summe von Sinusschwingungen, daneben die Amplituden der Schwingungen." class="c-fr" id="cv-fs" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 170px"><div class="lab"><label for="fs-s">Signal</label></div><select autocomplete="off" id="fs-s" style="width:100%"><option value="r">Rechteck</option><option value="d">Dreieck</option><option value="s">Sägezahn</option></select></div>
+<div class="ctrl"><div class="lab"><label for="fs-n">Anzahl Schwingungen N</label><output id="fs-n-o"></output></div><input autocomplete="off" id="fs-n" max="60" min="1" step="1" type="range" value="3"/></div>
+<label class="chk"><input autocomplete="off" checked="" id="fs-e" type="checkbox"/> einzelne Schwingungen</label>
+</div>
+<div class="readout" id="fs-read"></div>
+<figcaption><b>Abb. 1</b> Links das Signal (grau) und die Summe der ersten \(N\) Schwingungen (blau), darunter blass die einzelnen Schwingungen. Rechts deren Amplituden über der Frequenz, das Spektrum. Glatte Signale wie das Dreieck brauchen nur wenige Schwingungen, ihre Amplituden fallen wie \(1/k^2\). Sprünge wie beim Rechteck brauchen viele hohe Frequenzen, die Amplituden fallen nur wie \(1/k\). An einem Sprung bleibt ein Überschwinger von etwa 9 % stehen, egal wie groß \(N\) wird (Gibbs-Phänomen). Er wird nur schmaler.</figcaption>
+</figure>
+</section>
+<section id="transformation">
+<div class="step"><b>2</b><span class="eyebrow">Grundidee</span></div>
+<h2>Fourier-Transformation</h2>
+<p>Lässt man die Periode gegen unendlich gehen, rücken die Frequenzen beliebig dicht zusammen. Aus der Summe wird ein Integral, und jedes (vernünftige) Signal bekommt ein kontinuierliches Spektrum:</p>
+<div class="eq">\[
+F(u) = \int_{-\infty}^{\infty} f(x)\,e^{-2\pi i u x}\,\mathrm dx, \qquad f(x) = \int_{-\infty}^{\infty} F(u)\,e^{2\pi i u x}\,\mathrm du
+\]</div>
+<p><span class="arithmatex">\(u\)</span> ist die Frequenz in Schwingungen pro Längeneinheit, etwa Linienpaare pro Millimeter. Die wichtigsten Eigenschaften:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Ortsraum</th>
+<th>Frequenzraum</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(f(x - x_0)\)</span></td>
+<td><span class="arithmatex">\(e^{-2\pi i u x_0}F(u)\)</span></td>
+<td>Verschiebung ändert nur die Phase, nicht den Betrag</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f(x/a)\)</span></td>
+<td><span class="arithmatex">\(\vert a\vert\,F(a u)\)</span></td>
+<td>breit im Ort heißt schmal im Spektrum</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f * g\)</span></td>
+<td><span class="arithmatex">\(F\cdot G\)</span></td>
+<td>Faltung wird Multiplikation (Abschnitt 3)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f\cdot g\)</span></td>
+<td><span class="arithmatex">\(F * G\)</span></td>
+<td>und umgekehrt</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f\)</span> reell</td>
+<td><span class="arithmatex">\(F(-u) = \overline{F(u)}\)</span></td>
+<td>Betrag symmetrisch, man zeigt oft nur <span class="arithmatex">\(u \ge 0\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\int\vert f\vert^2\,\mathrm dx\)</span></td>
+<td><span class="arithmatex">\(\int\vert F\vert^2\,\mathrm du\)</span></td>
+<td>Energie bleibt gleich (Parseval)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ein paar Paare, die man kennen sollte: Ein Rechteck der Breite <span class="arithmatex">\(a\)</span> wird zu <span class="arithmatex">\(a\,\mathrm{sinc}(a u)\)</span> mit <span class="arithmatex">\(\mathrm{sinc}(x) = \sin(\pi x)/(\pi x)\)</span>. Ein Gauß bleibt ein Gauß. Ein einzelner Impuls (Delta) hat ein flaches Spektrum, enthält also alle Frequenzen gleich stark, und eine Konstante ist umgekehrt nur die Frequenz null.</p>
+<figure class="fig">
+<canvas aria-label="Links ein Impuls im Ortsraum, rechts der Betrag und der Realteil seiner Fourier-Transformierten." class="c-fr" id="cv-ft" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 170px"><div class="lab"><label for="ft-s">Signal</label></div><select autocomplete="off" id="ft-s" style="width:100%"><option value="r">Rechteck</option><option value="g">Gauß</option><option value="d">Dreieck</option></select></div>
+<div class="ctrl"><div class="lab"><label for="ft-w">Breite a</label><output id="ft-w-o"></output></div><input autocomplete="off" id="ft-w" max="3" min="0.2" step="0.02" type="range" value="1"/></div>
+<div class="ctrl"><div class="lab"><label for="ft-x">Verschiebung x₀</label><output id="ft-x-o"></output></div><input autocomplete="off" id="ft-x" max="2" min="-2" step="0.02" type="range" value="0"/></div>
+</div>
+<div class="readout" id="ft-read"></div>
+<figcaption><b>Abb. 2</b> Links das Signal, rechts seine Fourier-Transformierte: der Betrag \(|F(u)|\) (blau) und der Realteil (gelb). Je schmaler das Signal, desto breiter das Spektrum und umgekehrt, das Produkt der Breiten bleibt gleich. Das Rechteck hat wegen seiner harten Kanten ein langsam abklingendes sinc-Spektrum mit Nebenkeulen, der Gauß wieder einen Gauß ohne Nebenkeulen. Eine Verschiebung ändert den Betrag nicht, nur die Phase: Der Realteil beginnt zu schwingen, umso schneller, je weiter das Signal verschoben ist.</figcaption>
+</figure>
+</section>
+<section id="faltung">
+<div class="step"><b>3</b><span class="eyebrow">Grundidee</span></div>
+<h2>Faltung und Faltungssatz</h2>
+<p>Ein lineares, verschiebungsinvariantes System, etwa eine Optik, ein Detektor oder ein Filter, ist vollständig durch seine <strong>Impulsantwort</strong> <span class="arithmatex">\(h\)</span> beschrieben: das Ausgangssignal, wenn man einen einzelnen Punkt hineinschickt. In der Bildgebung heißt sie <strong>Punktbildfunktion</strong> (PSF). Jedes andere Eingangssignal ist eine Summe verschobener Punkte, also ist der Ausgang die entsprechende Summe verschobener Impulsantworten, die <strong>Faltung</strong>:</p>
+<div class="eq">\[
+(f * h)(x) = \int f(\tau)\,h(x - \tau)\,\mathrm d\tau
+\]</div>
+<p>Der <strong>Faltungssatz</strong> macht daraus im Frequenzraum eine Multiplikation:</p>
+<div class="eq">\[
+\mathcal F\{f * h\} = F\cdot H
+\]</div>
+<p><span class="arithmatex">\(H(u)\)</span> heißt <strong>Übertragungsfunktion</strong>. Sie sagt für jede Frequenz, wie stark sie das System durchlässt. Ihr Betrag, normiert auf <span class="arithmatex">\(H(0) = 1\)</span>, ist die <strong>Modulationsübertragungsfunktion</strong> (MTF), das übliche Maß für die Schärfe eines Bildgebungssystems. Eine breite PSF heißt eine schmale MTF, also Unschärfe.</p>
+<p>Praktisch folgen daraus zwei Dinge. Große Faltungen rechnet man schneller über die FFT als direkt. Und eine bekannte Faltung lässt sich im Prinzip durch Division durch <span class="arithmatex">\(H\)</span> rückgängig machen. Wo <span class="arithmatex">\(H\)</span> fast null ist, verstärkt das aber vor allem das Rauschen, deshalb braucht man dabei Regularisierung.</p>
+<figure class="fig">
+<canvas aria-label="Oben ein Signal und der gespiegelte, verschobene Faltungskern mit ihrem Produkt als Fläche; unten das Faltungsergebnis, das beim Verschieben entsteht." class="c-fr-t" id="cv-cv" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 170px"><div class="lab"><label for="cv-f">Signal f</label></div><select autocomplete="off" id="cv-f" style="width:100%"><option value="r">Rechteck</option><option value="p">zwei Pulse</option></select></div>
+<div class="ctrl" style="flex:0 1 210px"><div class="lab"><label for="cv-g">Kern g</label></div><select autocomplete="off" id="cv-g" style="width:100%"><option value="g">Gauß (Unschärfe)</option><option value="r">Rechteck (Mittelwert)</option><option value="e">abklingend (Nachleuchten)</option></select></div>
+<div class="ctrl"><div class="lab"><label for="cv-t">Position t</label><output id="cv-t-o"></output></div><input autocomplete="off" id="cv-t" max="5.5" min="-2.5" step="0.01" type="range" value="0.6"/></div>
+<button class="btn" id="cv-p" type="button">Abspielen</button>
+</div>
+<div class="readout" id="cv-read"></div>
+<figcaption><b>Abb. 3</b> Die Faltung \((f * g)(t) = \int f(\tau)\,g(t - \tau)\,\mathrm d\tau\) Schritt für Schritt. Oben das Signal \(f\) (schwarz) und der Kern, gespiegelt und an die Stelle \(t\) geschoben (blau). Ihr Produkt ist die rote Fläche, und deren Inhalt ist der Wert der Faltung an der Stelle \(t\) (Punkt unten). Schiebt man \(t\) durch, entsteht unten die ganze gefaltete Kurve. Beim abklingenden Kern sieht man, warum gespiegelt wird: Jeder Eingangswert wirkt erst danach nach, das Ergebnis läuft dem Signal hinterher.</figcaption>
+</figure>
+</section>
+<section id="abtastung">
+<div class="step"><b>4</b><span class="eyebrow">Diskrete Signale</span></div>
+<h2>Abtastung und Aliasing</h2>
+<p>Ein digitales Signal ist an Punkten im Abstand <span class="arithmatex">\(\Delta x\)</span> abgetastet, mit der Abtastrate <span class="arithmatex">\(f_s = 1/\Delta x\)</span>. Das <strong>Abtasttheorem</strong> (Nyquist-Shannon) sagt: Enthält das Signal keine Frequenzen oberhalb von <span class="arithmatex">\(f_s/2\)</span>, bestimmen die Abtastwerte es exakt. Diese Grenze heißt <strong>Nyquist-Frequenz</strong>.</p>
+<div class="eq">\[
+f_{\max} &lt; \frac{f_s}{2} \qquad\Longleftrightarrow\qquad \text{mindestens zwei Abtastwerte pro Periode}
+\]</div>
+<p>Höhere Frequenzen gehen nicht einfach verloren, sie tauchen als falsche, niedrigere Frequenzen wieder auf (<strong>Aliasing</strong>). Im Frequenzraum sieht man warum: Abtasten wiederholt das Spektrum im Abstand <span class="arithmatex">\(f_s\)</span>, und Anteile über <span class="arithmatex">\(f_s/2\)</span> überlappen mit der Kopie daneben. Hinterher lässt sich das nicht mehr trennen. Man muss vor dem Abtasten tiefpassfiltern. Bei einem Bilddetektor tut das die Pixelapertur zum Teil von selbst, beim Verkleinern von Bildern muss man es selbst tun (siehe <a href="../bildverarbeitung/pyramiden.html#aliasing">Pyramiden</a>).</p>
+<figure class="fig">
+<canvas aria-label="Eine Kosinusschwingung, ihre Abtastwerte und die Schwingung niedrigster Frequenz durch dieselben Werte; darunter das Spektrum mit seinen periodischen Kopien." class="c-fr-t" id="cv-sa" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="sa-f">Signalfrequenz f (in Einheiten der Abtastrate f<sub>s</sub>)</label><output id="sa-f-o"></output></div><input autocomplete="off" id="sa-f" max="2.2" min="0" step="0.005" type="range" value="0.12"/></div>
+</div>
+<div class="readout" id="sa-read"></div>
+<figcaption><b>Abb. 4</b> Oben eine Schwingung (grau), abgetastet in festen Abständen (Punkte). Blau gestrichelt die Schwingung mit der niedrigsten Frequenz, die durch dieselben Punkte geht. Nur sie würde man aus den Abtastwerten rekonstruieren. Solange \(f &lt; f_s/2\) ist, ist sie die richtige. Darüber erscheint eine falsche, niedrigere Frequenz (Alias). Unten der Grund im Spektrum: Abtasten wiederholt das Spektrum im Abstand \(f_s\). Liegt die Frequenz außerhalb des Nyquist-Bands (grau), rutscht eine ihrer Kopien hinein und ist von einer echten Frequenz nicht zu unterscheiden.</figcaption>
+</figure>
+</section>
+<section id="dft">
+<div class="step"><b>5</b><span class="eyebrow">Diskrete Signale</span></div>
+<h2>DFT und FFT</h2>
+<p>Für <span class="arithmatex">\(N\)</span> Abtastwerte <span class="arithmatex">\(x_0, \dots, x_{N-1}\)</span> ist die <strong>diskrete Fourier-Transformation</strong></p>
+<div class="eq">\[
+X_j = \sum_{n=0}^{N-1} x_n\,e^{-2\pi i j n / N}, \qquad j = 0, \dots, N - 1
+\]</div>
+<p>Der Index <span class="arithmatex">\(j\)</span> zählt, wie viele Perioden in den Ausschnitt passen. Die zugehörige Frequenz ist <span class="arithmatex">\(j\,f_s/N\)</span>, der Abstand zweier Frequenzlinien also <span class="arithmatex">\(f_s/N\)</span>. Die Indizes über <span class="arithmatex">\(N/2\)</span> stehen für negative Frequenzen, deshalb verschiebt man die Nullfrequenz zur Anzeige in die Mitte (<code>fftshift</code>). Die <strong>FFT</strong> berechnet dasselbe in <span class="arithmatex">\(O(N\log N)\)</span> statt <span class="arithmatex">\(O(N^2)\)</span> Schritten.</p>
+<p>Zwei Eigenheiten muss man kennen:</p>
+<ul class="tight">
+<li>Die DFT behandelt den Ausschnitt so, als würde er sich periodisch wiederholen. Passt keine ganze Zahl von Perioden hinein, entsteht an der Nahtstelle ein Sprung, und die Energie einer Frequenz verschmiert über das ganze Spektrum (<strong>Leckeffekt</strong>). Ein <strong>Fenster</strong> wie Hann blendet die Ränder weich aus und unterdrückt das, auf Kosten einer etwas breiteren Spitze.</li>
+<li>Auch eine Faltung über die FFT ist periodisch: Was rechts hinausläuft, kommt links wieder herein. Will man das nicht, füllt man vorher mit Nullen auf (Zero Padding).</li>
+</ul>
+<figure class="fig">
+<canvas aria-label="64 Abtastwerte einer Sinusschwingung mit Fenster und darunter ihr DFT-Betragsspektrum in Dezibel." class="c-fr-t" id="cv-lk" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="lk-k">Frequenz (Perioden im Ausschnitt)</label><output id="lk-k-o"></output></div><input autocomplete="off" id="lk-k" max="14" min="2" step="0.05" type="range" value="8.5"/></div>
+<div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="lk-w">Fenster</label></div><select autocomplete="off" id="lk-w" style="width:100%"><option value="r">keins (Rechteck)</option><option value="h">Hann</option></select></div>
+<label class="chk"><input autocomplete="off" id="lk-2" type="checkbox"/> schwache zweite Schwingung (−50 dB)</label>
+</div>
+<div class="readout" id="lk-read"></div>
+<figcaption><b>Abb. 5</b> Die DFT nimmt stillschweigend an, dass sich der Ausschnitt periodisch wiederholt. Passt eine ganze Zahl von Perioden hinein, liegt die ganze Energie in einer einzigen Frequenz. Sonst entsteht an der Nahtstelle ein Sprung, und die Energie verschmiert über alle Frequenzen (Leckeffekt). Ein Fenster wie Hann blendet die Ränder weich aus: Die Spitze wird etwas breiter, aber das Lecken fällt um Größenordnungen. Erst dann wird eine schwache zweite Schwingung neben einer starken sichtbar.</figcaption>
+</figure>
+</section>
+<section id="bilder">
+<div class="step"><b>6</b><span class="eyebrow">Bilder und Rauschen</span></div>
+<h2>Bilder im Frequenzraum</h2>
+<p>In zwei Dimensionen wird ein Bild in ebene Wellen zerlegt, jede mit einer Frequenz <span class="arithmatex">\(u\)</span> in x- und <span class="arithmatex">\(v\)</span> in y-Richtung:</p>
+<div class="eq">\[
+F(u, v) = \iint f(x, y)\,e^{-2\pi i (u x + v y)}\,\mathrm dx\,\mathrm dy
+\]</div>
+<p>Der Punkt <span class="arithmatex">\((u, v)\)</span> im Spektrum steht für Streifen senkrecht zur Richtung <span class="arithmatex">\((u, v)\)</span>, mit Abstand <span class="arithmatex">\(1/\sqrt{u^2 + v^2}\)</span>. Nah an der Mitte liegen grobe Strukturen, außen feine. Eine Kante erzeugt im Spektrum einen Streifen senkrecht zur Kante, ein periodisches Muster einzelne Spitzen. Die 2D-Transformation ist separierbar: erst alle Zeilen, dann alle Spalten eindimensional transformieren.</p>
+<p>Filtern heißt im Frequenzraum: Spektrum mit einer Maske multiplizieren. Ein Tiefpass glättet, ein Hochpass betont Kanten. Eine harte Maskenkante erzeugt Ringe (Gibbs), eine weiche Gauß-Maske nicht. Für kleine Filterkerne ist die direkte Faltung schneller, für große die FFT.</p>
+<figure class="fig">
+<canvas aria-label="Ein Testbild, sein Fourier-Spektrum mit Filtermaske und das gefilterte Bild." class="c-fr-3" id="cv-f2" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="f2-t">Filter</label></div><select autocomplete="off" id="f2-t" style="width:100%"><option value="lh">Tiefpass, harte Kante</option><option selected="" value="lg">Tiefpass, Gauß</option><option value="hg">Hochpass, Gauß</option></select></div>
+<div class="ctrl"><div class="lab"><label for="f2-r">Grenzfrequenz</label><output id="f2-r-o"></output></div><input autocomplete="off" id="f2-r" max="0.5" min="0.02" step="0.005" type="range" value="0.1"/></div>
+</div>
+<div class="readout" id="f2-read"></div>
+<figcaption><b>Abb. 6</b> Links das Bild, in der Mitte der Betrag seines Spektrums (logarithmisch, Nullfrequenz in der Mitte) mit der Filtermaske, rechts das Ergebnis der Rücktransformation. Grobe Flächen liegen nahe der Mitte, Kanten und das feine Gitter weiter außen. Das Gitter erzeugt deutliche Spitzen auf der waagrechten Achse, die Kanten Streifen senkrecht zu ihrer Richtung. Ein Tiefpass glättet, ein Hochpass lässt nur die Kanten übrig. Die harte Kante im Spektrum erzeugt Ringe um jede Kante im Bild, weil ihre Rücktransformierte eine sinc-artige Welle ist. Der Gauß tut das nicht.</figcaption>
+</figure>
+</section>
+<section id="rauschen">
+<div class="step"><b>7</b><span class="eyebrow">Bilder und Rauschen</span></div>
+<h2>Rauschen und Leistungsspektrum</h2>
+<p>Bei Rauschen interessiert nicht die Phase, sondern wie viel Leistung auf welche Frequenz fällt. Das <strong>Leistungsspektrum</strong> ist der Erwartungswert von <span class="arithmatex">\(|F|^2\)</span>, in der Praxis gemittelt über viele Rauschbilder oder Bildausschnitte. Für Detektorbilder heißt es <strong>Rauschleistungsspektrum</strong> (NPS).</p>
+<ul class="tight">
+<li><strong>Weißes Rauschen</strong>, bei dem jedes Pixel unabhängig ist, hat ein flaches Spektrum. Quantenrauschen hinter einem idealen Detektor wäre weiß.</li>
+<li><strong>Korreliertes Rauschen</strong>, etwa nach Unschärfe im Detektor oder einem Glättungsfilter, verliert Leistung bei hohen Frequenzen. Läuft weißes Rauschen durch ein System mit Übertragungsfunktion <span class="arithmatex">\(H\)</span>, ist sein Leistungsspektrum <span class="arithmatex">\(|H|^2\)</span> mal das Eingangsspektrum.</li>
+</ul>
+<p>Das Leistungsspektrum ist die Fourier-Transformierte der Autokorrelation, also der <a href="wahrscheinlichkeit.html#kovarianz">Kovarianz</a> zwischen Pixeln in einem gegebenen Abstand (Satz von Wiener-Chintschin). Das Integral über das ganze Spektrum ist die Varianz eines einzelnen Pixels. Zwei Bilder mit derselben Pixelvarianz können deshalb ganz verschieden aussehen: feinkörnig oder grobkörnig. Erst das Spektrum unterscheidet sie, und zusammen mit der MTF beschreibt es, wie gut ein Detektor kleine Strukturen im Rauschen sichtbar macht.</p>
+<figure class="fig">
+<canvas aria-label="Ein Rauschbild, sein zweidimensionales Leistungsspektrum und das radial gemittelte Leistungsspektrum als Kurve." class="c-fr-3" id="cv-ps" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="ps-s">Korrelationslänge σ</label><output id="ps-s-o"></output></div><input autocomplete="off" id="ps-s" max="3" min="0" step="0.05" type="range" value="1"/></div>
+<label class="chk"><input autocomplete="off" id="ps-a" type="checkbox"/> nur waagrecht korreliert</label>
+<button class="btn" id="ps-r" type="button">Neues Rauschen</button>
+</div>
+<div class="readout" id="ps-read"></div>
+<figcaption><b>Abb. 7</b> Links ein Rauschbild: weißes Rauschen, das mit einem Gauß der Breite σ geglättet wurde. Benachbarte Pixel sind dadurch korreliert. In der Mitte das Leistungsspektrum, \(|F|^2\) gemittelt über vier Rauschbilder, rechts dasselbe über Ringe gleicher Frequenz gemittelt (Punkte) mit dem erwarteten Verlauf (Linie). Weißes Rauschen (σ = 0) hat ein flaches Spektrum: alle Frequenzen gleich stark. Korrelation nimmt hohe Frequenzen weg, das Rauschen wird grobkörniger. Ist sie richtungsabhängig, wird auch das Spektrum es. Die Fläche unter dem Spektrum ist die Varianz eines Pixels.</figcaption>
+</figure>
+</section>
+<section id="formeln">
+<div class="eyebrow">Anhang A</div>
+<h2>Formeln</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Thema</th>
+<th>Formel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fourier-Reihe</td>
+<td><span class="arithmatex">\(f(x) = \sum_k c_k e^{2\pi i k x/T}\)</span>, <span class="arithmatex">\(c_k = \frac1T\int_0^T f\,e^{-2\pi i k x/T}\,\mathrm dx\)</span></td>
+</tr>
+<tr>
+<td>Transformation</td>
+<td><span class="arithmatex">\(F(u) = \int f(x)e^{-2\pi i u x}\,\mathrm dx\)</span>, <span class="arithmatex">\(f(x) = \int F(u)e^{2\pi i u x}\,\mathrm du\)</span></td>
+</tr>
+<tr>
+<td>Paare</td>
+<td>Rechteck der Breite <span class="arithmatex">\(a\)</span> ↔ <span class="arithmatex">\(a\,\mathrm{sinc}(a u)\)</span>, <span class="arithmatex">\(e^{-\pi x^2}\)</span> ↔ <span class="arithmatex">\(e^{-\pi u^2}\)</span>, <span class="arithmatex">\(\delta(x)\)</span> ↔ <span class="arithmatex">\(1\)</span></td>
+</tr>
+<tr>
+<td>Verschiebung, Skalierung</td>
+<td><span class="arithmatex">\(f(x - x_0)\)</span> ↔ <span class="arithmatex">\(e^{-2\pi i u x_0}F(u)\)</span>, <span class="arithmatex">\(f(x/a)\)</span> ↔ <span class="arithmatex">\(\vert a\vert F(a u)\)</span></td>
+</tr>
+<tr>
+<td>Faltungssatz</td>
+<td><span class="arithmatex">\(f * g\)</span> ↔ <span class="arithmatex">\(F\cdot G\)</span></td>
+</tr>
+<tr>
+<td>Parseval</td>
+<td><span class="arithmatex">\(\int\vert f\vert^2 = \int\vert F\vert^2\)</span></td>
+</tr>
+<tr>
+<td>Abtastung</td>
+<td><span class="arithmatex">\(f_{\max} &lt; f_s/2\)</span>, Frequenzauflösung der DFT <span class="arithmatex">\(f_s/N\)</span></td>
+</tr>
+<tr>
+<td>DFT</td>
+<td><span class="arithmatex">\(X_j = \sum_n x_n e^{-2\pi i j n/N}\)</span></td>
+</tr>
+<tr>
+<td>Leistungsspektrum</td>
+<td><span class="arithmatex">\(S(u) = \mathbb E\,\vert F(u)\vert^2\)</span>, nach einem System <span class="arithmatex">\(S_\text{aus} = \vert H\vert^2 S_\text{ein}\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section id="befehle">
+<div class="eyebrow">Anhang B</div>
+<h2>Befehle</h2>
+<pre><code class="language-python">import numpy as np
+from scipy import signal
+
+X = np.fft.fft(x)                         # DFT, Index 0 = Nullfrequenz
+f = np.fft.fftfreq(len(x), d=dx)          # zugehörige Frequenzen (inkl. negativer)
+X = np.fft.rfft(x)                        # nur nichtnegative Frequenzen (reelles Signal)
+x = np.fft.ifft(X).real                   # zurück
+
+F = np.fft.fftshift(np.fft.fft2(img))     # 2D, Nullfrequenz in der Mitte
+mag = np.log1p(np.abs(F))                 # zur Anzeige
+
+w = signal.windows.hann(len(x))           # Fenster gegen Leckeffekt
+y = signal.fftconvolve(x, h, mode="same") # Faltung über die FFT
+
+f, S = signal.welch(x, fs=fs, nperseg=256)  # gemitteltes Leistungsspektrum
+</code></pre>
+</section>
+    <footer>Alle Abbildungen rechnen live im Browser, die Spektren mit einer einfachen FFT. In Python übernimmt das <code>numpy.fft</code>.</footer>
+  </main>
+</div>
+<script src="../assets/ui.js"></script>
+<script src="../assets/fr.js"></script>
+<script>
+/* ---------- Fourier-Reihe ---------- */
+(() => {
+  const c = $('#cv-fs'), is = $('#fs-s'), inn = $('#fs-n'), ie = $('#fs-e');
+  const S = {
+    r: { f: x => Math.sign(Math.sin(x)) || 1, b: k => k % 2 ? 4 / (Math.PI * k) : 0 },
+    d: { f: x => { const t = ((x / (2 * Math.PI)) % 1 + 1) % 1; return t < 0.25 ? 4 * t : t < 0.75 ? 2 - 4 * t : 4 * t - 4; }, b: k => k % 2 ? 8 / (Math.PI * Math.PI * k * k) * (((k - 1) / 2) % 2 ? -1 : 1) : 0 },
+    s: { f: x => { const t = ((x / (2 * Math.PI) + 0.5) % 1 + 1) % 1; return 2 * t - 1; }, b: k => 2 / (Math.PI * k) * (k % 2 ? 1 : -1) },
+  };
+  const m = reg({ el: c, draw() {
+    const sg = S[is.value], N = +inn.value; $('#fs-n-o').textContent = N;
+    const sum = x => { let s = 0; for (let k = 1; k <= N; k++) s += sg.b(k) * Math.sin(k * x); return s; };
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), Mu = tok('--muted');
+    const r1 = narrow ? [0, 0, w, h * 0.58] : [0, 0, w * 0.62, h], r2 = narrow ? [0, h * 0.6, w, h * 0.4] : [w * 0.62 + 16, 0, w * 0.38 - 16, h];
+    const X0 = -Math.PI, X1 = 3 * Math.PI, f = frame(ctx, ...r1, { x0: X0, x1: X1, y0: -1.45, y1: 1.45, xt: [], yt: [-1, 0, 1], xl: 'x (zwei Perioden)', l: 26, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(f.bx, f.by, f.bw, f.bh); ctx.clip();
+    if (ie.checked) { ctx.lineWidth = 1; for (let k = 1, shown = 0; k <= N && shown < 6; k++) { const b = sg.b(k); if (!b) continue; shown++; ctx.strokeStyle = rgba(A, 0.3); curve(ctx, x => b * Math.sin(k * x), f.X, f.Y, X0, X1, 400); } }
+    ctx.strokeStyle = Mu; ctx.lineWidth = 1.8; curve(ctx, sg.f, f.X, f.Y, X0, X1, 800);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.4; curve(ctx, sum, f.X, f.Y, X0, X1, 1200);
+    ctx.restore(); title(ctx, `Summe der ersten ${N} Schwingung${N > 1 ? 'en' : ''}`, r1[0], r1[1] + 13);
+    const K = 30, g = frame(ctx, ...r2, { x0: 0, x1: K + 1, y0: 0, y1: 1.35, xt: [1, 10, 20, 30], yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'Frequenz k', l: 30, t: 20 });
+    for (let k = 1; k <= K; k++) { const b = Math.abs(sg.b(k)); if (!b) continue; ctx.strokeStyle = k <= N ? A : rgba(Mu, 0.6); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(g.X(k), g.Y(0)); ctx.lineTo(g.X(k), g.Y(b)); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(g.X(k), g.Y(b), 2.6, 0, 2 * Math.PI); ctx.fill(); }
+    title(ctx, 'Amplitude |bₖ|', r2[0], r2[1] + 13);
+    let mx = -Infinity, err = 0; const M = 2000; for (let i = 0; i < M; i++) { const x = 2 * Math.PI * (i + 0.5) / M, v = sum(x); mx = Math.max(mx, v); err += (v - sg.f(x)) ** 2; }
+    $('#fs-read').innerHTML = `<span class="k">mittlerer quadratischer Fehler:</span> ${ex(Math.sqrt(err / M), 2)}  <span class="k">·</span>  <span class="k">größter Wert der Summe:</span> ${nf(mx, 3)}${is.value === 'r' ? ` (Signal: 1, Überschwinger ${nf(100 * (mx - 1) / 2, 1)} % der Sprunghöhe)` : ''}`;
+  } });
+  [is, inn, ie].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Fourier-Transformation ---------- */
+(() => {
+  const c = $('#cv-ft'), is = $('#ft-s'), iw = $('#ft-w'), ix = $('#ft-x');
+  const S = {
+    r: { f: (x, a) => Math.abs(x) <= a / 2 ? 1 : 0, F: (u, a) => a * sinc(a * u), bw: a => 1 / a, nm: 'a·sinc(a·u)' },
+    g: { f: (x, a) => Math.exp(-Math.PI * (x / a) ** 2), F: (u, a) => a * Math.exp(-Math.PI * (a * u) ** 2), bw: a => 1 / a, nm: 'a·exp(−π a²u²)' },
+    d: { f: (x, a) => Math.max(0, 1 - Math.abs(x) / a), F: (u, a) => a * sinc(a * u) ** 2, bw: a => 1 / a, nm: 'a·sinc²(a·u)' },
+  };
+  const m = reg({ el: c, draw() {
+    const sg = S[is.value], a = +iw.value, x0 = +ix.value; $('#ft-w-o').textContent = nf(a, 2); $('#ft-x-o').textContent = nf(x0, 2);
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), B = tok('--bin2');
+    const r1 = narrow ? [0, 0, w, h * 0.45] : [0, 0, w * 0.45, h], r2 = narrow ? [0, h * 0.48, w, h * 0.52] : [w * 0.45 + 16, 0, w * 0.55 - 16, h];
+    const f = frame(ctx, ...r1, { x0: -4, x1: 4, y0: -0.15, y1: 1.2, xt: [-4, -2, 0, 2, 4], yt: [0, 1], xl: 'x', l: 22, t: 20 });
+    ctx.fillStyle = rgba(A, 0.18); ctx.beginPath(); ctx.moveTo(f.X(-4), f.Y(0)); for (let i = 0; i <= 600; i++) { const x = -4 + 8 * i / 600; ctx.lineTo(f.X(x), f.Y(sg.f(x - x0, a))); } ctx.lineTo(f.X(4), f.Y(0)); ctx.fill();
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2.2; curve(ctx, x => sg.f(x - x0, a), f.X, f.Y, -4, 4, 600);
+    title(ctx, 'Signal f(x)', r1[0], r1[1] + 13);
+    const U = 4, ymax = 3.1, g = frame(ctx, ...r2, { x0: -U, x1: U, y0: -ymax * 0.55, y1: ymax, xt: [-4, -2, 0, 2, 4], yt: [0, 1, 2, 3], xl: 'Frequenz u', l: 22, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(g.bx, g.by, g.bw, g.bh); ctx.clip();
+    ctx.strokeStyle = B; ctx.lineWidth = 1.6; curve(ctx, u => sg.F(u, a) * Math.cos(2 * Math.PI * u * x0), g.X, g.Y, -U, U, 800);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.4; curve(ctx, u => Math.abs(sg.F(u, a)), g.X, g.Y, -U, U, 800);
+    ctx.restore(); title(ctx, 'Spektrum F(u)', r2[0], r2[1] + 13);
+    legend(ctx, r2[0] + r2[2], r2[1] + 13, [['|F(u)|', A], ['Re F(u)', B]], { right: true });
+    $('#ft-read').innerHTML = `<span class="k">F(u) =</span> ${sg.nm}${x0 ? ' · e<sup>−2πi u x₀</sup>' : ''}  <span class="k">·</span>  <span class="k">Breite im Ort</span> ≈ ${nf(a, 2)}, <span class="k">im Spektrum</span> ≈ ${nf(sg.bw(a), 2)}, <span class="k">Produkt</span> <b>${nf(a * sg.bw(a), 2)}</b>`;
+  } });
+  [is, iw, ix].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Faltung ---------- */
+(() => {
+  const c = $('#cv-cv'), iff = $('#cv-f'), ig = $('#cv-g'), it = $('#cv-t'), bp = $('#cv-p');
+  const F = { r: x => x >= 0 && x <= 2 ? 1 : 0, p: x => (x >= 0 && x <= 0.6) || (x >= 2 && x <= 2.4) ? 1 : 0 };
+  const G = { g: x => Math.exp(-x * x / (2 * 0.35 * 0.35)) / (0.35 * Math.sqrt(2 * Math.PI)), r: x => Math.abs(x) <= 0.5 ? 1 : 0, e: x => x >= 0 ? Math.exp(-x / 0.7) / 0.7 : 0 };
+  const T0 = -2.5, T1 = 5.5, dx = 0.01;
+  const conv = (f, g, t) => { let s = 0; for (let x = -3; x <= 6; x += dx) s += f(x) * g(t - x); return s * dx; };
+  const m = reg({ el: c, playing: false, anim: true, step(dt) { let t = +it.value + dt * 1.4; if (t > T1) { t = T1; this.playing = false; bp.textContent = 'Abspielen'; } it.value = t; }, draw() {
+    const f = F[iff.value], g = G[ig.value], t = +it.value; $('#cv-t-o').textContent = nf(t, 2);
+    const { ctx, w, h } = fit(c), A = tok('--accent'), H = tok('--hole'), Fg = tok('--fg');
+    const gmax = Math.max(1.2, g(0) * 1.1);
+    const top = frame(ctx, 0, 0, w, h * 0.54, { x0: T0, x1: T1, y0: 0, y1: gmax, xt: [-2, 0, 2, 4], yt: [0, 1], xl: '', l: 26, t: 20, b: 18 });
+    ctx.fillStyle = rgba(H, 0.35); ctx.beginPath(); ctx.moveTo(top.X(T0), top.Y(0)); for (let x = T0; x <= T1; x += dx) ctx.lineTo(top.X(x), top.Y(Math.min(gmax, f(x) * g(t - x)))); ctx.lineTo(top.X(T1), top.Y(0)); ctx.fill();
+    ctx.strokeStyle = Fg; ctx.lineWidth = 2.2; curve(ctx, f, top.X, top.Y, T0, T1, 1600);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.2; curve(ctx, x => Math.min(gmax, g(t - x)), top.X, top.Y, T0, T1, 1600);
+    ctx.strokeStyle = rgba(A, 0.6); ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top.X(t), top.by); ctx.lineTo(top.X(t), top.by + top.bh); ctx.stroke(); ctx.setLineDash([]);
+    title(ctx, 'f(τ) und g(t − τ)', 0, 13); legend(ctx, w, 13, [['f(τ)', Fg], ['g(t − τ)', A], ['Produkt', H]], { right: true });
+    const vals = []; for (let x = T0; x <= T1 + 1e-9; x += 0.02) vals.push([x, conv(f, g, x)]);
+    const ymax = Math.max(...vals.map(v => v[1])) * 1.15 || 1, bot = frame(ctx, 0, h * 0.56, w, h * 0.44, { x0: T0, x1: T1, y0: 0, y1: ymax, xt: [-2, 0, 2, 4], yt: [0], xl: 't', l: 26, t: 20 });
+    ctx.strokeStyle = rgba(Fg, 0.18); ctx.lineWidth = 2; ctx.beginPath(); vals.forEach(([x, v], i) => i ? ctx.lineTo(bot.X(x), bot.Y(v)) : ctx.moveTo(bot.X(x), bot.Y(v))); ctx.stroke();
+    ctx.strokeStyle = H; ctx.lineWidth = 2.4; ctx.beginPath(); vals.filter(([x]) => x <= t).forEach(([x, v], i) => i ? ctx.lineTo(bot.X(x), bot.Y(v)) : ctx.moveTo(bot.X(x), bot.Y(v))); ctx.stroke();
+    const cv = conv(f, g, t); ctx.fillStyle = H; ctx.beginPath(); ctx.arc(bot.X(t), bot.Y(cv), 5, 0, 2 * Math.PI); ctx.fill();
+    title(ctx, '(f * g)(t)', 0, h * 0.56 + 13);
+    $('#cv-read').innerHTML = `<span class="k">(f * g)(${nf(t, 2)}) =</span> Fläche des Produkts = <b>${nf(cv, 3)}</b>`;
+  } });
+  [iff, ig, it].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  bp.addEventListener('click', () => { m.playing = !m.playing; if (m.playing && +it.value >= T1 - 0.01) it.value = T0; bp.textContent = m.playing ? 'Anhalten' : 'Abspielen'; });
+})();
+</script>
+<script>
+/* ---------- Abtastung ---------- */
+(() => {
+  const c = $('#cv-sa'), iff = $('#sa-f'), ph = 0.5;
+  const m = reg({ el: c, draw() {
+    const fq = +iff.value, k = Math.round(fq), fa = fq - k; $('#sa-f-o').textContent = nf(fq, 3) + ' fₛ';
+    const { ctx, w, h } = fit(c), A = tok('--accent'), Fg = tok('--fg'), Mu = tok('--muted'), H = tok('--hole');
+    const T = 16, top = frame(ctx, 0, 0, w, h * 0.6, { x0: 0, x1: T, y0: -1.3, y1: 1.3, xt: [0, 4, 8, 12, 16], yt: [-1, 0, 1], xl: 'Zeit (in Abtastabständen)', l: 26, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(top.bx, top.by, top.bw, top.bh); ctx.clip();
+    ctx.strokeStyle = rgba(Mu, 0.8); ctx.lineWidth = 1.6; curve(ctx, t => Math.cos(2 * Math.PI * fq * t + ph), top.X, top.Y, 0, T, 2000);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.2; ctx.setLineDash([6, 4]); curve(ctx, t => Math.cos(2 * Math.PI * fa * t + ph), top.X, top.Y, 0, T, 800); ctx.setLineDash([]);
+    ctx.restore();
+    for (let n = 0; n <= T; n++) { const v = Math.cos(2 * Math.PI * fq * n + ph); ctx.strokeStyle = rgba(Fg, 0.5); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top.X(n), top.Y(0)); ctx.lineTo(top.X(n), top.Y(v)); ctx.stroke(); ctx.fillStyle = Fg; ctx.beginPath(); ctx.arc(top.X(n), top.Y(v), 4, 0, 2 * Math.PI); ctx.fill(); }
+    title(ctx, 'Signal und Abtastwerte', 0, 13); legend(ctx, w, 13, [['Signal', Mu], ['aus den Abtastwerten rekonstruiert', A]], { right: true, maxW: w * 0.6 });
+    const bot = frame(ctx, 0, h * 0.62, w, h * 0.38, { x0: -2.5, x1: 2.5, y0: 0, y1: 1.25, xt: w < 560 ? [-2, -1, 0, 1, 2] : [-2, -1, -0.5, 0, 0.5, 1, 2], xf: v => v === 0 ? '0' : nf(v, Math.abs(v) === 0.5 ? 1 : 0) + ' fₛ', yt: [], xl: 'Frequenz', l: 26, t: 20 });
+    ctx.fillStyle = rgba(Mu, 0.15); ctx.fillRect(bot.X(-0.5), bot.by, bot.X(0.5) - bot.X(-0.5), bot.bh);
+    const stem = (x, col, lw, hgt) => { if (x < -2.5 || x > 2.5) return; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(bot.X(x), bot.Y(0)); ctx.lineTo(bot.X(x), bot.Y(hgt)); ctx.stroke(); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(bot.X(x), bot.Y(hgt), 3.5, 0, 2 * Math.PI); ctx.fill(); };
+    for (let j = -4; j <= 4; j++) for (const s of [-1, 1]) { const x = s * fq + j; if (j === 0) continue; stem(x, rgba(Mu, 0.55), 1.4, 0.7); }
+    stem(fq, Fg, 2.4, 1); stem(-fq, Fg, 2.4, 1); stem(fa, A, 3, 0.85); stem(-fa, A, 3, 0.85);
+    title(ctx, 'Spektrum nach dem Abtasten', 0, h * 0.62 + 13);
+    $('#sa-read').innerHTML = fq <= 0.5 ? `<span class="k">f = ${nf(fq, 3)} fₛ</span> liegt unter der Nyquist-Grenze fₛ/2: <b>wird richtig erfasst</b>, ${nf(1 / Math.max(fq, 1e-9), 1)} Abtastwerte pro Periode`
+      : `<span class="k">f = ${nf(fq, 3)} fₛ</span> liegt über fₛ/2: <b>erscheint als ${nf(Math.abs(fa), 3)} fₛ</b>${Math.abs(fa) < 0.01 ? ', also fast als Konstante' : ''}`;
+  } });
+  iff.addEventListener('input', rafDebounce(() => m.draw()));
+})();
+</script>
+<script>
+/* ---------- Leckeffekt ---------- */
+(() => {
+  const c = $('#cv-lk'), ik = $('#lk-k'), iw = $('#lk-w'), i2 = $('#lk-2'), N = 64;
+  const m = reg({ el: c, draw() {
+    const k = +ik.value, hann = iw.value === 'h'; $('#lk-k-o').textContent = nf(k, 2);
+    const win = n => hann ? 0.5 - 0.5 * Math.cos(2 * Math.PI * n / N) : 1;
+    const x = Array.from({ length: N }, (_, n) => Math.sin(2 * Math.PI * k * n / N) + (i2.checked ? 0.00316 * Math.sin(2 * Math.PI * 22.3 * n / N) : 0));
+    const re = Float64Array.from(x, (v, n) => v * win(n)), im = new Float64Array(N); fft(re, im);
+    const norm = hann ? N / 4 : N / 2, db = Array.from({ length: N / 2 + 1 }, (_, j) => 20 * Math.log10(Math.max(1e-6, Math.hypot(re[j], im[j]) / norm)));
+    const { ctx, w, h } = fit(c), A = tok('--accent'), Fg = tok('--fg'), Mu = tok('--muted'), H = tok('--hole');
+    const top = frame(ctx, 0, 0, w, h * 0.42, { x0: -0.5, x1: N + 0.5, y0: -1.25, y1: 1.25, xt: [0, 16, 32, 48, 64], yt: [-1, 0, 1], xl: '', l: 30, t: 20, b: 18 });
+    if (hann) { ctx.strokeStyle = rgba(Mu, 0.8); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; curve(ctx, win, top.X, top.Y, 0, N, 200); ctx.setLineDash([]); }
+    x.forEach((v, n) => { const y = v * win(n); ctx.strokeStyle = rgba(A, 0.5); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top.X(n), top.Y(0)); ctx.lineTo(top.X(n), top.Y(y)); ctx.stroke(); ctx.fillStyle = A; ctx.beginPath(); ctx.arc(top.X(n), top.Y(y), 2.6, 0, 2 * Math.PI); ctx.fill(); });
+    ctx.strokeStyle = H; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(top.X(N - 0.5), top.by); ctx.lineTo(top.X(N - 0.5), top.by + top.bh); ctx.stroke(); ctx.setLineDash([]);
+    title(ctx, `${N} Abtastwerte${hann ? ' mit Hann-Fenster' : ''}`, 0, 13);
+    const bot = frame(ctx, 0, h * 0.45, w, h * 0.55, { x0: -0.5, x1: N / 2 + 0.5, y0: -100, y1: 5, xt: [0, 8, 16, 24, 32], yt: [-100, -80, -60, -40, -20, 0], xl: 'Frequenzindex j (Perioden im Ausschnitt)', l: 34, t: 20 });
+    db.forEach((v, j) => { ctx.strokeStyle = j === Math.round(k) ? Fg : A; ctx.lineWidth = Math.max(2, bot.bw / (N / 2 + 1) * 0.55); ctx.beginPath(); ctx.moveTo(bot.X(j), bot.Y(-100)); ctx.lineTo(bot.X(j), bot.Y(Math.max(-100, v))); ctx.stroke(); });
+    if (i2.checked) { ctx.fillStyle = H; ctx.font = `12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText('▼ schwache Schwingung', bot.X(22.3), bot.Y(-50) - 6); }
+    title(ctx, 'Betrag der DFT in dB', 0, h * 0.45 + 13);
+    const far = Math.max(...db.filter((_, j) => Math.abs(j - k) > 4));
+    $('#lk-read').innerHTML = `<span class="k">Perioden im Ausschnitt:</span> ${nf(k, 2)}${Math.abs(k - Math.round(k)) < 0.01 ? ' (ganzzahlig, kein Lecken)' : ''}  <span class="k">·</span>  <span class="k">stärkstes Lecken weiter als 4 Linien von der Spitze:</span> <b>${nf(far, 0)} dB</b>`;
+  } });
+  [ik, iw, i2].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- 2D-Fourier ---------- */
+(() => {
+  const c = $('#cv-f2'), itp = $('#f2-t'), ir = $('#f2-r'), n = 128, I = testImage(n);
+  const RE = Float64Array.from(I), IM = new Float64Array(n * n); fft2(RE, IM, n);
+  const mag = new Float32Array(n * n); let mmax = 0; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = Math.log10(1 + Math.hypot(RE[y * n + x], IM[y * n + x])); mag[fshift(y, n) * n + fshift(x, n)] = v; mmax = Math.max(mmax, v); }
+  const fr = k => (k < n / 2 ? k : k - n) / n;
+  const m = reg({ el: c, draw() {
+    const t = itp.value, r = +ir.value; $('#f2-r-o').textContent = nf(r, 3) + ' /px';
+    const H = (u, v) => { const q = Math.hypot(u, v); return t === 'lh' ? (q <= r ? 1 : 0) : t === 'lg' ? Math.exp(-0.5 * (q / r) ** 2) : 1 - Math.exp(-0.5 * (q / r) ** 2); };
+    const re = new Float64Array(n * n), im = new Float64Array(n * n); let kept = 0, tot = 0;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const k = y * n + x, g = H(fr(x), fr(y)), e = RE[k] ** 2 + IM[k] ** 2; re[k] = RE[k] * g; im[k] = IM[k] * g; tot += e; kept += e * g * g; }
+    fft2(re, im, n, true); const out = Float32Array.from(re);
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    drawImg(ctx, I, n, L[0].x, L[0].y, L[0].size, { title: 'Bild' });
+    drawImg(ctx, mag, n, L[1].x, L[1].y, L[1].size, { lo: 0, hi: mmax, title: 'Spektrum |F| (log)' });
+    // Maske über dem Spektrum
+    const s = L[1].size, cx = L[1].x + s / 2, cy = L[1].y + s / 2, rp = r * s;
+    ctx.save(); ctx.beginPath(); ctx.rect(L[1].x, L[1].y, s, s); ctx.clip();
+    ctx.fillStyle = rgba(tok('--surface'), 0.55); ctx.beginPath();
+    if (t === 'hg') { ctx.arc(cx, cy, rp, 0, 2 * Math.PI); ctx.fill(); } else { ctx.rect(L[1].x, L[1].y, s, s); ctx.arc(cx, cy, rp, 0, 2 * Math.PI, true); ctx.fill('evenodd'); }
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 2; ctx.setLineDash(t === 'lh' ? [] : [5, 4]); ctx.beginPath(); ctx.arc(cx, cy, rp, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    if (t === 'hg') drawImg(ctx, out, n, L[2].x, L[2].y, L[2].size, { sym: true, hi: 0.35, title: 'Ergebnis (blau +, rot −)' });
+    else drawImg(ctx, out, n, L[2].x, L[2].y, L[2].size, { title: 'Ergebnis' });
+    $('#f2-read').innerHTML = `<span class="k">Grenzfrequenz:</span> ${nf(r, 3)} Perioden pro Pixel, also Strukturen bis etwa ${nf(1 / r, 1)} px Periode  <span class="k">·</span>  <span class="k">behaltene Energie:</span> ${nf(100 * kept / tot, 1)} %`;
+  } });
+  [itp, ir].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Leistungsspektrum ---------- */
+(() => {
+  const c = $('#cv-ps'), is = $('#ps-s'), ia = $('#ps-a'), n = 128, R = 4; let gen = 1, key = '', imgs = null;
+  const fr = k => (k < n / 2 ? k : k - n) / n;
+  const make = () => { setSeed(1234 * gen); imgs = Array.from({ length: R }, () => { const re = new Float64Array(n * n), im = new Float64Array(n * n); for (let k = 0; k < n * n; k++) re[k] = gauss(); fft2(re, im, n); return [re, im]; }); };
+  const m = reg({ el: c, draw() {
+    const sg = +is.value, an = ia.checked; $('#ps-s-o').textContent = nf(sg, 2) + ' px';
+    if (key !== String(gen)) { key = String(gen); make(); }
+    const Hf = (u, v) => Math.exp(-2 * Math.PI * Math.PI * sg * sg * (u * u + (an ? 0 : v * v)));
+    const nps = new Float64Array(n * n); let first = null;
+    imgs.forEach(([RE, IM], j) => { const re = new Float64Array(n * n), im = new Float64Array(n * n);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const k = y * n + x, g = Hf(fr(x), fr(y)); re[k] = RE[k] * g; im[k] = IM[k] * g; nps[k] += (re[k] ** 2 + im[k] ** 2) / (n * n) / R; }
+      if (j === 0) { fft2(re, im, n, true); first = Float32Array.from(re); } });
+    let v = 0; first.forEach(x => v += x * x); v /= n * n;
+    const logN = new Float32Array(n * n); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) logN[fshift(y, n) * n + fshift(x, n)] = Math.log10(nps[y * n + x] + 1e-4);
+    const nb = 32, rad = new Float64Array(nb), cnt = new Float64Array(nb);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const q = Math.hypot(fr(x), fr(y)), b = Math.floor(q / 0.5 * nb); if (b < nb) { rad[b] += nps[y * n + x]; cnt[b]++; } }
+    const { ctx, w, h } = fit(c), narrow = w < 560, s = narrow ? Math.min(w / 2 - 8, h * 0.45) : Math.min(h - 26, w * 0.3), top = 22;
+    const sd = Math.sqrt(v) || 1; drawImg(ctx, first, n, 0, top, s, { lo: -2.5 * sd, hi: 2.5 * sd, title: 'Rauschbild' });
+    drawImg(ctx, logN, n, s + 14, top, s, { lo: -4, hi: 0.3, title: 'Leistungsspektrum (log)', smooth: false });
+    const px = narrow ? 0 : 2 * s + 30, py = narrow ? top + s + 12 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: 0.5, y0: 1e-4, y1: 3, ylog: true, xt: [0, 0.1, 0.2, 0.3, 0.4, 0.5], xf: v => nf(v, 1), yt: [1e-4, 1e-3, 1e-2, 0.1, 1], yf: v => ex(v, 0), xl: 'Frequenz (Perioden pro Pixel)', l: 44, t: 22 });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i <= 100; i++) { const q = 0.5 * i / 100, y = an ? null : Hf(q, 0) ** 2; if (an) continue; i ? ctx.lineTo(f.X(q), f.Y(Math.max(1e-4, y))) : ctx.moveTo(f.X(q), f.Y(Math.max(1e-4, y))); } ctx.stroke();
+    ctx.fillStyle = tok('--accent'); for (let b = 0; b < nb; b++) if (cnt[b]) { const q = (b + 0.5) / nb * 0.5, y = rad[b] / cnt[b]; ctx.beginPath(); ctx.arc(f.X(q), f.Y(Math.max(1e-4, y)), 3, 0, 2 * Math.PI); ctx.fill(); }
+    title(ctx, 'radial gemittelt', px, py + 14);
+    let tot = 0; nps.forEach(x => tot += x); tot /= n * n;
+    $('#ps-read').innerHTML = `<span class="k">Varianz eines Pixels:</span> ${nf(v, 3)}  <span class="k">·</span>  <span class="k">Mittel des Leistungsspektrums über alle Frequenzen:</span> ${nf(tot, 3)} (gleich, Satz von Parseval)  <span class="k">·</span>  <span class="k">weißes Rauschen hätte überall</span> 1`;
+  } });
+  [is, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#ps-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+</body>
+</html>

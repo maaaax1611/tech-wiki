@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DFT, Leckeffekt und Fenster</title>
+<!-- Erzeugt von build.py aus src/figures/fr-05-dft-leckeffekt.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/fr.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-lk" class="c-fr-t" role="img" aria-label="64 Abtastwerte einer Sinusschwingung mit Fenster und darunter ihr DFT-Betragsspektrum in Dezibel."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="lk-k">Frequenz (Perioden im Ausschnitt)</label><output id="lk-k-o"></output></div><input id="lk-k" type="range" min="2" max="14" step="0.05" value="8.5" autocomplete="off"></div>
+    <div class="ctrl" style="flex:0 1 190px"><div class="lab"><label for="lk-w">Fenster</label></div><select id="lk-w" autocomplete="off" style="width:100%"><option value="r">keins (Rechteck)</option><option value="h">Hann</option></select></div>
+    <label class="chk"><input id="lk-2" type="checkbox" autocomplete="off"> schwache zweite Schwingung (−50 dB)</label>
+  </div>
+  <div class="readout" id="lk-read"></div>
+  <figcaption><b>Abb. 5</b> Die DFT nimmt stillschweigend an, dass sich der Ausschnitt periodisch wiederholt. Passt eine ganze Zahl von Perioden hinein, liegt die ganze Energie in einer einzigen Frequenz. Sonst entsteht an der Nahtstelle ein Sprung, und die Energie verschmiert über alle Frequenzen (Leckeffekt). Ein Fenster wie Hann blendet die Ränder weich aus: Die Spitze wird etwas breiter, aber das Lecken fällt um Größenordnungen. Erst dann wird eine schwache zweite Schwingung neben einer starken sichtbar.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/fr.js"></script>
+<script>
+/* ---------- Leckeffekt ---------- */
+(() => {
+  const c = $('#cv-lk'), ik = $('#lk-k'), iw = $('#lk-w'), i2 = $('#lk-2'), N = 64;
+  const m = reg({ el: c, draw() {
+    const k = +ik.value, hann = iw.value === 'h'; $('#lk-k-o').textContent = nf(k, 2);
+    const win = n => hann ? 0.5 - 0.5 * Math.cos(2 * Math.PI * n / N) : 1;
+    const x = Array.from({ length: N }, (_, n) => Math.sin(2 * Math.PI * k * n / N) + (i2.checked ? 0.00316 * Math.sin(2 * Math.PI * 22.3 * n / N) : 0));
+    const re = Float64Array.from(x, (v, n) => v * win(n)), im = new Float64Array(N); fft(re, im);
+    const norm = hann ? N / 4 : N / 2, db = Array.from({ length: N / 2 + 1 }, (_, j) => 20 * Math.log10(Math.max(1e-6, Math.hypot(re[j], im[j]) / norm)));
+    const { ctx, w, h } = fit(c), A = tok('--accent'), Fg = tok('--fg'), Mu = tok('--muted'), H = tok('--hole');
+    const top = frame(ctx, 0, 0, w, h * 0.42, { x0: -0.5, x1: N + 0.5, y0: -1.25, y1: 1.25, xt: [0, 16, 32, 48, 64], yt: [-1, 0, 1], xl: '', l: 30, t: 20, b: 18 });
+    if (hann) { ctx.strokeStyle = rgba(Mu, 0.8); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; curve(ctx, win, top.X, top.Y, 0, N, 200); ctx.setLineDash([]); }
+    x.forEach((v, n) => { const y = v * win(n); ctx.strokeStyle = rgba(A, 0.5); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(top.X(n), top.Y(0)); ctx.lineTo(top.X(n), top.Y(y)); ctx.stroke(); ctx.fillStyle = A; ctx.beginPath(); ctx.arc(top.X(n), top.Y(y), 2.6, 0, 2 * Math.PI); ctx.fill(); });
+    ctx.strokeStyle = H; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(top.X(N - 0.5), top.by); ctx.lineTo(top.X(N - 0.5), top.by + top.bh); ctx.stroke(); ctx.setLineDash([]);
+    title(ctx, `${N} Abtastwerte${hann ? ' mit Hann-Fenster' : ''}`, 0, 13);
+    const bot = frame(ctx, 0, h * 0.45, w, h * 0.55, { x0: -0.5, x1: N / 2 + 0.5, y0: -100, y1: 5, xt: [0, 8, 16, 24, 32], yt: [-100, -80, -60, -40, -20, 0], xl: 'Frequenzindex j (Perioden im Ausschnitt)', l: 34, t: 20 });
+    db.forEach((v, j) => { ctx.strokeStyle = j === Math.round(k) ? Fg : A; ctx.lineWidth = Math.max(2, bot.bw / (N / 2 + 1) * 0.55); ctx.beginPath(); ctx.moveTo(bot.X(j), bot.Y(-100)); ctx.lineTo(bot.X(j), bot.Y(Math.max(-100, v))); ctx.stroke(); });
+    if (i2.checked) { ctx.fillStyle = H; ctx.font = `12px ${DISP}`; ctx.textAlign = 'center'; ctx.fillText('▼ schwache Schwingung', bot.X(22.3), bot.Y(-50) - 6); }
+    title(ctx, 'Betrag der DFT in dB', 0, h * 0.45 + 13);
+    const far = Math.max(...db.filter((_, j) => Math.abs(j - k) > 4));
+    $('#lk-read').innerHTML = `<span class="k">Perioden im Ausschnitt:</span> ${nf(k, 2)}${Math.abs(k - Math.round(k)) < 0.01 ? ' (ganzzahlig, kein Lecken)' : ''}  <span class="k">·</span>  <span class="k">stärkstes Lecken weiter als 4 Linien von der Spitze:</span> <b>${nf(far, 0)} dB</b>`;
+  } });
+  [ik, iw, i2].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>

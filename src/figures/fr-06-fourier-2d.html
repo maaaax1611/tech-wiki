@@ -1,0 +1,40 @@
+<!-- title: Filtern im Frequenzraum
+     lib: fr -->
+<figure class="fig">
+  <canvas id="cv-f2" class="c-fr-3" role="img" aria-label="Ein Testbild, sein Fourier-Spektrum mit Filtermaske und das gefilterte Bild."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 200px"><div class="lab"><label for="f2-t">Filter</label></div><select id="f2-t" autocomplete="off" style="width:100%"><option value="lh">Tiefpass, harte Kante</option><option value="lg" selected>Tiefpass, Gauß</option><option value="hg">Hochpass, Gauß</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="f2-r">Grenzfrequenz</label><output id="f2-r-o"></output></div><input id="f2-r" type="range" min="0.02" max="0.5" step="0.005" value="0.1" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="f2-read"></div>
+  <figcaption><b>Abb.</b> Links das Bild, in der Mitte der Betrag seines Spektrums (logarithmisch, Nullfrequenz in der Mitte) mit der Filtermaske, rechts das Ergebnis der Rücktransformation. Grobe Flächen liegen nahe der Mitte, Kanten und das feine Gitter weiter außen. Das Gitter erzeugt deutliche Spitzen auf der waagrechten Achse, die Kanten Streifen senkrecht zu ihrer Richtung. Ein Tiefpass glättet, ein Hochpass lässt nur die Kanten übrig. Die harte Kante im Spektrum erzeugt Ringe um jede Kante im Bild, weil ihre Rücktransformierte eine sinc-artige Welle ist. Der Gauß tut das nicht.</figcaption>
+</figure>
+<script>
+/* ---------- 2D-Fourier ---------- */
+(() => {
+  const c = $('#cv-f2'), itp = $('#f2-t'), ir = $('#f2-r'), n = 128, I = testImage(n);
+  const RE = Float64Array.from(I), IM = new Float64Array(n * n); fft2(RE, IM, n);
+  const mag = new Float32Array(n * n); let mmax = 0; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = Math.log10(1 + Math.hypot(RE[y * n + x], IM[y * n + x])); mag[fshift(y, n) * n + fshift(x, n)] = v; mmax = Math.max(mmax, v); }
+  const fr = k => (k < n / 2 ? k : k - n) / n;
+  const m = reg({ el: c, draw() {
+    const t = itp.value, r = +ir.value; $('#f2-r-o').textContent = nf(r, 3) + ' /px';
+    const H = (u, v) => { const q = Math.hypot(u, v); return t === 'lh' ? (q <= r ? 1 : 0) : t === 'lg' ? Math.exp(-0.5 * (q / r) ** 2) : 1 - Math.exp(-0.5 * (q / r) ** 2); };
+    const re = new Float64Array(n * n), im = new Float64Array(n * n); let kept = 0, tot = 0;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const k = y * n + x, g = H(fr(x), fr(y)), e = RE[k] ** 2 + IM[k] ** 2; re[k] = RE[k] * g; im[k] = IM[k] * g; tot += e; kept += e * g * g; }
+    fft2(re, im, n, true); const out = Float32Array.from(re);
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    drawImg(ctx, I, n, L[0].x, L[0].y, L[0].size, { title: 'Bild' });
+    drawImg(ctx, mag, n, L[1].x, L[1].y, L[1].size, { lo: 0, hi: mmax, title: 'Spektrum |F| (log)' });
+    // Maske über dem Spektrum
+    const s = L[1].size, cx = L[1].x + s / 2, cy = L[1].y + s / 2, rp = r * s;
+    ctx.save(); ctx.beginPath(); ctx.rect(L[1].x, L[1].y, s, s); ctx.clip();
+    ctx.fillStyle = rgba(tok('--surface'), 0.55); ctx.beginPath();
+    if (t === 'hg') { ctx.arc(cx, cy, rp, 0, 2 * Math.PI); ctx.fill(); } else { ctx.rect(L[1].x, L[1].y, s, s); ctx.arc(cx, cy, rp, 0, 2 * Math.PI, true); ctx.fill('evenodd'); }
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 2; ctx.setLineDash(t === 'lh' ? [] : [5, 4]); ctx.beginPath(); ctx.arc(cx, cy, rp, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    if (t === 'hg') drawImg(ctx, out, n, L[2].x, L[2].y, L[2].size, { sym: true, hi: 0.35, title: 'Ergebnis (blau +, rot −)' });
+    else drawImg(ctx, out, n, L[2].x, L[2].y, L[2].size, { title: 'Ergebnis' });
+    $('#f2-read').innerHTML = `<span class="k">Grenzfrequenz:</span> ${nf(r, 3)} Perioden pro Pixel, also Strukturen bis etwa ${nf(1 / r, 1)} px Periode  <span class="k">·</span>  <span class="k">behaltene Energie:</span> ${nf(100 * kept / tot, 1)} %`;
+  } });
+  [itp, ir].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

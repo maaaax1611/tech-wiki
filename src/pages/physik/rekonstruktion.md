@@ -13,7 +13,7 @@ Wie ein CT aus vielen Projektionen ein Schnittbild berechnet: Radon-Transformati
 
 ## Fourier-Transformation und Faltung {#fourier eyebrow="Auffrischung" toc="Auffrischung: Fourier & Faltung"}
 
-Für die Rekonstruktion braucht man zwei Werkzeuge aus der Signalverarbeitung. Wer sie sicher kennt, kann diesen Abschnitt überspringen.
+Für die Rekonstruktion braucht man zwei Werkzeuge aus der Signalverarbeitung. Wer sie sicher kennt, kann diesen Abschnitt überspringen. Ausführlicher steht beides auf der Seite [Fourier und Signale](../grundlagen/fourier.html).
 
 ### Jedes Signal ist eine Summe von Wellen
 

@@ -1,0 +1,45 @@
+<!-- title: Rauschen und Leistungsspektrum
+     lib: fr -->
+<figure class="fig">
+  <canvas id="cv-ps" class="c-fr-3" role="img" aria-label="Ein Rauschbild, sein zweidimensionales Leistungsspektrum und das radial gemittelte Leistungsspektrum als Kurve."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="ps-s">Korrelationslänge σ</label><output id="ps-s-o"></output></div><input id="ps-s" type="range" min="0" max="3" step="0.05" value="1" autocomplete="off"></div>
+    <label class="chk"><input id="ps-a" type="checkbox" autocomplete="off"> nur waagrecht korreliert</label>
+    <button class="btn" type="button" id="ps-r">Neues Rauschen</button>
+  </div>
+  <div class="readout" id="ps-read"></div>
+  <figcaption><b>Abb.</b> Links ein Rauschbild: weißes Rauschen, das mit einem Gauß der Breite σ geglättet wurde. Benachbarte Pixel sind dadurch korreliert. In der Mitte das Leistungsspektrum, \(|F|^2\) gemittelt über vier Rauschbilder, rechts dasselbe über Ringe gleicher Frequenz gemittelt (Punkte) mit dem erwarteten Verlauf (Linie). Weißes Rauschen (σ = 0) hat ein flaches Spektrum: alle Frequenzen gleich stark. Korrelation nimmt hohe Frequenzen weg, das Rauschen wird grobkörniger. Ist sie richtungsabhängig, wird auch das Spektrum es. Die Fläche unter dem Spektrum ist die Varianz eines Pixels.</figcaption>
+</figure>
+<script>
+/* ---------- Leistungsspektrum ---------- */
+(() => {
+  const c = $('#cv-ps'), is = $('#ps-s'), ia = $('#ps-a'), n = 128, R = 4; let gen = 1, key = '', imgs = null;
+  const fr = k => (k < n / 2 ? k : k - n) / n;
+  const make = () => { setSeed(1234 * gen); imgs = Array.from({ length: R }, () => { const re = new Float64Array(n * n), im = new Float64Array(n * n); for (let k = 0; k < n * n; k++) re[k] = gauss(); fft2(re, im, n); return [re, im]; }); };
+  const m = reg({ el: c, draw() {
+    const sg = +is.value, an = ia.checked; $('#ps-s-o').textContent = nf(sg, 2) + ' px';
+    if (key !== String(gen)) { key = String(gen); make(); }
+    const Hf = (u, v) => Math.exp(-2 * Math.PI * Math.PI * sg * sg * (u * u + (an ? 0 : v * v)));
+    const nps = new Float64Array(n * n); let first = null;
+    imgs.forEach(([RE, IM], j) => { const re = new Float64Array(n * n), im = new Float64Array(n * n);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const k = y * n + x, g = Hf(fr(x), fr(y)); re[k] = RE[k] * g; im[k] = IM[k] * g; nps[k] += (re[k] ** 2 + im[k] ** 2) / (n * n) / R; }
+      if (j === 0) { fft2(re, im, n, true); first = Float32Array.from(re); } });
+    let v = 0; first.forEach(x => v += x * x); v /= n * n;
+    const logN = new Float32Array(n * n); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) logN[fshift(y, n) * n + fshift(x, n)] = Math.log10(nps[y * n + x] + 1e-4);
+    const nb = 32, rad = new Float64Array(nb), cnt = new Float64Array(nb);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const q = Math.hypot(fr(x), fr(y)), b = Math.floor(q / 0.5 * nb); if (b < nb) { rad[b] += nps[y * n + x]; cnt[b]++; } }
+    const { ctx, w, h } = fit(c), narrow = w < 560, s = narrow ? Math.min(w / 2 - 8, h * 0.45) : Math.min(h - 26, w * 0.3), top = 22;
+    const sd = Math.sqrt(v) || 1; drawImg(ctx, first, n, 0, top, s, { lo: -2.5 * sd, hi: 2.5 * sd, title: 'Rauschbild' });
+    drawImg(ctx, logN, n, s + 14, top, s, { lo: -4, hi: 0.3, title: 'Leistungsspektrum (log)', smooth: false });
+    const px = narrow ? 0 : 2 * s + 30, py = narrow ? top + s + 12 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: 0.5, y0: 1e-4, y1: 3, ylog: true, xt: [0, 0.1, 0.2, 0.3, 0.4, 0.5], xf: v => nf(v, 1), yt: [1e-4, 1e-3, 1e-2, 0.1, 1], yf: v => ex(v, 0), xl: 'Frequenz (Perioden pro Pixel)', l: 44, t: 22 });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i <= 100; i++) { const q = 0.5 * i / 100, y = an ? null : Hf(q, 0) ** 2; if (an) continue; i ? ctx.lineTo(f.X(q), f.Y(Math.max(1e-4, y))) : ctx.moveTo(f.X(q), f.Y(Math.max(1e-4, y))); } ctx.stroke();
+    ctx.fillStyle = tok('--accent'); for (let b = 0; b < nb; b++) if (cnt[b]) { const q = (b + 0.5) / nb * 0.5, y = rad[b] / cnt[b]; ctx.beginPath(); ctx.arc(f.X(q), f.Y(Math.max(1e-4, y)), 3, 0, 2 * Math.PI); ctx.fill(); }
+    title(ctx, 'radial gemittelt', px, py + 14);
+    let tot = 0; nps.forEach(x => tot += x); tot /= n * n;
+    $('#ps-read').innerHTML = `<span class="k">Varianz eines Pixels:</span> ${nf(v, 3)}  <span class="k">·</span>  <span class="k">Mittel des Leistungsspektrums über alle Frequenzen:</span> ${nf(tot, 3)} (gleich, Satz von Parseval)  <span class="k">·</span>  <span class="k">weißes Rauschen hätte überall</span> 1`;
+  } });
+  [is, ia].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+  $('#ps-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>

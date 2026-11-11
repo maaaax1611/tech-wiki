@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fourier-Reihe</title>
+<!-- Erzeugt von build.py aus src/figures/fr-01-fourier-reihe.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/fr.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-fs" class="c-fr" role="img" aria-label="Ein periodisches Signal, angenähert durch eine Summe von Sinusschwingungen, daneben die Amplituden der Schwingungen."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 170px"><div class="lab"><label for="fs-s">Signal</label></div><select id="fs-s" autocomplete="off" style="width:100%"><option value="r">Rechteck</option><option value="d">Dreieck</option><option value="s">Sägezahn</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="fs-n">Anzahl Schwingungen N</label><output id="fs-n-o"></output></div><input id="fs-n" type="range" min="1" max="60" step="1" value="3" autocomplete="off"></div>
+    <label class="chk"><input id="fs-e" type="checkbox" checked autocomplete="off"> einzelne Schwingungen</label>
+  </div>
+  <div class="readout" id="fs-read"></div>
+  <figcaption><b>Abb. 1</b> Links das Signal (grau) und die Summe der ersten \(N\) Schwingungen (blau), darunter blass die einzelnen Schwingungen. Rechts deren Amplituden über der Frequenz, das Spektrum. Glatte Signale wie das Dreieck brauchen nur wenige Schwingungen, ihre Amplituden fallen wie \(1/k^2\). Sprünge wie beim Rechteck brauchen viele hohe Frequenzen, die Amplituden fallen nur wie \(1/k\). An einem Sprung bleibt ein Überschwinger von etwa 9 % stehen, egal wie groß \(N\) wird (Gibbs-Phänomen). Er wird nur schmaler.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/fr.js"></script>
+<script>
+/* ---------- Fourier-Reihe ---------- */
+(() => {
+  const c = $('#cv-fs'), is = $('#fs-s'), inn = $('#fs-n'), ie = $('#fs-e');
+  const S = {
+    r: { f: x => Math.sign(Math.sin(x)) || 1, b: k => k % 2 ? 4 / (Math.PI * k) : 0 },
+    d: { f: x => { const t = ((x / (2 * Math.PI)) % 1 + 1) % 1; return t < 0.25 ? 4 * t : t < 0.75 ? 2 - 4 * t : 4 * t - 4; }, b: k => k % 2 ? 8 / (Math.PI * Math.PI * k * k) * (((k - 1) / 2) % 2 ? -1 : 1) : 0 },
+    s: { f: x => { const t = ((x / (2 * Math.PI) + 0.5) % 1 + 1) % 1; return 2 * t - 1; }, b: k => 2 / (Math.PI * k) * (k % 2 ? 1 : -1) },
+  };
+  const m = reg({ el: c, draw() {
+    const sg = S[is.value], N = +inn.value; $('#fs-n-o').textContent = N;
+    const sum = x => { let s = 0; for (let k = 1; k <= N; k++) s += sg.b(k) * Math.sin(k * x); return s; };
+    const { ctx, w, h } = fit(c), narrow = w < 560, A = tok('--accent'), Mu = tok('--muted');
+    const r1 = narrow ? [0, 0, w, h * 0.58] : [0, 0, w * 0.62, h], r2 = narrow ? [0, h * 0.6, w, h * 0.4] : [w * 0.62 + 16, 0, w * 0.38 - 16, h];
+    const X0 = -Math.PI, X1 = 3 * Math.PI, f = frame(ctx, ...r1, { x0: X0, x1: X1, y0: -1.45, y1: 1.45, xt: [], yt: [-1, 0, 1], xl: 'x (zwei Perioden)', l: 26, t: 20 });
+    ctx.save(); ctx.beginPath(); ctx.rect(f.bx, f.by, f.bw, f.bh); ctx.clip();
+    if (ie.checked) { ctx.lineWidth = 1; for (let k = 1, shown = 0; k <= N && shown < 6; k++) { const b = sg.b(k); if (!b) continue; shown++; ctx.strokeStyle = rgba(A, 0.3); curve(ctx, x => b * Math.sin(k * x), f.X, f.Y, X0, X1, 400); } }
+    ctx.strokeStyle = Mu; ctx.lineWidth = 1.8; curve(ctx, sg.f, f.X, f.Y, X0, X1, 800);
+    ctx.strokeStyle = A; ctx.lineWidth = 2.4; curve(ctx, sum, f.X, f.Y, X0, X1, 1200);
+    ctx.restore(); title(ctx, `Summe der ersten ${N} Schwingung${N > 1 ? 'en' : ''}`, r1[0], r1[1] + 13);
+    const K = 30, g = frame(ctx, ...r2, { x0: 0, x1: K + 1, y0: 0, y1: 1.35, xt: [1, 10, 20, 30], yt: [0, 0.5, 1], yf: v => nf(v, 1), xl: 'Frequenz k', l: 30, t: 20 });
+    for (let k = 1; k <= K; k++) { const b = Math.abs(sg.b(k)); if (!b) continue; ctx.strokeStyle = k <= N ? A : rgba(Mu, 0.6); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(g.X(k), g.Y(0)); ctx.lineTo(g.X(k), g.Y(b)); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(g.X(k), g.Y(b), 2.6, 0, 2 * Math.PI); ctx.fill(); }
+    title(ctx, 'Amplitude |bₖ|', r2[0], r2[1] + 13);
+    let mx = -Infinity, err = 0; const M = 2000; for (let i = 0; i < M; i++) { const x = 2 * Math.PI * (i + 0.5) / M, v = sum(x); mx = Math.max(mx, v); err += (v - sg.f(x)) ** 2; }
+    $('#fs-read').innerHTML = `<span class="k">mittlerer quadratischer Fehler:</span> ${ex(Math.sqrt(err / M), 2)}  <span class="k">·</span>  <span class="k">größter Wert der Summe:</span> ${nf(mx, 3)}${is.value === 'r' ? ` (Signal: 1, Überschwinger ${nf(100 * (mx - 1) / 2, 1)} % der Sprunghöhe)` : ''}`;
+  } });
+  [is, inn, ie].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+</body>
+</html>
