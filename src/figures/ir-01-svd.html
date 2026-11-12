@@ -1,0 +1,44 @@
+<!-- title: Schlecht gestellt: Rekonstruktion über die Singulärwertzerlegung
+     lib: ir -->
+<figure class="fig">
+  <canvas id="cv-sv" class="c-ir" role="img" aria-label="Ein kleines Phantom, seine Rekonstruktion aus den k größten Singulärwerten, das Spektrum der Singulärwerte und der Fehler in Abhängigkeit von k."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="sv-k">verwendete Singulärwerte k</label><output id="sv-k-o"></output></div><input id="sv-k" type="range" min="1" max="256" step="1" value="60" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="sv-n">Rauschen in den Messdaten</label><output id="sv-n-o"></output></div><input id="sv-n" type="range" min="0" max="3" step="0.05" value="1" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="sv-read"></div>
+  <figcaption><b>Abb.</b> Ein Phantom mit 16 × 16 Pixeln, gemessen unter 14 Winkeln mit 22 Strahlen, also weniger Messwerte als Unbekannte. Die Rekonstruktion setzt das Bild aus den Singulärvektoren der Systemmatrix zusammen, jeweils mit Gewicht (Datenanteil)/\(\sigma_i\). Mit wenigen großen Singulärwerten ist das Bild glatt und unscharf. Mit mehr kommen Details dazu, aber die kleinen \(\sigma_i\) teilen auch das Rauschen durch sehr kleine Zahlen, und ab einem Punkt überwiegt es. Der Fehler (rechts unten) ist deshalb in der Mitte am kleinsten. Ohne Rauschen gelingt auch die volle Inversion.</figcaption>
+</figure>
+<script>
+/* ---------- Abgeschnittene SVD ---------- */
+(() => {
+  const c = $('#cv-sv'), ik = $('#sv-k'), inz = $('#sv-n'), n = 16, N = n * n; let E = null, A = null, X = null, base = null, noise = null, busy = false;
+  const setup = () => { A = buildA(n, 14, 22); X = phantom(n); base = fwd(A, X); setSeed(11); noise = Float64Array.from({ length: A.m }, () => gauss());
+    const M = new Float64Array(N * N); for (let i = 0; i < A.m; i++) for (let q = A.ptr[i]; q < A.ptr[i + 1]; q++) for (let r = A.ptr[i]; r < A.ptr[i + 1]; r++) M[A.idx[q] * N + A.idx[r]] += A.val[q] * A.val[r];
+    E = jacobiEig(M, N); };
+  const m = reg({ el: c, draw() {
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    if (!E) { title(ctx, 'Singulärwertzerlegung wird berechnet …', 0, 16); if (!busy) { busy = true; setTimeout(() => { setup(); m.draw(); }, 30); } return; }
+    const k = +ik.value, nl = +inz.value; $('#sv-k-o').textContent = k; $('#sv-n-o').textContent = nf(nl, 2) + ' %';
+    const p = base.map((v, i) => v + 0.01 * nl * noise[i]), b = back(A, p), coef = E.vec.map(v => { let s = 0; for (let j = 0; j < N; j++) s += v[j] * b[j]; return s; });
+    const errs = [], x = new Float64Array(N); let xk = null;
+    for (let i = 0; i < N; i++) { const a = coef[i] / Math.max(E.val[i], 1e-12); for (let j = 0; j < N; j++) x[j] += a * E.vec[i][j]; errs.push(rmse(x, X)); if (i + 1 === k) xk = Float32Array.from(x); }
+    const s = narrow ? Math.min(w / 2 - 8, h * 0.42) : Math.min(h - 26, w * 0.24), top = 22;
+    drawImg(ctx, X, n, 0, top, s, { lo: 0, hi: 1, title: 'Phantom' });
+    drawImg(ctx, xk, n, s + 14, top, s, { lo: 0, hi: 1, title: `k = ${k}` });
+    const px = narrow ? 0 : 2 * s + 32, pw = narrow ? w : w - px, py = narrow ? top + s + 10 : 0, ph = narrow ? h - py : h;
+    const sig = E.val.map(v => Math.sqrt(Math.max(v, 1e-12)));
+    const f1 = frame(ctx, px, py, pw, ph * 0.5, { x0: 1, x1: N, y0: Math.min(...sig) * 0.7, y1: sig[0] * 1.5, ylog: true, xt: [1, 64, 128, 192, 256], yt: [0.01, 0.1, 1], yf: v => ex(v, 0), xl: '', l: 40, t: 20, b: 16 });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; ctx.beginPath(); sig.forEach((v, i) => i ? ctx.lineTo(f1.X(i + 1), f1.Y(v)) : ctx.moveTo(f1.X(1), f1.Y(v))); ctx.stroke();
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f1.X(k), f1.by); ctx.lineTo(f1.X(k), f1.by + f1.bh); ctx.stroke();
+    title(ctx, 'Singulärwerte σᵢ', px, py + 13);
+    const emax = Math.min(1.2, Math.max(...errs.slice(0, Math.min(N, 200)))), f2 = frame(ctx, px, py + ph * 0.5, pw, ph * 0.5, { x0: 1, x1: N, y0: 0.01, y1: 3, ylog: true, xt: [1, 64, 128, 192, 256], yt: [0.01, 0.1, 1], yf: v => ex(v, 0), xl: 'k', l: 40, t: 20 });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; ctx.beginPath(); errs.forEach((v, i) => { const y = f2.Y(Math.min(3, Math.max(0.01, v))); i ? ctx.lineTo(f2.X(i + 1), y) : ctx.moveTo(f2.X(1), y); }); ctx.stroke();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(f2.X(k), f2.Y(Math.min(3, Math.max(0.01, errs[k - 1]))), 4.5, 0, 2 * Math.PI); ctx.fill();
+    title(ctx, 'Fehler zum Phantom', px, py + ph * 0.5 + 13);
+    const best = errs.indexOf(Math.min(...errs)) + 1;
+    $('#sv-read').innerHTML = `<span class="k">σ₁ / σₖ =</span> ${ex(sig[0] / sig[k - 1], 1)} (so stark wird Rauschen in dieser Komponente verstärkt)  <span class="k">·</span>  <span class="k">Fehler bei k = ${k}:</span> ${nf(errs[k - 1], 3)}, <span class="k">am kleinsten bei k =</span> <b>${best}</b> (${nf(errs[best - 1], 3)})`;
+  } });
+  [ik, inz].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>

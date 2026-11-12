@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iterative Rekonstruktion</title>
+<!-- Erzeugt von build.py aus src/pages/physik/iterative-rekonstruktion.md. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ir.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" aria-label="Inhalt">
+    <div class="eyebrow">Inhalt</div>
+    <ol>
+      <li class="lv">Das Problem</li>
+      <li><a href="#invers"><span class="n">1</span><span>Inverses Problem</span></a></li>
+      <li><a href="#lsq"><span class="n">2</span><span>Kleinste Quadrate, SIRT</span></a></li>
+      <li class="lv">Besser modellieren</li>
+      <li><a href="#statistik"><span class="n">3</span><span>Gewichtung, Likelihood</span></a></li>
+      <li><a href="#regularisierung"><span class="n">4</span><span>Regularisierung</span></a></li>
+      <li class="lv">Praxis</li>
+      <li><a href="#schnell"><span class="n">5</span><span>Schneller rechnen</span></a></li>
+      <li><a href="#lernen"><span class="n">6</span><span>Lernbasierte Verfahren</span></a></li>
+      <li class="lv">Anhang</li>
+      <li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li>
+      <li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li>
+    </ol>
+  </nav>
+  <main>
+    <header id="ueberblick">
+      <p class="backlink"><a href="../index.html">← Wiki</a> · <a href="../index.html#physik">Physik</a></p>
+      <div class="topbar"><div class="eyebrow">Physik · Computertomographie</div>
+        <div class="theme" role="group" aria-label="Darstellung"><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button><button type="button" data-t="system">System</button></div></div>
+      <h1>Iterative Rekonstruktion</h1>
+      <p class="lede">Die <a href="rekonstruktion.html#iterativ">CT-Rekonstruktion</a> endet mit dem Gleichungssystem <span class="arithmatex">\(A\mathbf x = \mathbf p\)</span> und den einfachsten iterativen Verfahren ART und SART. Diese Seite macht dort weiter: warum das System so schwierig ist, wie man Rauschen richtig gewichtet, wie Vorwissen über Bilder hilft und wie neuronale Netze ins Spiel kommen. Vorausgesetzt werden <a href="../grundlagen/lineare-algebra.html">lineare Algebra</a>, <a href="../grundlagen/vektoranalysis.html#gd">Optimierung</a> und <a href="../grundlagen/wahrscheinlichkeit.html#ml">Wahrscheinlichkeit</a>.</p>
+    </header>
+    <details class="toc-mobile"><summary><span class="lab">Inhalt</span><span class="cur"></span></summary><ol><li><a href="#invers"><span class="n">1</span><span>Inverses Problem</span></a></li><li><a href="#lsq"><span class="n">2</span><span>Kleinste Quadrate, SIRT</span></a></li><li><a href="#statistik"><span class="n">3</span><span>Gewichtung, Likelihood</span></a></li><li><a href="#regularisierung"><span class="n">4</span><span>Regularisierung</span></a></li><li><a href="#schnell"><span class="n">5</span><span>Schneller rechnen</span></a></li><li><a href="#lernen"><span class="n">6</span><span>Lernbasierte Verfahren</span></a></li><li><a href="#formeln"><span class="n">A</span><span>Formeln</span></a></li><li><a href="#befehle"><span class="n">B</span><span>Befehle</span></a></li></ol></details>
+<section id="invers">
+<div class="step"><b>1</b><span class="eyebrow">Das Problem</span></div>
+<h2>Rekonstruktion als inverses Problem</h2>
+<p>Die Messung ist eine lineare Abbildung vom Bild <span class="arithmatex">\(\mathbf x\)</span> auf die Linienintegrale <span class="arithmatex">\(\mathbf p = A\mathbf x\)</span> (Systemmatrix <span class="arithmatex">\(A\)</span>, siehe <a href="rekonstruktion.html#iterativ">Gleichungssystem</a>). Rekonstruieren heißt, diese Abbildung umzukehren. Das ist ein <strong>inverses Problem</strong>, und zwar ein <strong>schlecht gestelltes</strong>: Kleine Fehler in den Daten können große Fehler im Bild erzeugen.</p>
+<p>Am klarsten sieht man das mit der <a href="../grundlagen/lineare-algebra.html#svd">Singulärwertzerlegung</a> <span class="arithmatex">\(A = U\Sigma V^\top\)</span>. Die Lösung im Sinne der kleinsten Quadrate ist</p>
+<div class="eq">\[
+\hat{\mathbf x} = \sum_i \frac{\mathbf u_i^\top\mathbf p}{\sigma_i}\,\mathbf v_i
+\]</div>
+<p>Die Bildmuster <span class="arithmatex">\(\mathbf v_i\)</span> zu großen Singulärwerten sind glatt, die zu kleinen fein und oszillierend. Gerade diese feinen Muster werden durch die Projektion stark abgeschwächt, ihr <span class="arithmatex">\(\sigma_i\)</span> ist klein. Beim Zurückrechnen teilt man durch <span class="arithmatex">\(\sigma_i\)</span> und verstärkt damit auch das Rauschen in dieser Komponente um <span class="arithmatex">\(1/\sigma_i\)</span>. Die Singulärwerte fallen über viele Größenordnungen, die Kondition ist entsprechend riesig.</p>
+<p>Jede brauchbare Rekonstruktion muss deshalb die kleinsten Singulärwerte dämpfen. Das ist der Kern von <strong>Regularisierung</strong>, in welcher Form auch immer: Filter bei der FBP, frühes Abbrechen von Iterationen, Strafterme in der Zielfunktion. Immer tauscht man ein wenig Schärfe gegen deutlich weniger Rauschen.</p>
+<figure class="fig">
+<canvas aria-label="Ein kleines Phantom, seine Rekonstruktion aus den k größten Singulärwerten, das Spektrum der Singulärwerte und der Fehler in Abhängigkeit von k." class="c-ir" id="cv-sv" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="sv-k">verwendete Singulärwerte k</label><output id="sv-k-o"></output></div><input autocomplete="off" id="sv-k" max="256" min="1" step="1" type="range" value="60"/></div>
+<div class="ctrl"><div class="lab"><label for="sv-n">Rauschen in den Messdaten</label><output id="sv-n-o"></output></div><input autocomplete="off" id="sv-n" max="3" min="0" step="0.05" type="range" value="1"/></div>
+</div>
+<div class="readout" id="sv-read"></div>
+<figcaption><b>Abb. 1</b> Ein Phantom mit 16 × 16 Pixeln, gemessen unter 14 Winkeln mit 22 Strahlen, also weniger Messwerte als Unbekannte. Die Rekonstruktion setzt das Bild aus den Singulärvektoren der Systemmatrix zusammen, jeweils mit Gewicht (Datenanteil)/\(\sigma_i\). Mit wenigen großen Singulärwerten ist das Bild glatt und unscharf. Mit mehr kommen Details dazu, aber die kleinen \(\sigma_i\) teilen auch das Rauschen durch sehr kleine Zahlen, und ab einem Punkt überwiegt es. Der Fehler (rechts unten) ist deshalb in der Mitte am kleinsten. Ohne Rauschen gelingt auch die volle Inversion.</figcaption>
+</figure>
+</section>
+<section id="lsq">
+<div class="step"><b>2</b><span class="eyebrow">Das Problem</span></div>
+<h2>Kleinste Quadrate und Semikonvergenz</h2>
+<p>Statt <span class="arithmatex">\(A\)</span> zu invertieren, minimiert man den Datenfehler</p>
+<div class="eq">\[
+f(\mathbf x) = \tfrac12\,\Vert A\mathbf x - \mathbf p\Vert^2, \qquad \nabla f = A^\top(A\mathbf x - \mathbf p)
+\]</div>
+<p>mit <a href="../grundlagen/vektoranalysis.html#gd">Gradientenabstieg</a>. <span class="arithmatex">\(A\mathbf x\)</span> ist eine Vorwärtsprojektion, <span class="arithmatex">\(A^\top\)</span> eine Rückprojektion. Jede Iteration projiziert also das aktuelle Bild, vergleicht mit den Messdaten und projiziert den Unterschied zurück. Mit geschickter Normierung nach Strahllängen und Pixelgewichten heißt das Verfahren <strong>SIRT</strong>. SART ist dieselbe Idee, nur Winkel für Winkel. Die Nebenbedingung <span class="arithmatex">\(\mathbf x \ge 0\)</span> setzt man nach jedem Schritt einfach durch.</p>
+<p>Bei verrauschten Daten zeigen diese Verfahren <strong>Semikonvergenz</strong>: Der Fehler zum wahren Bild sinkt erst und steigt dann wieder. Gradientenabstieg lernt zuerst die Komponenten mit großen Singulärwerten, die feinen und verrauschten erst spät. Wenige Iterationen wirken deshalb wie eine abgeschnittene SVD, und <strong>frühes Abbrechen</strong> ist selbst eine Form von Regularisierung. Die Zahl der Iterationen wird so zu einem Parameter, den man festlegen muss.</p>
+<figure class="fig">
+<canvas aria-label="SIRT-Rekonstruktion nach einer wählbaren Zahl von Iterationen und der Fehler zum Phantom über die Iterationen, mit und ohne Rauschen." class="c-ir-3" id="cv-sc" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="sc-k">Iteration</label><output id="sc-k-o"></output></div><input autocomplete="off" id="sc-k" max="300" min="1" step="1" type="range" value="15"/></div>
+<div class="ctrl"><div class="lab"><label for="sc-d">Photonen pro Strahl</label><output id="sc-d-o"></output></div><input autocomplete="off" id="sc-d" max="4.5" min="2" step="0.05" type="range" value="2.3"/></div>
+<button class="btn" id="sc-p" type="button">Abspielen</button>
+</div>
+<div class="readout" id="sc-read"></div>
+<figcaption><b>Abb. 2</b> SIRT auf verrauschten Daten (60 Winkel). Links das Bild nach der gewählten Zahl von Iterationen, in der Mitte dasselbe ohne Rauschen in den Daten, rechts der Fehler zum Phantom für beide. Ohne Rauschen sinkt der Fehler immer weiter. Mit Rauschen sinkt er zunächst ebenso, weil erst die groben Strukturen entstehen. Später kommen die feinen Komponenten mit kleinen Singulärwerten dazu, und mit ihnen das verstärkte Rauschen: Der Fehler steigt wieder, das Bild wird körnig. Je weniger Photonen, desto früher ist das Optimum erreicht.</figcaption>
+</figure>
+</section>
+<section id="statistik">
+<div class="step"><b>3</b><span class="eyebrow">Besser modellieren</span></div>
+<h2>Statistisches Modell und Gewichtung</h2>
+<p>Ungewichtete kleinste Quadrate behandeln alle Strahlen gleich. Sie sind aber nicht gleich genau. Ein Strahl, der mit <span class="arithmatex">\(N_i\)</span> Photonen ankommt, liefert einen Messwert <span class="arithmatex">\(p_i = -\ln(N_i/I_0)\)</span> mit <a href="../grundlagen/wahrscheinlichkeit.html#fehler">Varianz</a> ungefähr <span class="arithmatex">\(1/N_i\)</span>. Hinter dichten Objekten sind das wenige Photonen und sehr unsichere Werte. Die passende Zielfunktion gewichtet jeden Strahl mit seiner Genauigkeit, <strong>gewichtete kleinste Quadrate</strong> (WLS):</p>
+<div class="eq">\[
+f(\mathbf x) = \tfrac12\sum_i w_i\,(\mathbf a_i^\top\mathbf x - p_i)^2, \qquad w_i \approx N_i
+\]</div>
+<p>Noch genauer ist es, direkt die <strong>Poisson-Likelihood</strong> der gezählten Photonen zu maximieren, mit erwarteter Zählrate <span class="arithmatex">\(\bar N_i = I_0\,e^{-\mathbf a_i^\top\mathbf x}\)</span>:</p>
+<div class="eq">\[
+\hat{\mathbf x} = \arg\max_{\mathbf x} \sum_i \big(N_i \ln\bar N_i(\mathbf x) - \bar N_i(\mathbf x)\big)
+\]</div>
+<p>WLS ist die quadratische Näherung davon und für die meisten Strahlen gut genug. Die volle Poisson-Form hilft bei sehr wenigen Photonen und erlaubt, auch weitere Effekte wie Streustrahlung oder Elektronikrauschen in <span class="arithmatex">\(\bar N_i\)</span> einzubauen. Das ist der Ausgangspunkt der <strong>modellbasierten</strong> Rekonstruktion (MBIR).</p>
+<figure class="fig">
+<canvas aria-label="Ein Phantom mit zwei dichten Einschlüssen und zwei Rekonstruktionen aus verrauschten Daten, ungewichtet mit Streifen und gewichtet mit weniger Streifen." class="c-ir-3" id="cv-wl" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="wl-d">Dosis (Photonen pro Strahl ohne Objekt)</label><output id="wl-d-o"></output></div><input autocomplete="off" id="wl-d" max="5" min="2.3" step="0.05" type="range" value="2.7"/></div>
+<button class="btn" id="wl-r" type="button">Neue Messung</button>
+</div>
+<div class="readout" id="wl-read"></div>
+<figcaption><b>Abb. 3</b> Ein Phantom mit zwei dichten Einschlüssen, etwa Knochen oder Implantaten. Strahlen, die durch beide gehen, kommen mit nur wenigen Photonen an, und ihr Messwert \(-\ln(N/I_0)\) ist entsprechend unsicher. Ungewichtet (Mitte) zählen alle Strahlen gleich, ihre Fehler verteilen sich als dunkle und helle Streifen entlang der Verbindungslinie. Gewichtet mit der gemessenen Photonenzahl (rechts) tragen gerade diese Strahlen wenig bei, die Streifen werden deutlich schwächer. Beide Bilder nach 60 Iterationen, Fensterung auf das Weichgewebe.</figcaption>
+</figure>
+</section>
+<section id="regularisierung">
+<div class="step"><b>4</b><span class="eyebrow">Besser modellieren</span></div>
+<h2>Regularisierung</h2>
+<p>Statt die Lösung nur über die Iterationszahl zu steuern, schreibt man das Vorwissen über Bilder direkt in die Zielfunktion:</p>
+<div class="eq">\[
+\hat{\mathbf x} = \arg\min_{\mathbf x}\ \tfrac12\sum_i w_i\,(\mathbf a_i^\top\mathbf x - p_i)^2 + \beta\,R(\mathbf x), \qquad R(\mathbf x) = \sum_{j \sim k} \psi(x_j - x_k)
+\]</div>
+<p><span class="arithmatex">\(R\)</span> bestraft Unterschiede zwischen benachbarten Pixeln <span class="arithmatex">\(j \sim k\)</span>, <span class="arithmatex">\(\beta\)</span> regelt die Stärke. Entscheidend ist die Strafe <span class="arithmatex">\(\psi\)</span> für eine Differenz <span class="arithmatex">\(d\)</span>:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Regularisierer</th>
+<th><span class="arithmatex">\(\psi(d)\)</span></th>
+<th>Wirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>quadratisch (Tikhonov)</td>
+<td><span class="arithmatex">\(d^2\)</span></td>
+<td>glättet alles, auch Kanten</td>
+</tr>
+<tr>
+<td>Huber</td>
+<td><span class="arithmatex">\(d^2\)</span> für kleine <span class="arithmatex">\(\vert d\vert\)</span>, linear für große</td>
+<td>glättet Rauschen, lässt Kanten weitgehend stehen</td>
+</tr>
+<tr>
+<td>Total Variation (TV)</td>
+<td><span class="arithmatex">\(\vert d\vert\)</span></td>
+<td>bevorzugt stückweise konstante Bilder, bei zu großem β Treppenstufen</td>
+</tr>
+</tbody>
+</table></div>
+<p>Die quadratische Strafe macht große Sprünge sehr teuer und verwischt deshalb Kanten. Huber und TV wachsen für große Sprünge nur linear, eine scharfe Kante kostet daher kaum mehr als ein weicher Übergang. In der Sprache der <a href="../grundlagen/wahrscheinlichkeit.html#ml">Wahrscheinlichkeit</a> ist <span class="arithmatex">\(R\)</span> ein Log-Prior, und das Ganze eine MAP-Schätzung.</p>
+<p>Besonders wertvoll ist Regularisierung bei <strong>wenigen Projektionen</strong> (Sparse View) oder <strong>fehlenden Winkeln</strong> (Limited Angle, etwa bei Tomosynthese). Dann hat <span class="arithmatex">\(A\)</span> einen großen Nullraum, und viele Bilder passen gleich gut zu den Daten. Erst das Vorwissen entscheidet, welches man nimmt. TV ist hier besonders wirksam, weil medizinische Bilder sich gut durch wenige Kanten beschreiben lassen. Das ist die Idee hinter Compressed Sensing.</p>
+<p>Alle Verfahren mit <span class="arithmatex">\(R\)</span> sind nichtlinear. Auflösung und Rauschtextur hängen dann vom Kontrast und von der Umgebung ab. Bei Bildqualitätsmessungen muss man das berücksichtigen, die MTF eines Systems ist dann keine feste Größe mehr.</p>
+<figure class="fig">
+<canvas aria-label="Phantom, regularisierte Rekonstruktion aus wenigen verrauschten Projektionen und ein Profil durch beide." class="c-ir-3" id="cv-rg" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl" style="flex:0 1 210px"><div class="lab"><label for="rg-t">Regularisierung</label></div><select autocomplete="off" id="rg-t" style="width:100%"><option value="none">keine</option><option value="quad">quadratisch (Tikhonov)</option><option value="huber">Huber</option><option selected="" value="tv">Total Variation</option></select></div>
+<div class="ctrl"><div class="lab"><label for="rg-b">Stärke β</label><output id="rg-b-o"></output></div><input autocomplete="off" id="rg-b" max="-0.3" min="-2.5" step="0.05" type="range" value="-1"/></div>
+<div class="ctrl"><div class="lab"><label for="rg-a">Projektionswinkel</label><output id="rg-a-o"></output></div><input autocomplete="off" id="rg-a" max="90" min="8" step="1" type="range" value="30"/></div>
+</div>
+<div class="readout" id="rg-read"></div>
+<figcaption><b>Abb. 4</b> Rekonstruktion aus verrauschten Daten mit wählbarer Winkelzahl, 150 Iterationen. Ohne Regularisierung bleiben Rauschen und bei wenigen Winkeln Streifen. Quadratische Regularisierung bestraft jede Differenz zwischen Nachbarn gleich stark, also auch echte Kanten: Das Bild wird glatt, aber unscharf. Huber und Total Variation bestrafen große Sprünge nur linear und lassen Kanten deshalb stehen, während sie flache Bereiche glätten. Zu großes β macht aus dem Bild eine Fläche mit wenigen Stufen. Das Profil (rechts) läuft entlang der gestrichelten Zeile.</figcaption>
+</figure>
+</section>
+<section id="schnell">
+<div class="step"><b>5</b><span class="eyebrow">Praxis</span></div>
+<h2>Schneller rechnen</h2>
+<p>Jede Iteration kostet eine Vorwärts- und eine Rückprojektion des ganzen Volumens. Damit klinische Rekonstruktionen in Sekunden fertig werden, braucht man wenige Iterationen und schnelle Projektoren.</p>
+<ul class="tight">
+<li><strong>Ordered Subsets (OS):</strong> Die Projektionen werden in Teilmengen aufgeteilt, etwa jeder zehnte Winkel. Jede Teilmenge liefert eine Näherung des vollen Gradienten, und man macht nach jeder einen Schritt. Mit <span class="arithmatex">\(M\)</span> Teilmengen läuft der Anfang etwa <span class="arithmatex">\(M\)</span>-mal schneller, wie bei stochastischem Gradientenabstieg.</li>
+<li><strong>Momentum und Nesterov-Beschleunigung:</strong> wie beim <a href="../grundlagen/vektoranalysis.html#optimierer">Training neuronaler Netze</a>, oft kombiniert mit OS.</li>
+<li><strong>Vorkonditionierung:</strong> Skalierung der Schritte pro Pixel, damit alle Bildbereiche ähnlich schnell konvergieren. SIRT und die sogenannten separierbaren Surrogate sind Beispiele.</li>
+<li><strong>Guter Startwert:</strong> Man beginnt mit dem FBP-Bild statt mit null.</li>
+</ul>
+<p>Die Projektoren selbst laufen auf GPUs. Die Systemmatrix wird dabei nie gespeichert, sondern bei jeder Projektion aus der Geometrie neu berechnet.</p>
+</section>
+<section id="lernen">
+<div class="step"><b>6</b><span class="eyebrow">Praxis</span></div>
+<h2>Lernbasierte Verfahren</h2>
+<p>Neuronale Netze werden an drei Stellen in die Rekonstruktion eingebaut:</p>
+<ul class="tight">
+<li><strong>Nachverarbeitung:</strong> Ein Netz bekommt das FBP- oder iterative Bild und entrauscht oder entstreift es, meist ein U-Net. Einfach, schnell und leicht zu trainieren. Die Messdaten sieht das Netz aber nicht mehr.</li>
+<li><strong>Entrollte Iterationen</strong> (unrolled): Eine feste Zahl von Iterationen wird als ein großes Netz geschrieben. Zwischen kleinen gelernten Stufen stehen echte Vor- und Rückprojektionen mit den Messdaten. Alles wird zusammen trainiert, Beispiele sind Learned Primal-Dual oder Variational Networks.</li>
+<li><strong>Plug-and-Play:</strong> Ein getrennt trainierter Entrauscher ersetzt in einer klassischen Iteration den Regularisierer oder seinen Gradienten. Er muss die Scannergeometrie nicht kennen und lässt sich wiederverwenden. Diffusionsmodelle als Prior funktionieren nach demselben Muster.</li>
+</ul>
+<figure class="fig">
+<div class="svgbox">
+<svg aria-label="Drei Arten, neuronale Netze in die Rekonstruktion einzubauen: Nachverarbeitung nach der FBP, entrollte Iterationen mit abwechselnden Daten- und Netzschritten, und Plug-and-Play mit einem vortrainierten Entrauscher in einer klassischen Iteration." role="img" viewbox="0 0 792 360">
+<defs><marker id="ar" markerheight="7" markerwidth="7" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path class="d-mut" d="M0,0 L10,5 L0,10 z"></path></marker>
+<marker id="ar2" markerheight="7" markerwidth="7" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path class="d-b2" d="M0,0 L10,5 L0,10 z"></path></marker></defs>
+<g font-size="13"><text class="d-fg" font-weight="600" x="8" y="50">Nachverarbeitung</text><text class="d-mut" font-size="11" x="8" y="67">Netz nach der Rekonstruktion</text><text class="d-fg" font-weight="600" x="8" y="155">Entrollte Iterationen</text><text class="d-mut" font-size="11" x="8" y="172">K Stufen, gemeinsam trainiert</text><text class="d-fg" font-weight="600" x="8" y="265">Plug-and-Play</text><text class="d-mut" font-size="11" x="8" y="282">vortrainierter Entrauscher</text><g transform="translate(32,0)">
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="58.0">p</text>
+<rect height="46" rx="5" style="fill:var(--bg);stroke:var(--rule);stroke-width:1.2" width="70" x="230" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="265.0" y="58.0">FBP</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="110" x="330" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="385.0" y="50">Netz</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="385.0" y="66">entrauschen</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="70" x="470" y="30"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="505.0" y="58.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="228" y1="53" y2="53"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="300" x2="328" y1="53" y2="53"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="440" x2="468" y1="53" y2="53"></line>
+<text class="d-mut" font-size="11.5" x="560" y="50">sieht die Messdaten</text><text class="d-mut" font-size="11.5" x="560" y="65">nach der FBP nicht mehr</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="163.0">p</text>
+<rect height="46" rx="5" style="fill:var(--bg);stroke:var(--rule);stroke-width:1.2" width="56" x="220" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="248.0" y="163.0">FBP</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="92" x="296" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="342.0" y="155">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="342.0" y="171">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="70" x="408" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="443.0" y="163.0">Netz₁</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="92" x="498" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="544.0" y="155">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="544.0" y="171">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="62" x="610" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="641.0" y="163.0">Netz₂</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="60" x="692" y="135"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="722.0" y="163.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="218" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="276" x2="294" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="388" x2="406" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="478" x2="496" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="590" x2="608" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="672" x2="690" y1="158" y2="158"></line>
+<path class="d-stb2" d="M175,181 L175,205 L342.0,205 L342.0,185" fill="none" marker-end="url(#ar2)" stroke-dasharray="5 4" stroke-width="1.5"></path>
+<path class="d-stb2" d="M175,181 L175,205 L544.0,205 L544.0,185" fill="none" marker-end="url(#ar2)" stroke-dasharray="5 4" stroke-width="1.5"></path>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="273.0">p</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="100" x="230" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="280.0" y="265">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="280.0" y="281">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="130" x="360" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="425.0" y="265">Entrauscher</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="425.0" y="281">statt R(x)</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="70" x="560" y="245"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="595.0" y="273.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="228" y1="268" y2="268"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="330" x2="358" y1="268" y2="268"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="490" x2="558" y1="268" y2="268"></line>
+<text class="d-mut" font-size="11" text-anchor="middle" x="524" y="260">nach N</text><text class="d-mut" font-size="11" text-anchor="middle" x="524" y="285">Schritten</text>
+<path class="d-stm" d="M425,291 L425,311 L280,311 L280,295" fill="none" marker-end="url(#ar)" stroke-width="1.5"></path><text class="d-mut" font-size="11" text-anchor="middle" x="352" y="325">wiederholen</text>
+<rect height="12" rx="2" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="16" x="150" y="334"></rect><text class="d-mut" font-size="12" x="172" y="345">nutzt die Messdaten p</text>
+<rect height="12" rx="2" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="16" x="330" y="334"></rect><text class="d-mut" font-size="12" x="352" y="345">gelerntes Netz</text>
+</g></g></svg>
+</div>
+<figcaption><b>Abb. 5</b> Nachverarbeitung (oben) bekommt nur das fertige FBP-Bild. Bei entrollten Iterationen (Mitte) wechseln sich Datenschritte, die die Messung \(\mathbf p\) einbeziehen, mit kleinen Netzen ab. Alle Stufen werden zusammen trainiert. Plug-and-Play (unten) nimmt einen getrennt trainierten Entrauscher und setzt ihn in eine klassische Iteration anstelle des Regularisierers. In den beiden unteren Varianten muss das Ergebnis immer wieder zur Messung passen.</figcaption>
+</figure>
+<p>Trainiert wird meist mit Bildpaaren: Normaldosis-Aufnahmen als Ziel, dazu simulierte Niedrigdosis- oder Wenig-Winkel-Daten derselben Patienten als Eingabe. Was das Netz lernt, ist damit ein Prior über typische Anatomie. Daraus kommt sein Nutzen, aber auch sein Risiko: Strukturen, die in den Trainingsdaten selten sind, etwa kleine oder ungewöhnliche Läsionen, kann es als Rauschen behandeln und entfernen. Umgekehrt kann es plausible Strukturen erzeugen, die gar nicht gemessen wurden (Halluzination).</p>
+<p>Gegen beides hilft <strong>Datenkonsistenz</strong>: Das Ergebnis muss die Messung erklären, <span class="arithmatex">\(A\mathbf x \approx \mathbf p\)</span>. Verfahren mit Datenschritten in der Schleife holen zurück, was in den Daten steht, auch wenn das Vorwissen es nicht erwartet. Globale Fehlermaße wie RMSE oder SSIM zeigen das oft nicht, weil eine kleine fehlende Läsion kaum zum Gesamtfehler beiträgt. Wie bei klassischer Regularisierung gilt außerdem: Das Verfahren ist nichtlinear, Auflösung und Rauschen hängen vom Bildinhalt ab. Bildqualität bewertet man deshalb besser mit aufgabenbezogenen Tests, etwa ob eine Läsion noch erkennbar ist, als mit MTF und NPS allein.</p>
+<figure class="fig">
+<canvas aria-label="Phantom mit kleiner Läsion, ein nur nachverarbeitetes Bild ohne Läsion und ein datenkonsistentes Bild, in dem die Läsion wieder erscheint." class="c-ir-3" id="cv-dc" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="dc-a">Stärke des gelernten Vorwissens</label><output id="dc-a-o"></output></div><input autocomplete="off" id="dc-a" max="0.9" min="0.2" step="0.05" type="range" value="0.7"/></div>
+<div class="ctrl"><div class="lab"><label for="dc-k">Datenschritte pro Iteration</label><output id="dc-k-o"></output></div><input autocomplete="off" id="dc-k" max="10" min="1" step="1" type="range" value="6"/></div>
+<label class="chk"><input autocomplete="off" checked="" id="dc-l" type="checkbox"/> Läsion im Objekt</label>
+</div>
+<div class="readout" id="dc-read"></div>
+<figcaption><b>Abb. 6</b> Ein Modellversuch. Statt eines echten Netzes dient ein einfacher „Entrauscher“, der das Bild glättet und zum Teil durch eine typische Anatomie ersetzt, die er gelernt hat: das Phantom ohne Läsion. Die Daten stammen aus 20 verrauschten Projektionen eines Objekts mit kleiner Läsion (Kreis). Nur nachverarbeitet (Mitte) sieht das Bild sauber aus und hat den kleineren Gesamtfehler, aber die Läsion ist weg, weil das Vorwissen sie nicht kennt. Mit Datenschritten zwischen den Entrauschungen (rechts) ist das Bild unruhiger, aber die Läsion kommt zurück: Die Messung enthält sie, und jeder Datenschritt fordert sie wieder ein.</figcaption>
+</figure>
+</section>
+<section id="formeln">
+<div class="eyebrow">Anhang A</div>
+<h2>Formeln</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Thema</th>
+<th>Formel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Modell</td>
+<td><span class="arithmatex">\(\mathbf p = A\mathbf x\)</span>, <span class="arithmatex">\(p_i = -\ln(N_i/I_0)\)</span>, <span class="arithmatex">\(\operatorname{Var}[p_i] \approx 1/N_i\)</span></td>
+</tr>
+<tr>
+<td>SVD-Lösung</td>
+<td><span class="arithmatex">\(\hat{\mathbf x} = \sum_i \frac{\mathbf u_i^\top\mathbf p}{\sigma_i}\mathbf v_i\)</span>, Rauschverstärkung <span class="arithmatex">\(1/\sigma_i\)</span></td>
+</tr>
+<tr>
+<td>Gradient</td>
+<td><span class="arithmatex">\(\nabla\tfrac12\Vert A\mathbf x - \mathbf p\Vert^2 = A^\top(A\mathbf x - \mathbf p)\)</span></td>
+</tr>
+<tr>
+<td>SIRT</td>
+<td><span class="arithmatex">\(\mathbf x \leftarrow \mathbf x + \lambda\,C A^\top R(\mathbf p - A\mathbf x)\)</span>, <span class="arithmatex">\(R\)</span>, <span class="arithmatex">\(C\)</span>: Kehrwerte der Zeilen- und Spaltensummen</td>
+</tr>
+<tr>
+<td>WLS</td>
+<td><span class="arithmatex">\(\min \tfrac12\sum_i w_i(\mathbf a_i^\top\mathbf x - p_i)^2\)</span>, <span class="arithmatex">\(w_i \approx N_i\)</span></td>
+</tr>
+<tr>
+<td>Poisson</td>
+<td><span class="arithmatex">\(\max \sum_i N_i\ln\bar N_i - \bar N_i\)</span>, <span class="arithmatex">\(\bar N_i = I_0 e^{-\mathbf a_i^\top\mathbf x}\)</span></td>
+</tr>
+<tr>
+<td>Regularisiert</td>
+<td><span class="arithmatex">\(\min\)</span> Datenterm <span class="arithmatex">\(+ \beta\sum_{j\sim k}\psi(x_j - x_k)\)</span>, <span class="arithmatex">\(\psi\)</span>: <span class="arithmatex">\(d^2\)</span>, Huber, <span class="arithmatex">\(\vert d\vert\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section id="befehle">
+<div class="eyebrow">Anhang B</div>
+<h2>Befehle</h2>
+<pre><code class="language-python">from skimage.transform import radon, iradon, iradon_sart
+import numpy as np
+
+theta = np.linspace(0, 180, 60, endpoint=False)
+sino = radon(img, theta=theta)                       # Vorwärtsprojektion
+rec = iradon_sart(sino, theta=theta)                  # eine SART-Iteration
+for _ in range(9):
+    rec = iradon_sart(sino, theta=theta, image=rec)   # weitere Iterationen
+
+# GPU, Kegelstrahl, große Volumen: ASTRA Toolbox oder TIGRE
+import astra
+vol = astra.create_vol_geom(512, 512)
+proj = astra.create_proj_geom("parallel", 1.0, 736, np.deg2rad(theta))
+pid = astra.create_projector("cuda", proj, vol)
+# Algorithmen: "SIRT_CUDA", "SART_CUDA", "CGLS_CUDA", "FBP_CUDA"
+</code></pre>
+</section>
+    <footer>Alle Abbildungen rechnen live im Browser mit kleinen Bildern (16 × 16 bzw. 64 × 64 Pixel) und Parallelstrahlgeometrie. Echte Rekonstruktionen nutzen GPU-Bibliotheken wie ASTRA oder TIGRE.</footer>
+  </main>
+</div>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ir.js"></script>
+<script>
+/* ---------- Abgeschnittene SVD ---------- */
+(() => {
+  const c = $('#cv-sv'), ik = $('#sv-k'), inz = $('#sv-n'), n = 16, N = n * n; let E = null, A = null, X = null, base = null, noise = null, busy = false;
+  const setup = () => { A = buildA(n, 14, 22); X = phantom(n); base = fwd(A, X); setSeed(11); noise = Float64Array.from({ length: A.m }, () => gauss());
+    const M = new Float64Array(N * N); for (let i = 0; i < A.m; i++) for (let q = A.ptr[i]; q < A.ptr[i + 1]; q++) for (let r = A.ptr[i]; r < A.ptr[i + 1]; r++) M[A.idx[q] * N + A.idx[r]] += A.val[q] * A.val[r];
+    E = jacobiEig(M, N); };
+  const m = reg({ el: c, draw() {
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    if (!E) { title(ctx, 'Singulärwertzerlegung wird berechnet …', 0, 16); if (!busy) { busy = true; setTimeout(() => { setup(); m.draw(); }, 30); } return; }
+    const k = +ik.value, nl = +inz.value; $('#sv-k-o').textContent = k; $('#sv-n-o').textContent = nf(nl, 2) + ' %';
+    const p = base.map((v, i) => v + 0.01 * nl * noise[i]), b = back(A, p), coef = E.vec.map(v => { let s = 0; for (let j = 0; j < N; j++) s += v[j] * b[j]; return s; });
+    const errs = [], x = new Float64Array(N); let xk = null;
+    for (let i = 0; i < N; i++) { const a = coef[i] / Math.max(E.val[i], 1e-12); for (let j = 0; j < N; j++) x[j] += a * E.vec[i][j]; errs.push(rmse(x, X)); if (i + 1 === k) xk = Float32Array.from(x); }
+    const s = narrow ? Math.min(w / 2 - 8, h * 0.42) : Math.min(h - 26, w * 0.24), top = 22;
+    drawImg(ctx, X, n, 0, top, s, { lo: 0, hi: 1, title: 'Phantom' });
+    drawImg(ctx, xk, n, s + 14, top, s, { lo: 0, hi: 1, title: `k = ${k}` });
+    const px = narrow ? 0 : 2 * s + 32, pw = narrow ? w : w - px, py = narrow ? top + s + 10 : 0, ph = narrow ? h - py : h;
+    const sig = E.val.map(v => Math.sqrt(Math.max(v, 1e-12)));
+    const f1 = frame(ctx, px, py, pw, ph * 0.5, { x0: 1, x1: N, y0: Math.min(...sig) * 0.7, y1: sig[0] * 1.5, ylog: true, xt: [1, 64, 128, 192, 256], yt: [0.01, 0.1, 1], yf: v => ex(v, 0), xl: '', l: 40, t: 20, b: 16 });
+    ctx.strokeStyle = tok('--fg'); ctx.lineWidth = 2; ctx.beginPath(); sig.forEach((v, i) => i ? ctx.lineTo(f1.X(i + 1), f1.Y(v)) : ctx.moveTo(f1.X(1), f1.Y(v))); ctx.stroke();
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f1.X(k), f1.by); ctx.lineTo(f1.X(k), f1.by + f1.bh); ctx.stroke();
+    title(ctx, 'Singulärwerte σᵢ', px, py + 13);
+    const emax = Math.min(1.2, Math.max(...errs.slice(0, Math.min(N, 200)))), f2 = frame(ctx, px, py + ph * 0.5, pw, ph * 0.5, { x0: 1, x1: N, y0: 0.01, y1: 3, ylog: true, xt: [1, 64, 128, 192, 256], yt: [0.01, 0.1, 1], yf: v => ex(v, 0), xl: 'k', l: 40, t: 20 });
+    ctx.strokeStyle = tok('--hole'); ctx.lineWidth = 2; ctx.beginPath(); errs.forEach((v, i) => { const y = f2.Y(Math.min(3, Math.max(0.01, v))); i ? ctx.lineTo(f2.X(i + 1), y) : ctx.moveTo(f2.X(1), y); }); ctx.stroke();
+    ctx.fillStyle = tok('--accent'); ctx.beginPath(); ctx.arc(f2.X(k), f2.Y(Math.min(3, Math.max(0.01, errs[k - 1]))), 4.5, 0, 2 * Math.PI); ctx.fill();
+    title(ctx, 'Fehler zum Phantom', px, py + ph * 0.5 + 13);
+    const best = errs.indexOf(Math.min(...errs)) + 1;
+    $('#sv-read').innerHTML = `<span class="k">σ₁ / σₖ =</span> ${ex(sig[0] / sig[k - 1], 1)} (so stark wird Rauschen in dieser Komponente verstärkt)  <span class="k">·</span>  <span class="k">Fehler bei k = ${k}:</span> ${nf(errs[k - 1], 3)}, <span class="k">am kleinsten bei k =</span> <b>${best}</b> (${nf(errs[best - 1], 3)})`;
+  } });
+  [ik, inz].forEach(e => e.addEventListener('input', rafDebounce(() => m.draw())));
+})();
+</script>
+<script>
+/* ---------- Semikonvergenz ---------- */
+(() => {
+  const c = $('#cv-sc'), ik = $('#sc-k'), idd = $('#sc-d'), bp = $('#sc-p'), n = 64, K = 300; let A = null, X = null, clean = null, key = '', R = null, timer = null;
+  const run = p => { const snaps = [], err = []; solve(A, p, { iter: K, pos: true, each: (k, x) => { snaps.push(Float32Array.from(x)); err.push(rmse(x, X)); } }); return { snaps, err }; };
+  const compute = () => { if (!A) { A = buildA(n, 60, 92); X = phantom(n); clean = run(measure(A, X, 0).p); }
+    setSeed(77); R = run(measure(A, X, Math.round(10 ** +idd.value), 3).p); };
+  const m = reg({ el: c, playing: false, anim: true, step(dt) { let k = +ik.value + dt * 40; if (k >= K) { k = K; this.playing = false; bp.textContent = 'Abspielen'; } ik.value = Math.round(k); }, draw() {
+    const k = +ik.value; $('#sc-k-o').textContent = k; $('#sc-d-o').textContent = Math.round(10 ** +idd.value).toLocaleString('de-DE');
+    if (key !== idd.value) { key = idd.value; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 80 : 30); }
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    const s = narrow ? Math.min(w / 2 - 8, h * 0.45) : Math.min(h - 26, w * 0.3), top = 22;
+    drawImg(ctx, R.snaps[k - 1], n, 0, top, s, { lo: 0, hi: 0.5, title: 'mit Rauschen' });
+    drawImg(ctx, clean.snaps[k - 1], n, s + 14, top, s, { lo: 0, hi: 0.5, title: 'ohne Rauschen' });
+    const px = narrow ? 0 : 2 * s + 32, py = narrow ? top + s + 10 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const emax = Math.max(...R.err, ...clean.err) * 1.05, f = frame(ctx, px, py, pw, ph, { x0: 1, x1: K, y0: 0, y1: emax, xt: [1, 100, 200, 300], yt: [0, 0.05, 0.1], yf: v => nf(v, 2), xl: 'Iteration', l: 40, t: 40 });
+    [[clean.err, tok('--muted')], [R.err, tok('--hole')]].forEach(([e, col]) => { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); e.forEach((v, i) => i ? ctx.lineTo(f.X(i + 1), f.Y(v)) : ctx.moveTo(f.X(1), f.Y(v))); ctx.stroke(); });
+    const best = R.err.indexOf(Math.min(...R.err)) + 1;
+    ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(f.X(k), f.by); ctx.lineTo(f.X(k), f.by + f.bh); ctx.stroke();
+    ctx.fillStyle = tok('--hole'); ctx.beginPath(); ctx.arc(f.X(best), f.Y(R.err[best - 1]), 4, 0, 2 * Math.PI); ctx.fill();
+    title(ctx, 'Fehler zum Phantom', px, py + 14); legend(ctx, px + pw, py + 32, [['mit Rauschen', tok('--hole')], ['ohne', tok('--muted')]], { right: true });
+    $('#sc-read').innerHTML = `<span class="k">Iteration ${k}:</span> Fehler ${nf(R.err[k - 1], 4)} mit, ${nf(clean.err[k - 1], 4)} ohne Rauschen  <span class="k">·</span>  <span class="k">bester Abbruch bei Iteration</span> <b>${best}</b>`;
+  } });
+  [ik, idd].forEach(e => e.addEventListener('input', () => m.draw()));
+  bp.addEventListener('click', () => { m.playing = !m.playing; if (m.playing && +ik.value >= K) ik.value = 1; bp.textContent = m.playing ? 'Anhalten' : 'Abspielen'; });
+})();
+</script>
+<script>
+/* ---------- Gewichtung ---------- */
+(() => {
+  const c = $('#cv-wl'), id = $('#wl-d'), n = 64, S = 4; let A = null, X = null, soft = null, gen = 1, key = '', R = null, timer = null;
+  const EX = [[-0.33, -0.12, 0.11, 0.11, 0, 2.5], [0.33, -0.12, 0.11, 0.11, 0, 2.5]];
+  const compute = () => { if (!A) { A = buildA(n, 90, 92); X = phantom(n, EX); soft = []; for (let k = 0; k < n * n; k++) if (X[k] > 0.1 && X[k] < 0.5) soft.push(k); }
+    const I0 = Math.round(10 ** +id.value); setSeed(31 * gen + 7); const M = measure(A, X, I0, S);
+    let low = 0; for (const v of M.N) if (v < 10) low++;
+    const xu = solve(A, M.p, { iter: 60, pos: true }), xw = solve(A, M.p, { iter: 60, pos: true, w: M.N });
+    const r = a => Math.sqrt(soft.reduce((s, k) => s + (a[k] - X[k]) ** 2, 0) / soft.length);
+    R = { I0, xu: Float32Array.from(xu), xw: Float32Array.from(xw), ru: r(xu), rw: r(xw), low: low / A.m }; };
+  const m = reg({ el: c, draw() {
+    const I0 = Math.round(10 ** +id.value); $('#wl-d-o').textContent = I0.toLocaleString('de-DE');
+    const k = id.value + '|' + gen; if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 60 : 30); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    drawImg(ctx, X, n, L[0].x, L[0].y, L[0].size, { lo: 0, hi: 0.6, title: 'Phantom' });
+    drawImg(ctx, R.xu, n, L[1].x, L[1].y, L[1].size, { lo: 0, hi: 0.6, title: 'ungewichtet' });
+    drawImg(ctx, R.xw, n, L[2].x, L[2].y, L[2].size, { lo: 0, hi: 0.6, title: 'gewichtet mit Nᵢ' });
+    $('#wl-read').innerHTML = `<span class="k">Strahlen mit weniger als 10 Photonen:</span> ${nf(100 * R.low, 1)} %  <span class="k">·</span>  <span class="k">Fehler im Weichgewebe:</span> ungewichtet ${nf(R.ru, 3)}, gewichtet <b>${nf(R.rw, 3)}</b>`;
+  } });
+  id.addEventListener('input', () => m.draw());
+  $('#wl-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+<script>
+/* ---------- Regularisierung ---------- */
+(() => {
+  const c = $('#cv-rg'), it = $('#rg-t'), ib = $('#rg-b'), ia = $('#rg-a'), n = 64, row = 28; let As = {}, X = phantom(n), key = '', R = null, timer = null;
+  const compute = () => { const na = +ia.value; if (!As[na]) As[na] = buildA(n, na, 92); const A = As[na]; setSeed(5 + na); const M = measure(A, X, 1000, 3);
+    const t = it.value, beta = 10 ** +ib.value, x = solve(A, M.p, { iter: 150, pos: true, beta: t === 'none' ? 0 : beta, grad: t === 'none' ? null : regGrad(t, n) });
+    R = { x: Float32Array.from(x), e: rmse(x, X) }; };
+  const m = reg({ el: c, draw() {
+    const t = it.value, beta = 10 ** +ib.value; $('#rg-b-o').textContent = t === 'none' ? '–' : nf(beta, beta < 0.1 ? 3 : 2); $('#rg-a-o').textContent = ia.value; ib.disabled = t === 'none';
+    const k = [t, ib.value, ia.value].join('|'); if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 80 : 30); }
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    if (!R) { title(ctx, 'Rekonstruktion wird berechnet …', 0, 16); return; }
+    const s = narrow ? Math.min(w / 2 - 8, h * 0.45) : Math.min(h - 26, w * 0.3), top = 22;
+    drawImg(ctx, X, n, 0, top, s, { lo: 0, hi: 0.5, title: 'Phantom' });
+    drawImg(ctx, R.x, n, s + 14, top, s, { lo: 0, hi: 0.5, title: t === 'none' ? 'ohne Regularisierung' : { quad: 'quadratisch', huber: 'Huber', tv: 'Total Variation' }[t] });
+    [0, s + 14].forEach(x0 => { const y = top + (row + 0.5) * s / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + s, y); ctx.stroke(); ctx.setLineDash([]); });
+    const px = narrow ? 0 : 2 * s + 32, py = narrow ? top + s + 10 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: n - 1, y0: -0.05, y1: 0.55, xt: [0, 32, 63], yt: [0, 0.2, 0.4], yf: v => nf(v, 1), xl: 'x (Pixel)', l: 34, t: 22 });
+    [[X, tok('--muted'), 1.6], [R.x, tok('--accent'), 2]].forEach(([I, col, lw]) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); for (let x = 0; x < n; x++) { const v = I[row * n + x]; x ? ctx.lineTo(f.X(x), f.Y(v)) : ctx.moveTo(f.X(x), f.Y(v)); } ctx.stroke(); });
+    title(ctx, 'Profil', px, py + 14); legend(ctx, px + pw, py + 14, [['Phantom', tok('--muted')], ['Rekonstruktion', tok('--accent')]], { right: true });
+    $('#rg-read').innerHTML = `<span class="k">Fehler zum Phantom:</span> <b>${nf(R.e, 4)}</b>  <span class="k">·</span>  ${ia.value} Winkel, 1000 Photonen pro Strahl`;
+  } });
+  [it, ib, ia].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+<script>
+/* ---------- Datenkonsistenz ---------- */
+(() => {
+  const c = $('#cv-dc'), ia = $('#dc-a'), ik = $('#dc-k'), il = $('#dc-l'), n = 64, LES = [[0.25, 0.45, 0.07, 0.07, 0, 0.12]];
+  let A = null, X0 = null, key = '', R = null, timer = null, ins = [], ring = [];
+  const cx = Math.round((0.25 + 1) * n / 2 - 0.5), cy = Math.round((1 - 0.45) * n / 2 - 0.5);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const d = Math.hypot(x - cx, y - cy); if (d <= 1.5) ins.push(y * n + x); else if (d > 3.5 && d < 5.5) ring.push(y * n + x); }
+  const con = a => ins.reduce((s, k) => s + a[k], 0) / ins.length - ring.reduce((s, k) => s + a[k], 0) / ring.length;
+  const compute = () => { if (!A) { A = buildA(n, 20, 92); X0 = phantom(n); }
+    const a = +ia.value, K = +ik.value, X = il.checked ? phantom(n, LES) : X0;
+    const D = (x, s) => { const b = blurImg(x, n, 0.9); for (let j = 0; j < b.length; j++) b[j] = (1 - s) * b[j] + s * X0[j]; return b; };
+    setSeed(9); const M = measure(A, X, 1000, 3), base = solve(A, M.p, { iter: 30, pos: true }), post = D(base, a);
+    let x = Float64Array.from(post); for (let k = 0; k < 20; k++) { x = D(x, a * 0.3); x = solve(A, M.p, { iter: K, pos: true, x0: x }); }
+    R = { X: Float32Array.from(X), post: Float32Array.from(post), dc: Float32Array.from(x), c: [con(X), con(post), con(x)], e: [rmse(post, X), rmse(x, X)] }; };
+  const m = reg({ el: c, draw() {
+    $('#dc-a-o').textContent = nf(+ia.value, 2); $('#dc-k-o').textContent = ik.value;
+    const k = [ia.value, ik.value, il.checked].join('|'); if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 60 : 30); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    [[R.X, 'Objekt'], [R.post, 'nur nachverarbeitet'], [R.dc, 'mit Datenschritten']].forEach(([I, t], i) => {
+      drawImg(ctx, I, n, L[i].x, L[i].y, L[i].size, { lo: 0.05, hi: 0.45, title: t });
+      const s = L[i].size / n; ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(L[i].x + (cx + 0.5) * s, L[i].y + (cy + 0.5) * s, 5 * s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); });
+    const pct = v => R.c[0] > 0.01 ? ` (${nf(100 * v / R.c[0], 0)} %)` : '';
+    $('#dc-read').innerHTML = `<span class="k">Kontrast der Läsion:</span> Objekt ${nf(R.c[0], 3)}, nachverarbeitet <b>${nf(R.c[1], 3)}</b>${pct(R.c[1])}, mit Datenschritten <b>${nf(R.c[2], 3)}</b>${pct(R.c[2])}<br><span class="k">Gesamtfehler zum Objekt:</span> nachverarbeitet ${nf(R.e[0], 4)}, mit Datenschritten ${nf(R.e[1], 4)}`;
+  } });
+  [ia, ik, il].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+</body>
+</html>

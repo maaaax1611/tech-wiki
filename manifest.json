@@ -8,7 +8,7 @@
   {
    "id": "physik",
    "title": "Physik",
-   "desc": "Röntgenphysik, Detektoren und CT-Rekonstruktion."
+   "desc": "Röntgenphysik, Detektoren, CT-Rekonstruktion und MRT."
   },
   {
    "id": "bildverarbeitung",
@@ -624,6 +624,69 @@
    ]
   },
   {
+   "id": "iterative-rekonstruktion",
+   "category": "physik",
+   "path": "physik/iterative-rekonstruktion.html",
+   "title": "Iterative Rekonstruktion",
+   "desc": "Inverses Problem und Singulärwerte, SIRT und Semikonvergenz, Gewichtung nach Photonenstatistik, Regularisierung und lernbasierte Verfahren.",
+   "tags": [
+    "CT",
+    "Rekonstruktion",
+    "Regularisierung",
+    "Statistik"
+   ],
+   "sections": [
+    {
+     "id": "invers",
+     "n": "1",
+     "t": "Inverses Problem",
+     "a": false
+    },
+    {
+     "id": "lsq",
+     "n": "2",
+     "t": "Kleinste Quadrate, SIRT",
+     "a": false
+    },
+    {
+     "id": "statistik",
+     "n": "3",
+     "t": "Gewichtung, Likelihood",
+     "a": false
+    },
+    {
+     "id": "regularisierung",
+     "n": "4",
+     "t": "Regularisierung",
+     "a": false
+    },
+    {
+     "id": "schnell",
+     "n": "5",
+     "t": "Schneller rechnen",
+     "a": false
+    },
+    {
+     "id": "lernen",
+     "n": "6",
+     "t": "Lernbasierte Verfahren",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
+   ]
+  },
+  {
    "id": "photon-counting",
    "category": "physik",
    "path": "physik/photon-counting.html",
@@ -711,6 +774,19 @@
      "a": true
     }
    ]
+  },
+  {
+   "id": "mrt",
+   "category": "physik",
+   "path": "physik/mrt.html",
+   "title": "Magnetresonanz­tomographie",
+   "desc": "Kernspin und Präzession, Relaxation T1 und T2, Gradienten und k-Raum, Sequenzen und Rekonstruktion.",
+   "tags": [
+    "MRT",
+    "k-Raum",
+    "Relaxation"
+   ],
+   "status": "geplant"
   },
   {
    "id": "punktoperationen",
@@ -1696,6 +1772,48 @@
    "slug": "tr-14-lora-rang",
    "page": "transformer",
    "title": "LoRA: Anpassung mit niedrigem Rang",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-01-svd",
+   "page": "iterative-rekonstruktion",
+   "title": "Schlecht gestellt: Rekonstruktion über die Singulärwertzerlegung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-02-semikonvergenz",
+   "page": "iterative-rekonstruktion",
+   "title": "SIRT und Semikonvergenz",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-03-gewichtung",
+   "page": "iterative-rekonstruktion",
+   "title": "Gewichtete kleinste Quadrate bei wenig Photonen",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-04-regularisierung",
+   "page": "iterative-rekonstruktion",
+   "title": "Regularisierung und wenige Winkel",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-05-lernen-schema",
+   "page": "iterative-rekonstruktion",
+   "title": "Drei Wege, Netze in die Rekonstruktion einzubauen",
+   "interactive": false,
+   "height": 640
+  },
+  {
+   "slug": "ir-06-datenkonsistenz",
+   "page": "iterative-rekonstruktion",
+   "title": "Nachverarbeitung gegen Datenkonsistenz",
    "interactive": true,
    "height": 640
   },
