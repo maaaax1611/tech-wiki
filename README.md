@@ -37,16 +37,16 @@ Die Startseite lädt `manifest.json` per `fetch`. Lokal deshalb über einen Webs
 
 ## Veröffentlichen mit GitHub Pages
 
-1. Neues Repository anlegen (z. B. `xray-wiki`) und den Inhalt dieses Ordners hochladen.
+1. Neues Repository anlegen (z. B. `tech-wiki`) und den Inhalt dieses Ordners hochladen.
 2. *Settings → Pages → Build and deployment*: Source **Deploy from a branch**, Branch **main**, Ordner **/ (root)**.
-3. Nach ca. einer Minute ist die Seite unter `https://<user>.github.io/xray-wiki/` erreichbar.
+3. Nach ca. einer Minute ist die Seite unter `https://<user>.github.io/tech-wiki/` erreichbar.
 
 Die Datei `.nojekyll` sorgt dafür, dass GitHub die Dateien unverändert ausliefert.
 
 ## In Obsidian einbetten
 
 ```html
-<iframe src="https://<user>.github.io/xray-wiki/widgets/rk-06-fbp-labor.html" width="100%" height="720" style="border:0"></iframe>
+<iframe src="https://<user>.github.io/tech-wiki/widgets/rk-06-fbp-labor.html" width="100%" height="720" style="border:0"></iframe>
 ```
 
 Optionen: `?theme=dark` / `?theme=light` (Farbschema erzwingen), `?frame=0` (ohne Rahmen). Auf der Startseite gibt es für jedes Widget einen fertigen Schnipsel zum Kopieren.
