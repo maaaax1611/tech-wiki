@@ -48,6 +48,80 @@
     "Rauschen",
     "Filter",
     "Maxwell"
+   ],
+   "sections": [
+    {
+     "id": "grundgroessen",
+     "n": "1",
+     "t": "Ladung, Strom, Spannung",
+     "a": false
+    },
+    {
+     "id": "efeld",
+     "n": "2",
+     "t": "Elektrisches Feld",
+     "a": false
+    },
+    {
+     "id": "bfeld",
+     "n": "3",
+     "t": "Magnetfeld und Lorentzkraft",
+     "a": false
+    },
+    {
+     "id": "induktion",
+     "n": "4",
+     "t": "Induktion",
+     "a": false
+    },
+    {
+     "id": "maxwell",
+     "n": "5",
+     "t": "Maxwell und EM-Wellen",
+     "a": false
+    },
+    {
+     "id": "passiv",
+     "n": "6",
+     "t": "Widerstand, Kondensator, Spule",
+     "a": false
+    },
+    {
+     "id": "halbleiter",
+     "n": "7",
+     "t": "Halbleiter, Diode, Transistor",
+     "a": false
+    },
+    {
+     "id": "rc",
+     "n": "8",
+     "t": "RC-Glied",
+     "a": false
+    },
+    {
+     "id": "impedanz",
+     "n": "9",
+     "t": "Impedanz und Filter",
+     "a": false
+    },
+    {
+     "id": "opv",
+     "n": "10",
+     "t": "Operationsverstärker",
+     "a": false
+    },
+    {
+     "id": "rauschen",
+     "n": "11",
+     "t": "Rauschen",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln und Konstanten",
+     "a": true
+    }
    ]
   },
   {
@@ -66,6 +140,86 @@
     "SVD",
     "PCA",
     "QR"
+   ],
+   "sections": [
+    {
+     "id": "vektoren",
+     "n": "1",
+     "t": "Vektoren",
+     "a": false
+    },
+    {
+     "id": "matrizen",
+     "n": "2",
+     "t": "Matrizen als Abbildungen",
+     "a": false
+    },
+    {
+     "id": "basis",
+     "n": "3",
+     "t": "Basis, Rang, Basiswechsel",
+     "a": false
+    },
+    {
+     "id": "determinante",
+     "n": "4",
+     "t": "Determinante",
+     "a": false
+    },
+    {
+     "id": "lgs",
+     "n": "5",
+     "t": "Ax = b lösen",
+     "a": false
+    },
+    {
+     "id": "kondition",
+     "n": "6",
+     "t": "Kondition",
+     "a": false
+    },
+    {
+     "id": "kq",
+     "n": "7",
+     "t": "Kleinste Quadrate",
+     "a": false
+    },
+    {
+     "id": "iterativ",
+     "n": "8",
+     "t": "Iterative Verfahren",
+     "a": false
+    },
+    {
+     "id": "eigen",
+     "n": "9",
+     "t": "Eigenwerte",
+     "a": false
+    },
+    {
+     "id": "orthogonal",
+     "n": "10",
+     "t": "Orthogonalität, QR",
+     "a": false
+    },
+    {
+     "id": "svd",
+     "n": "11",
+     "t": "Singulärwertzerlegung",
+     "a": false
+    },
+    {
+     "id": "kalkuel",
+     "n": "A",
+     "t": "Matrix-Kalkül",
+     "a": true
+    },
+    {
+     "id": "formeln",
+     "n": "B",
+     "t": "Formeln und Notation",
+     "a": true
+    }
    ]
   },
   {
@@ -80,6 +234,98 @@
     "Poisson",
     "Gauß",
     "Bayes"
+   ],
+   "sections": [
+    {
+     "id": "zufall",
+     "n": "1",
+     "t": "Zufall und Wahrscheinlichkeit",
+     "a": false
+    },
+    {
+     "id": "verteilungen",
+     "n": "2",
+     "t": "Zufallsvariablen und Verteilungen",
+     "a": false
+    },
+    {
+     "id": "momente",
+     "n": "3",
+     "t": "Erwartungswert und Varianz",
+     "a": false
+    },
+    {
+     "id": "bpg",
+     "n": "4",
+     "t": "Binomial, Poisson, Gauß",
+     "a": false
+    },
+    {
+     "id": "weitere",
+     "n": "5",
+     "t": "Weitere Verteilungen",
+     "a": false
+    },
+    {
+     "id": "gemeinsam",
+     "n": "6",
+     "t": "Gemeinsame Verteilungen",
+     "a": false
+    },
+    {
+     "id": "kovarianz",
+     "n": "7",
+     "t": "Kovarianz und Korrelation",
+     "a": false
+    },
+    {
+     "id": "bayes",
+     "n": "8",
+     "t": "Satz von Bayes",
+     "a": false
+    },
+    {
+     "id": "zgs",
+     "n": "9",
+     "t": "Grenzwertsätze",
+     "a": false
+    },
+    {
+     "id": "fehler",
+     "n": "10",
+     "t": "Fehlerfortpflanzung",
+     "a": false
+    },
+    {
+     "id": "schaetzer",
+     "n": "11",
+     "t": "Schätzer",
+     "a": false
+    },
+    {
+     "id": "ml",
+     "n": "12",
+     "t": "Maximum Likelihood und MAP",
+     "a": false
+    },
+    {
+     "id": "ki",
+     "n": "13",
+     "t": "Konfidenzintervalle und Tests",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
@@ -94,6 +340,62 @@
     "Faltung",
     "Abtastung",
     "Spektrum"
+   ],
+   "sections": [
+    {
+     "id": "reihe",
+     "n": "1",
+     "t": "Fourier-Reihe",
+     "a": false
+    },
+    {
+     "id": "transformation",
+     "n": "2",
+     "t": "Fourier-Transformation",
+     "a": false
+    },
+    {
+     "id": "faltung",
+     "n": "3",
+     "t": "Faltung und Faltungssatz",
+     "a": false
+    },
+    {
+     "id": "abtastung",
+     "n": "4",
+     "t": "Abtastung und Aliasing",
+     "a": false
+    },
+    {
+     "id": "dft",
+     "n": "5",
+     "t": "DFT und FFT",
+     "a": false
+    },
+    {
+     "id": "bilder",
+     "n": "6",
+     "t": "2D-Fourier-Transformation",
+     "a": false
+    },
+    {
+     "id": "rauschen",
+     "n": "7",
+     "t": "Leistungsspektrum",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
@@ -110,6 +412,80 @@
     "Optimierung",
     "Konvex",
     "Lagrange"
+   ],
+   "sections": [
+    {
+     "id": "taylor",
+     "n": "1",
+     "t": "Ableitung und Taylor-Reihe",
+     "a": false
+    },
+    {
+     "id": "gradient",
+     "n": "2",
+     "t": "Partielle Ableitungen und Gradient",
+     "a": false
+    },
+    {
+     "id": "jacobi",
+     "n": "3",
+     "t": "Jacobi-Matrix und Kettenregel",
+     "a": false
+    },
+    {
+     "id": "regeln",
+     "n": "4",
+     "t": "Ableitungsregeln",
+     "a": false
+    },
+    {
+     "id": "backprop",
+     "n": "5",
+     "t": "Backpropagation",
+     "a": false
+    },
+    {
+     "id": "hesse",
+     "n": "6",
+     "t": "Hesse-Matrix",
+     "a": false
+    },
+    {
+     "id": "gd",
+     "n": "7",
+     "t": "Gradientenabstieg",
+     "a": false
+    },
+    {
+     "id": "optimierer",
+     "n": "8",
+     "t": "Momentum, SGD und Adam",
+     "a": false
+    },
+    {
+     "id": "lagrange",
+     "n": "9",
+     "t": "Lagrange-Multiplikatoren",
+     "a": false
+    },
+    {
+     "id": "konvex",
+     "n": "10",
+     "t": "Konvexität",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
@@ -124,6 +500,62 @@
     "Schwächung",
     "Detektor",
     "CT"
+   ],
+   "sections": [
+    {
+     "id": "photon",
+     "n": "1",
+     "t": "Was ist ein Photon?",
+     "a": false
+    },
+    {
+     "id": "roehre",
+     "n": "2",
+     "t": "Die Röntgenröhre",
+     "a": false
+    },
+    {
+     "id": "materie",
+     "n": "3",
+     "t": "Röntgen trifft Materie",
+     "a": false
+    },
+    {
+     "id": "halbleiter",
+     "n": "4",
+     "t": "Halbleiter",
+     "a": false
+    },
+    {
+     "id": "drift",
+     "n": "5",
+     "t": "Ladung im elektrischen Feld",
+     "a": false
+    },
+    {
+     "id": "signal",
+     "n": "6",
+     "t": "Vom Ladungsträger zum Signal",
+     "a": false
+    },
+    {
+     "id": "ct",
+     "n": "7",
+     "t": "Vom Signal zum CT-Bild",
+     "a": false
+    },
+    {
+     "id": "bruecke",
+     "n": "→",
+     "t": "Weiter zu Photon Counting",
+     "a": false
+    },
+    {
+     "id": "glossar",
+     "n": "A",
+     "t": "Glossar",
+     "a": true
+    }
    ]
   },
   {
@@ -139,6 +571,56 @@
     "FBP",
     "SART",
     "Fourier"
+   ],
+   "sections": [
+    {
+     "id": "fourier",
+     "n": "1",
+     "t": "Auffrischung: Fourier & Faltung",
+     "a": false
+    },
+    {
+     "id": "radon",
+     "n": "2",
+     "t": "Die Radon-Transformation",
+     "a": false
+    },
+    {
+     "id": "rueck",
+     "n": "3",
+     "t": "Warum Rückprojektion verschmiert",
+     "a": false
+    },
+    {
+     "id": "slice",
+     "n": "4",
+     "t": "Das Fourier-Slice-Theorem",
+     "a": false
+    },
+    {
+     "id": "fbp",
+     "n": "5",
+     "t": "Gefilterte Rückprojektion",
+     "a": false
+    },
+    {
+     "id": "praxis",
+     "n": "6",
+     "t": "Praxis: Winkel, Rauschen, Geometrie",
+     "a": false
+    },
+    {
+     "id": "iterativ",
+     "n": "7",
+     "t": "Iterative Rekonstruktion",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln auf einen Blick",
+     "a": true
+    }
    ]
   },
   {
@@ -167,6 +649,80 @@
     "ASIC",
     "Pile-up",
     "Spektral-CT"
+   ],
+   "sections": [
+    {
+     "id": "konzept",
+     "n": "01",
+     "t": "Zählen statt integrieren",
+     "a": false
+    },
+    {
+     "id": "konversion",
+     "n": "02",
+     "t": "Direkte Konversion",
+     "a": false
+    },
+    {
+     "id": "signal",
+     "n": "03",
+     "t": "Ladungstransport & Signal",
+     "a": false
+    },
+    {
+     "id": "asic",
+     "n": "04",
+     "t": "Vom Puls zum Zählerstand",
+     "a": false
+    },
+    {
+     "id": "pileup",
+     "n": "05",
+     "t": "Totzeit & Pile-up",
+     "a": false
+    },
+    {
+     "id": "sharing",
+     "n": "06",
+     "t": "Charge Sharing & Fluoreszenz",
+     "a": false
+    },
+    {
+     "id": "kalibrierung",
+     "n": "07",
+     "t": "Polarisation & Kalibrierung",
+     "a": false
+    },
+    {
+     "id": "bins",
+     "n": "08",
+     "t": "Spektren & Energie-Bins",
+     "a": false
+    },
+    {
+     "id": "zerlegung",
+     "n": "09",
+     "t": "Materialzerlegung",
+     "a": false
+    },
+    {
+     "id": "bildqualitaet",
+     "n": "10",
+     "t": "MTF, NPS, DQE",
+     "a": false
+    },
+    {
+     "id": "systeme",
+     "n": "11",
+     "t": "Systeme & Sensortypen",
+     "a": false
+    },
+    {
+     "id": "zahlen",
+     "n": "A",
+     "t": "Zahlen auf einen Blick",
+     "a": true
+    }
    ]
   },
   {
@@ -212,6 +768,80 @@
     "Canny",
     "Unsharp Masking",
     "Bilateral"
+   ],
+   "sections": [
+    {
+     "id": "nachbarschaft",
+     "n": "1",
+     "t": "Nachbarschaftsoperationen",
+     "a": false
+    },
+    {
+     "id": "faltung",
+     "n": "2",
+     "t": "Faltung und Korrelation",
+     "a": false
+    },
+    {
+     "id": "raender",
+     "n": "3",
+     "t": "Ränder",
+     "a": false
+    },
+    {
+     "id": "glaetten",
+     "n": "4",
+     "t": "Box- und Gaußfilter",
+     "a": false
+    },
+    {
+     "id": "median",
+     "n": "5",
+     "t": "Median und Rangfilter",
+     "a": false
+    },
+    {
+     "id": "gradient",
+     "n": "6",
+     "t": "Ableitungen, Sobel",
+     "a": false
+    },
+    {
+     "id": "laplace",
+     "n": "7",
+     "t": "Laplace, LoG",
+     "a": false
+    },
+    {
+     "id": "canny",
+     "n": "8",
+     "t": "Canny-Kantendetektor",
+     "a": false
+    },
+    {
+     "id": "unsharp",
+     "n": "9",
+     "t": "Unsharp Masking",
+     "a": false
+    },
+    {
+     "id": "bilateral",
+     "n": "10",
+     "t": "Bilateralfilter",
+     "a": false
+    },
+    {
+     "id": "kernel",
+     "n": "A",
+     "t": "Kernel-Sammlung",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
@@ -241,6 +871,74 @@
     "DoG",
     "Wavelets",
     "Multiskalen"
+   ],
+   "sections": [
+    {
+     "id": "groesse",
+     "n": "1",
+     "t": "Strukturen haben eine Größe",
+     "a": false
+    },
+    {
+     "id": "skalenraum",
+     "n": "2",
+     "t": "Gauß-Skalenraum",
+     "a": false
+    },
+    {
+     "id": "aliasing",
+     "n": "3",
+     "t": "Verkleinern und Aliasing",
+     "a": false
+    },
+    {
+     "id": "gausspyramide",
+     "n": "4",
+     "t": "Gaußsche Pyramide",
+     "a": false
+    },
+    {
+     "id": "laplacepyramide",
+     "n": "5",
+     "t": "Laplace-Pyramide",
+     "a": false
+    },
+    {
+     "id": "dog",
+     "n": "6",
+     "t": "DoG und Blobs",
+     "a": false
+    },
+    {
+     "id": "kontrast",
+     "n": "7",
+     "t": "Multiskalen-Kontrast",
+     "a": false
+    },
+    {
+     "id": "blending",
+     "n": "8",
+     "t": "Blending",
+     "a": false
+    },
+    {
+     "id": "wavelets",
+     "n": "9",
+     "t": "Wavelets (Ausblick)",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
@@ -357,6 +1055,98 @@
     "LoRA",
     "Flash Attention",
     "KV-Cache"
+   ],
+   "sections": [
+    {
+     "id": "sequenzen",
+     "n": "1",
+     "t": "Sequenzen verarbeiten",
+     "a": false
+    },
+    {
+     "id": "tokenisierung",
+     "n": "2",
+     "t": "Tokenisierung (BPE)",
+     "a": false
+    },
+    {
+     "id": "embeddings",
+     "n": "3",
+     "t": "Embeddings",
+     "a": false
+    },
+    {
+     "id": "attention",
+     "n": "4",
+     "t": "Attention",
+     "a": false
+    },
+    {
+     "id": "qkv",
+     "n": "5",
+     "t": "Query, Key, Value",
+     "a": false
+    },
+    {
+     "id": "multihead",
+     "n": "6",
+     "t": "Multi-Head Attention",
+     "a": false
+    },
+    {
+     "id": "position",
+     "n": "7",
+     "t": "Positionskodierung",
+     "a": false
+    },
+    {
+     "id": "block",
+     "n": "8",
+     "t": "Der Transformer-Block",
+     "a": false
+    },
+    {
+     "id": "masken",
+     "n": "9",
+     "t": "Encoder, Decoder, Masken",
+     "a": false
+    },
+    {
+     "id": "training",
+     "n": "10",
+     "t": "Training und Erzeugung",
+     "a": false
+    },
+    {
+     "id": "aufwand",
+     "n": "11",
+     "t": "Rechenaufwand, KV-Cache",
+     "a": false
+    },
+    {
+     "id": "flash",
+     "n": "12",
+     "t": "Flash Attention",
+     "a": false
+    },
+    {
+     "id": "lora",
+     "n": "13",
+     "t": "Fine-Tuning und LoRA",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Dimensionen und Formeln",
+     "a": true
+    },
+    {
+     "id": "glossar",
+     "n": "B",
+     "t": "Glossar",
+     "a": true
+    }
    ]
   }
  ],

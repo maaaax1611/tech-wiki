@@ -10,7 +10,7 @@ Quellen:
   src/template.html               HTML-Gerüst
 
 Ergebnis (wird mit eingecheckt, GitHub Pages liefert es direkt aus):
-  <gebiet>/<seite>.html, widgets/<slug>.html, assets/*, manifest.json (Widget-Liste)
+  <gebiet>/<seite>.html, widgets/<slug>.html, assets/*, manifest.json (Widget-Liste, Abschnitte je Seite)
 
 Markdown:
   Frontmatter     title, eyebrow, footer (HTML erlaubt), toc_intro (Eintrag „0“ fürs Inhaltsverzeichnis)
@@ -173,6 +173,7 @@ def build_page(path, manifest):
             cur['nodes'].append(node)
 
     toc, toc_m, secs, num, group = [], [], [], 0, None
+    outline = []  # Abschnitte für das Inhaltsverzeichnis der Startseite
     if fm.get('toc_intro'):
         toc.append(f'<li><a href="#ueberblick"><span class="n">0</span><span>{esc(fm["toc_intro"])}</span></a></li>')
         toc_m.append(f'<li><a href="#ueberblick">{esc(fm["toc_intro"])}</a></li>')
@@ -197,6 +198,7 @@ def build_page(path, manifest):
         short = a.get('toc') or h.get_text().strip()
         toc.append(f'<li><a href="#{sid}"><span class="n">{esc(mark)}</span><span>{esc(short)}</span></a></li>')
         toc_m.append(f'<li><a href="#{sid}"><span class="n">{esc(mark)}</span><span>{esc(short)}</span></a></li>')
+        outline.append({'id': sid, 'n': str(mark), 't': short, 'a': bool(a.get('appendix'))})
         secs.append(f'<section id="{sid}">\n{badge}\n{h}\n{"".join(str(x) for x in s["nodes"]).strip()}\n</section>')
 
     intro_html = ''.join(str(x) for x in intro).strip()
@@ -230,7 +232,7 @@ def build_page(path, manifest):
     dest = ROOT / rel
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(out)
-    return {'id': fm.get('id', path.stem), 'path': str(rel), 'figs': figs}
+    return {'id': fm.get('id', path.stem), 'path': str(rel), 'figs': figs, 'sections': outline}
 
 
 def build_widget(f):
@@ -253,6 +255,9 @@ def main():
         manifest['widgets'] = [w for w in manifest['widgets'] if w['page'] != info['id']] + [
             {'slug': f['slug'], 'page': info['id'], 'title': f['title'], 'interactive': f['interactive'],
              'height': old.get(f['slug'], {}).get('height') or 640} for f in info['figs']]
+        for pg in manifest.get('pages', []):
+            if pg.get('path') == info['path']:
+                pg['sections'] = info['sections']
         print(f'{info["path"]}: {len(info["figs"])} Abbildungen')
     (ROOT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + '\n')
 
