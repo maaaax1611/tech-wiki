@@ -198,3 +198,11 @@ function jacobiEig(Sin, n) {
   const ord = [...Array(n).keys()].sort((i, j) => S[j * n + j] - S[i * n + i]);
   return { val: ord.map(i => S[i * n + i]), vec: ord.map(i => Float64Array.from({ length: n }, (_, k) => V[k * n + i])) };
 }
+// separierbarer Gaußfilter mit Randwiederholung
+function blurImg(x, n, s) {
+  const r = Math.ceil(3 * s), k = []; let sm = 0; for (let i = -r; i <= r; i++) { const v = Math.exp(-i * i / (2 * s * s)); k.push(v); sm += v; } for (let i = 0; i < k.length; i++) k[i] /= sm;
+  const t = new Float64Array(n * n), o = new Float64Array(n * n);
+  for (let y = 0; y < n; y++) for (let xx = 0; xx < n; xx++) { let a = 0; for (let i = -r; i <= r; i++) a += k[i + r] * x[y * n + Math.min(n - 1, Math.max(0, xx + i))]; t[y * n + xx] = a; }
+  for (let y = 0; y < n; y++) for (let xx = 0; xx < n; xx++) { let a = 0; for (let i = -r; i <= r; i++) a += k[i + r] * t[Math.min(n - 1, Math.max(0, y + i)) * n + xx]; o[y * n + xx] = a; }
+  return o;
+}

@@ -93,13 +93,19 @@ Die Projektoren selbst laufen auf GPUs. Die Systemmatrix wird dabei nie gespeich
 
 ## Lernbasierte Verfahren {#lernen}
 
-Neuronale Netze kommen an drei Stellen hinzu:
+Neuronale Netze werden an drei Stellen in die Rekonstruktion eingebaut:
 
-- **Nachverarbeitung:** Ein Netz entrauscht oder entstreift das FBP- oder iterative Bild. Einfach und schnell, aber das Netz kennt die Messdaten nicht mehr.
-- **Entrollte Iterationen** (unrolled): Eine feste Zahl von Iterationen wird als Netz geschrieben, mit echten Vor- und Rückprojektionen dazwischen. Gelernt werden Schrittweiten, Regularisierer oder ganze Korrekturschritte (z. B. Learned Primal-Dual).
-- **Gelernter Regularisierer:** Ein Netz ersetzt $R(\mathbf x)$ oder seinen Gradienten in einer klassischen Iteration, etwa als Entrauscher (Plug-and-Play) oder als Diffusionsmodell, das den Prior über Bilder liefert.
+- **Nachverarbeitung:** Ein Netz bekommt das FBP- oder iterative Bild und entrauscht oder entstreift es, meist ein U-Net. Einfach, schnell und leicht zu trainieren. Die Messdaten sieht das Netz aber nicht mehr.
+- **Entrollte Iterationen** (unrolled): Eine feste Zahl von Iterationen wird als ein großes Netz geschrieben. Zwischen kleinen gelernten Stufen stehen echte Vor- und Rückprojektionen mit den Messdaten. Alles wird zusammen trainiert, Beispiele sind Learned Primal-Dual oder Variational Networks.
+- **Plug-and-Play:** Ein getrennt trainierter Entrauscher ersetzt in einer klassischen Iteration den Regularisierer oder seinen Gradienten. Er muss die Scannergeometrie nicht kennen und lässt sich wiederverwenden. Diffusionsmodelle als Prior funktionieren nach demselben Muster.
 
-Bei allen bleibt die **Datenkonsistenz** der Anker: Das Ergebnis muss die Messung erklären, $A\mathbf x \approx \mathbf p$. Sonst kann ein Netz plausibel aussehende, aber falsche Strukturen erzeugen oder echte entfernen. Verfahren, die die Projektionen in jedem Schritt einbeziehen, sind dafür robuster als reine Nachverarbeitung.
+::: widget ir-05-lernen-schema
+
+Trainiert wird meist mit Bildpaaren: Normaldosis-Aufnahmen als Ziel, dazu simulierte Niedrigdosis- oder Wenig-Winkel-Daten derselben Patienten als Eingabe. Was das Netz lernt, ist damit ein Prior über typische Anatomie. Daraus kommt sein Nutzen, aber auch sein Risiko: Strukturen, die in den Trainingsdaten selten sind, etwa kleine oder ungewöhnliche Läsionen, kann es als Rauschen behandeln und entfernen. Umgekehrt kann es plausible Strukturen erzeugen, die gar nicht gemessen wurden (Halluzination).
+
+Gegen beides hilft **Datenkonsistenz**: Das Ergebnis muss die Messung erklären, $A\mathbf x \approx \mathbf p$. Verfahren mit Datenschritten in der Schleife holen zurück, was in den Daten steht, auch wenn das Vorwissen es nicht erwartet. Globale Fehlermaße wie RMSE oder SSIM zeigen das oft nicht, weil eine kleine fehlende Läsion kaum zum Gesamtfehler beiträgt. Wie bei klassischer Regularisierung gilt außerdem: Das Verfahren ist nichtlinear, Auflösung und Rauschen hängen vom Bildinhalt ab. Bildqualität bewertet man deshalb besser mit aufgabenbezogenen Tests, etwa ob eine Läsion noch erkennbar ist, als mit MTF und NPS allein.
+
+::: widget ir-06-datenkonsistenz
 
 ## Formeln {#formeln appendix="A"}
 

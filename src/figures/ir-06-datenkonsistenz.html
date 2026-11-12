@@ -1,0 +1,40 @@
+<!-- title: Nachverarbeitung gegen Datenkonsistenz
+     lib: ir -->
+<figure class="fig">
+  <canvas id="cv-dc" class="c-ir-3" role="img" aria-label="Phantom mit kleiner Läsion, ein nur nachverarbeitetes Bild ohne Läsion und ein datenkonsistentes Bild, in dem die Läsion wieder erscheint."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="dc-a">Stärke des gelernten Vorwissens</label><output id="dc-a-o"></output></div><input id="dc-a" type="range" min="0.2" max="0.9" step="0.05" value="0.7" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="dc-k">Datenschritte pro Iteration</label><output id="dc-k-o"></output></div><input id="dc-k" type="range" min="1" max="10" step="1" value="6" autocomplete="off"></div>
+    <label class="chk"><input id="dc-l" type="checkbox" checked autocomplete="off"> Läsion im Objekt</label>
+  </div>
+  <div class="readout" id="dc-read"></div>
+  <figcaption><b>Abb.</b> Ein Modellversuch. Statt eines echten Netzes dient ein einfacher „Entrauscher“, der das Bild glättet und zum Teil durch eine typische Anatomie ersetzt, die er gelernt hat: das Phantom ohne Läsion. Die Daten stammen aus 20 verrauschten Projektionen eines Objekts mit kleiner Läsion (Kreis). Nur nachverarbeitet (Mitte) sieht das Bild sauber aus und hat den kleineren Gesamtfehler, aber die Läsion ist weg, weil das Vorwissen sie nicht kennt. Mit Datenschritten zwischen den Entrauschungen (rechts) ist das Bild unruhiger, aber die Läsion kommt zurück: Die Messung enthält sie, und jeder Datenschritt fordert sie wieder ein.</figcaption>
+</figure>
+<script>
+/* ---------- Datenkonsistenz ---------- */
+(() => {
+  const c = $('#cv-dc'), ia = $('#dc-a'), ik = $('#dc-k'), il = $('#dc-l'), n = 64, LES = [[0.25, 0.45, 0.07, 0.07, 0, 0.12]];
+  let A = null, X0 = null, key = '', R = null, timer = null, ins = [], ring = [];
+  const cx = Math.round((0.25 + 1) * n / 2 - 0.5), cy = Math.round((1 - 0.45) * n / 2 - 0.5);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const d = Math.hypot(x - cx, y - cy); if (d <= 1.5) ins.push(y * n + x); else if (d > 3.5 && d < 5.5) ring.push(y * n + x); }
+  const con = a => ins.reduce((s, k) => s + a[k], 0) / ins.length - ring.reduce((s, k) => s + a[k], 0) / ring.length;
+  const compute = () => { if (!A) { A = buildA(n, 20, 92); X0 = phantom(n); }
+    const a = +ia.value, K = +ik.value, X = il.checked ? phantom(n, LES) : X0;
+    const D = (x, s) => { const b = blurImg(x, n, 0.9); for (let j = 0; j < b.length; j++) b[j] = (1 - s) * b[j] + s * X0[j]; return b; };
+    setSeed(9); const M = measure(A, X, 1000, 3), base = solve(A, M.p, { iter: 30, pos: true }), post = D(base, a);
+    let x = Float64Array.from(post); for (let k = 0; k < 20; k++) { x = D(x, a * 0.3); x = solve(A, M.p, { iter: K, pos: true, x0: x }); }
+    R = { X: Float32Array.from(X), post: Float32Array.from(post), dc: Float32Array.from(x), c: [con(X), con(post), con(x)], e: [rmse(post, X), rmse(x, X)] }; };
+  const m = reg({ el: c, draw() {
+    $('#dc-a-o').textContent = nf(+ia.value, 2); $('#dc-k-o').textContent = ik.value;
+    const k = [ia.value, ik.value, il.checked].join('|'); if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 60 : 30); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    [[R.X, 'Objekt'], [R.post, 'nur nachverarbeitet'], [R.dc, 'mit Datenschritten']].forEach(([I, t], i) => {
+      drawImg(ctx, I, n, L[i].x, L[i].y, L[i].size, { lo: 0.05, hi: 0.45, title: t });
+      const s = L[i].size / n; ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(L[i].x + (cx + 0.5) * s, L[i].y + (cy + 0.5) * s, 5 * s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); });
+    const pct = v => R.c[0] > 0.01 ? ` (${nf(100 * v / R.c[0], 0)} %)` : '';
+    $('#dc-read').innerHTML = `<span class="k">Kontrast der Läsion:</span> Objekt ${nf(R.c[0], 3)}, nachverarbeitet <b>${nf(R.c[1], 3)}</b>${pct(R.c[1])}, mit Datenschritten <b>${nf(R.c[2], 3)}</b>${pct(R.c[2])}<br><span class="k">Gesamtfehler zum Objekt:</span> nachverarbeitet ${nf(R.e[0], 4)}, mit Datenschritten ${nf(R.e[1], 4)}`;
+  } });
+  [ia, ik, il].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>

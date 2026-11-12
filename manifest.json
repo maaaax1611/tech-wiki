@@ -964,6 +964,20 @@
    "height": 640
   },
   {
+   "slug": "ir-05-lernen-schema",
+   "page": "iterative-rekonstruktion",
+   "title": "Drei Wege, Netze in die Rekonstruktion einzubauen",
+   "interactive": false,
+   "height": 640
+  },
+  {
+   "slug": "ir-06-datenkonsistenz",
+   "page": "iterative-rekonstruktion",
+   "title": "Nachverarbeitung gegen Datenkonsistenz",
+   "interactive": true,
+   "height": 640
+  },
+  {
    "slug": "pc-01-zaehlen-vs-integrieren",
    "page": "photon-counting",
    "title": "Zählen statt integrieren",

@@ -173,13 +173,83 @@ f(\mathbf x) = \tfrac12\sum_i w_i\,(\mathbf a_i^\top\mathbf x - p_i)^2, \qquad w
 <section id="lernen">
 <div class="step"><b>6</b><span class="eyebrow">Praxis</span></div>
 <h2>Lernbasierte Verfahren</h2>
-<p>Neuronale Netze kommen an drei Stellen hinzu:</p>
+<p>Neuronale Netze werden an drei Stellen in die Rekonstruktion eingebaut:</p>
 <ul class="tight">
-<li><strong>Nachverarbeitung:</strong> Ein Netz entrauscht oder entstreift das FBP- oder iterative Bild. Einfach und schnell, aber das Netz kennt die Messdaten nicht mehr.</li>
-<li><strong>Entrollte Iterationen</strong> (unrolled): Eine feste Zahl von Iterationen wird als Netz geschrieben, mit echten Vor- und Rückprojektionen dazwischen. Gelernt werden Schrittweiten, Regularisierer oder ganze Korrekturschritte (z. B. Learned Primal-Dual).</li>
-<li><strong>Gelernter Regularisierer:</strong> Ein Netz ersetzt <span class="arithmatex">\(R(\mathbf x)\)</span> oder seinen Gradienten in einer klassischen Iteration, etwa als Entrauscher (Plug-and-Play) oder als Diffusionsmodell, das den Prior über Bilder liefert.</li>
+<li><strong>Nachverarbeitung:</strong> Ein Netz bekommt das FBP- oder iterative Bild und entrauscht oder entstreift es, meist ein U-Net. Einfach, schnell und leicht zu trainieren. Die Messdaten sieht das Netz aber nicht mehr.</li>
+<li><strong>Entrollte Iterationen</strong> (unrolled): Eine feste Zahl von Iterationen wird als ein großes Netz geschrieben. Zwischen kleinen gelernten Stufen stehen echte Vor- und Rückprojektionen mit den Messdaten. Alles wird zusammen trainiert, Beispiele sind Learned Primal-Dual oder Variational Networks.</li>
+<li><strong>Plug-and-Play:</strong> Ein getrennt trainierter Entrauscher ersetzt in einer klassischen Iteration den Regularisierer oder seinen Gradienten. Er muss die Scannergeometrie nicht kennen und lässt sich wiederverwenden. Diffusionsmodelle als Prior funktionieren nach demselben Muster.</li>
 </ul>
-<p>Bei allen bleibt die <strong>Datenkonsistenz</strong> der Anker: Das Ergebnis muss die Messung erklären, <span class="arithmatex">\(A\mathbf x \approx \mathbf p\)</span>. Sonst kann ein Netz plausibel aussehende, aber falsche Strukturen erzeugen oder echte entfernen. Verfahren, die die Projektionen in jedem Schritt einbeziehen, sind dafür robuster als reine Nachverarbeitung.</p>
+<figure class="fig">
+<div class="svgbox">
+<svg aria-label="Drei Arten, neuronale Netze in die Rekonstruktion einzubauen: Nachverarbeitung nach der FBP, entrollte Iterationen mit abwechselnden Daten- und Netzschritten, und Plug-and-Play mit einem vortrainierten Entrauscher in einer klassischen Iteration." role="img" viewbox="0 0 792 360">
+<defs><marker id="ar" markerheight="7" markerwidth="7" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path class="d-mut" d="M0,0 L10,5 L0,10 z"></path></marker>
+<marker id="ar2" markerheight="7" markerwidth="7" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path class="d-b2" d="M0,0 L10,5 L0,10 z"></path></marker></defs>
+<g font-size="13"><text class="d-fg" font-weight="600" x="8" y="50">Nachverarbeitung</text><text class="d-mut" font-size="11" x="8" y="67">Netz nach der Rekonstruktion</text><text class="d-fg" font-weight="600" x="8" y="155">Entrollte Iterationen</text><text class="d-mut" font-size="11" x="8" y="172">K Stufen, gemeinsam trainiert</text><text class="d-fg" font-weight="600" x="8" y="265">Plug-and-Play</text><text class="d-mut" font-size="11" x="8" y="282">vortrainierter Entrauscher</text><g transform="translate(32,0)">
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="58.0">p</text>
+<rect height="46" rx="5" style="fill:var(--bg);stroke:var(--rule);stroke-width:1.2" width="70" x="230" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="265.0" y="58.0">FBP</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="110" x="330" y="30"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="385.0" y="50">Netz</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="385.0" y="66">entrauschen</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="70" x="470" y="30"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="505.0" y="58.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="228" y1="53" y2="53"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="300" x2="328" y1="53" y2="53"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="440" x2="468" y1="53" y2="53"></line>
+<text class="d-mut" font-size="11.5" x="560" y="50">sieht die Messdaten</text><text class="d-mut" font-size="11.5" x="560" y="65">nach der FBP nicht mehr</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="163.0">p</text>
+<rect height="46" rx="5" style="fill:var(--bg);stroke:var(--rule);stroke-width:1.2" width="56" x="220" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="248.0" y="163.0">FBP</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="92" x="296" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="342.0" y="155">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="342.0" y="171">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="70" x="408" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="443.0" y="163.0">Netz₁</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="92" x="498" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="544.0" y="155">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="544.0" y="171">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="62" x="610" y="135"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="641.0" y="163.0">Netz₂</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="60" x="692" y="135"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="722.0" y="163.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="218" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="276" x2="294" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="388" x2="406" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="478" x2="496" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="590" x2="608" y1="158" y2="158"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="672" x2="690" y1="158" y2="158"></line>
+<path class="d-stb2" d="M175,181 L175,205 L342.0,205 L342.0,185" fill="none" marker-end="url(#ar2)" stroke-dasharray="5 4" stroke-width="1.5"></path>
+<path class="d-stb2" d="M175,181 L175,205 L544.0,205 L544.0,185" fill="none" marker-end="url(#ar2)" stroke-dasharray="5 4" stroke-width="1.5"></path>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--fg);stroke-width:1.4" width="50" x="150" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="175.0" y="273.0">p</text>
+<rect height="46" rx="5" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="100" x="230" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="280.0" y="265">Daten</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="280.0" y="281">Aᵀ(Ax − p)</text>
+<rect height="46" rx="5" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="130" x="360" y="245"></rect>
+<text font-weight="600" style="fill:var(--fg)" text-anchor="middle" x="425.0" y="265">Entrauscher</text><text class="m" font-size="11" style="fill:var(--fg)" text-anchor="middle" x="425.0" y="281">statt R(x)</text>
+<rect height="46" rx="5" style="fill:var(--accent);stroke:none" width="70" x="560" y="245"></rect>
+<text font-weight="600" style="fill:var(--surface)" text-anchor="middle" x="595.0" y="273.0">Bild</text>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="200" x2="228" y1="268" y2="268"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="330" x2="358" y1="268" y2="268"></line>
+<line class="d-stm" marker-end="url(#ar)" stroke-width="1.5" x1="490" x2="558" y1="268" y2="268"></line>
+<text class="d-mut" font-size="11" text-anchor="middle" x="524" y="260">nach N</text><text class="d-mut" font-size="11" text-anchor="middle" x="524" y="285">Schritten</text>
+<path class="d-stm" d="M425,291 L425,311 L280,311 L280,295" fill="none" marker-end="url(#ar)" stroke-width="1.5"></path><text class="d-mut" font-size="11" text-anchor="middle" x="352" y="325">wiederholen</text>
+<rect height="12" rx="2" style="fill:var(--surface);stroke:var(--bin2);stroke-width:2" width="16" x="150" y="334"></rect><text class="d-mut" font-size="12" x="172" y="345">nutzt die Messdaten p</text>
+<rect height="12" rx="2" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" width="16" x="330" y="334"></rect><text class="d-mut" font-size="12" x="352" y="345">gelerntes Netz</text>
+</g></g></svg>
+</div>
+<figcaption><b>Abb. 5</b> Nachverarbeitung (oben) bekommt nur das fertige FBP-Bild. Bei entrollten Iterationen (Mitte) wechseln sich Datenschritte, die die Messung \(\mathbf p\) einbeziehen, mit kleinen Netzen ab. Alle Stufen werden zusammen trainiert. Plug-and-Play (unten) nimmt einen getrennt trainierten Entrauscher und setzt ihn in eine klassische Iteration anstelle des Regularisierers. In den beiden unteren Varianten muss das Ergebnis immer wieder zur Messung passen.</figcaption>
+</figure>
+<p>Trainiert wird meist mit Bildpaaren: Normaldosis-Aufnahmen als Ziel, dazu simulierte Niedrigdosis- oder Wenig-Winkel-Daten derselben Patienten als Eingabe. Was das Netz lernt, ist damit ein Prior über typische Anatomie. Daraus kommt sein Nutzen, aber auch sein Risiko: Strukturen, die in den Trainingsdaten selten sind, etwa kleine oder ungewöhnliche Läsionen, kann es als Rauschen behandeln und entfernen. Umgekehrt kann es plausible Strukturen erzeugen, die gar nicht gemessen wurden (Halluzination).</p>
+<p>Gegen beides hilft <strong>Datenkonsistenz</strong>: Das Ergebnis muss die Messung erklären, <span class="arithmatex">\(A\mathbf x \approx \mathbf p\)</span>. Verfahren mit Datenschritten in der Schleife holen zurück, was in den Daten steht, auch wenn das Vorwissen es nicht erwartet. Globale Fehlermaße wie RMSE oder SSIM zeigen das oft nicht, weil eine kleine fehlende Läsion kaum zum Gesamtfehler beiträgt. Wie bei klassischer Regularisierung gilt außerdem: Das Verfahren ist nichtlinear, Auflösung und Rauschen hängen vom Bildinhalt ab. Bildqualität bewertet man deshalb besser mit aufgabenbezogenen Tests, etwa ob eine Läsion noch erkennbar ist, als mit MTF und NPS allein.</p>
+<figure class="fig">
+<canvas aria-label="Phantom mit kleiner Läsion, ein nur nachverarbeitetes Bild ohne Läsion und ein datenkonsistentes Bild, in dem die Läsion wieder erscheint." class="c-ir-3" id="cv-dc" role="img"></canvas>
+<div class="ctrls">
+<div class="ctrl"><div class="lab"><label for="dc-a">Stärke des gelernten Vorwissens</label><output id="dc-a-o"></output></div><input autocomplete="off" id="dc-a" max="0.9" min="0.2" step="0.05" type="range" value="0.7"/></div>
+<div class="ctrl"><div class="lab"><label for="dc-k">Datenschritte pro Iteration</label><output id="dc-k-o"></output></div><input autocomplete="off" id="dc-k" max="10" min="1" step="1" type="range" value="6"/></div>
+<label class="chk"><input autocomplete="off" checked="" id="dc-l" type="checkbox"/> Läsion im Objekt</label>
+</div>
+<div class="readout" id="dc-read"></div>
+<figcaption><b>Abb. 6</b> Ein Modellversuch. Statt eines echten Netzes dient ein einfacher „Entrauscher“, der das Bild glättet und zum Teil durch eine typische Anatomie ersetzt, die er gelernt hat: das Phantom ohne Läsion. Die Daten stammen aus 20 verrauschten Projektionen eines Objekts mit kleiner Läsion (Kreis). Nur nachverarbeitet (Mitte) sieht das Bild sauber aus und hat den kleineren Gesamtfehler, aber die Läsion ist weg, weil das Vorwissen sie nicht kennt. Mit Datenschritten zwischen den Entrauschungen (rechts) ist das Bild unruhiger, aber die Läsion kommt zurück: Die Messung enthält sie, und jeder Datenschritt fordert sie wieder ein.</figcaption>
+</figure>
 </section>
 <section id="formeln">
 <div class="eyebrow">Anhang A</div>
@@ -357,6 +427,34 @@ pid = astra.create_projector("cuda", proj, vol)
     $('#rg-read').innerHTML = `<span class="k">Fehler zum Phantom:</span> <b>${nf(R.e, 4)}</b>  <span class="k">·</span>  ${ia.value} Winkel, 1000 Photonen pro Strahl`;
   } });
   [it, ib, ia].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+<script>
+/* ---------- Datenkonsistenz ---------- */
+(() => {
+  const c = $('#cv-dc'), ia = $('#dc-a'), ik = $('#dc-k'), il = $('#dc-l'), n = 64, LES = [[0.25, 0.45, 0.07, 0.07, 0, 0.12]];
+  let A = null, X0 = null, key = '', R = null, timer = null, ins = [], ring = [];
+  const cx = Math.round((0.25 + 1) * n / 2 - 0.5), cy = Math.round((1 - 0.45) * n / 2 - 0.5);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const d = Math.hypot(x - cx, y - cy); if (d <= 1.5) ins.push(y * n + x); else if (d > 3.5 && d < 5.5) ring.push(y * n + x); }
+  const con = a => ins.reduce((s, k) => s + a[k], 0) / ins.length - ring.reduce((s, k) => s + a[k], 0) / ring.length;
+  const compute = () => { if (!A) { A = buildA(n, 20, 92); X0 = phantom(n); }
+    const a = +ia.value, K = +ik.value, X = il.checked ? phantom(n, LES) : X0;
+    const D = (x, s) => { const b = blurImg(x, n, 0.9); for (let j = 0; j < b.length; j++) b[j] = (1 - s) * b[j] + s * X0[j]; return b; };
+    setSeed(9); const M = measure(A, X, 1000, 3), base = solve(A, M.p, { iter: 30, pos: true }), post = D(base, a);
+    let x = Float64Array.from(post); for (let k = 0; k < 20; k++) { x = D(x, a * 0.3); x = solve(A, M.p, { iter: K, pos: true, x0: x }); }
+    R = { X: Float32Array.from(X), post: Float32Array.from(post), dc: Float32Array.from(x), c: [con(X), con(post), con(x)], e: [rmse(post, X), rmse(x, X)] }; };
+  const m = reg({ el: c, draw() {
+    $('#dc-a-o').textContent = nf(+ia.value, 2); $('#dc-k-o').textContent = ik.value;
+    const k = [ia.value, ik.value, il.checked].join('|'); if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 60 : 30); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    [[R.X, 'Objekt'], [R.post, 'nur nachverarbeitet'], [R.dc, 'mit Datenschritten']].forEach(([I, t], i) => {
+      drawImg(ctx, I, n, L[i].x, L[i].y, L[i].size, { lo: 0.05, hi: 0.45, title: t });
+      const s = L[i].size / n; ctx.strokeStyle = tok('--bin2'); ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(L[i].x + (cx + 0.5) * s, L[i].y + (cy + 0.5) * s, 5 * s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); });
+    const pct = v => R.c[0] > 0.01 ? ` (${nf(100 * v / R.c[0], 0)} %)` : '';
+    $('#dc-read').innerHTML = `<span class="k">Kontrast der Läsion:</span> Objekt ${nf(R.c[0], 3)}, nachverarbeitet <b>${nf(R.c[1], 3)}</b>${pct(R.c[1])}, mit Datenschritten <b>${nf(R.c[2], 3)}</b>${pct(R.c[2])}<br><span class="k">Gesamtfehler zum Objekt:</span> nachverarbeitet ${nf(R.e[0], 4)}, mit Datenschritten ${nf(R.e[1], 4)}`;
+  } });
+  [ia, ik, il].forEach(e => e.addEventListener('input', () => m.draw()));
 })();
 </script>
 </body>
