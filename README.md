@@ -1,4 +1,4 @@
-# xray-wiki
+# tech wiki
 
 Persönliches Nachschlagewerk mit interaktiven Seiten, nach Themengebieten geordnet. Jede Abbildung gibt es zusätzlich als einzelnes Widget zum Einbetten, z. B. in Obsidian.
 
