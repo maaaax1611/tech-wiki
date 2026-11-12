@@ -634,6 +634,56 @@
     "Rekonstruktion",
     "Regularisierung",
     "Statistik"
+   ],
+   "sections": [
+    {
+     "id": "invers",
+     "n": "1",
+     "t": "Inverses Problem",
+     "a": false
+    },
+    {
+     "id": "lsq",
+     "n": "2",
+     "t": "Kleinste Quadrate, SIRT",
+     "a": false
+    },
+    {
+     "id": "statistik",
+     "n": "3",
+     "t": "Gewichtung, Likelihood",
+     "a": false
+    },
+    {
+     "id": "regularisierung",
+     "n": "4",
+     "t": "Regularisierung",
+     "a": false
+    },
+    {
+     "id": "schnell",
+     "n": "5",
+     "t": "Schneller rechnen",
+     "a": false
+    },
+    {
+     "id": "lernen",
+     "n": "6",
+     "t": "Lernbasierte Verfahren",
+     "a": false
+    },
+    {
+     "id": "formeln",
+     "n": "A",
+     "t": "Formeln",
+     "a": true
+    },
+    {
+     "id": "befehle",
+     "n": "B",
+     "t": "Befehle",
+     "a": true
+    }
    ]
   },
   {
