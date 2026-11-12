@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regularisierung und wenige Winkel</title>
+<!-- Erzeugt von build.py aus src/figures/ir-04-regularisierung.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ir.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-rg" class="c-ir-3" role="img" aria-label="Phantom, regularisierte Rekonstruktion aus wenigen verrauschten Projektionen und ein Profil durch beide."></canvas>
+  <div class="ctrls">
+    <div class="ctrl" style="flex:0 1 210px"><div class="lab"><label for="rg-t">Regularisierung</label></div><select id="rg-t" autocomplete="off" style="width:100%"><option value="none">keine</option><option value="quad">quadratisch (Tikhonov)</option><option value="huber">Huber</option><option value="tv" selected>Total Variation</option></select></div>
+    <div class="ctrl"><div class="lab"><label for="rg-b">Stärke β</label><output id="rg-b-o"></output></div><input id="rg-b" type="range" min="-2.5" max="-0.3" step="0.05" value="-1" autocomplete="off"></div>
+    <div class="ctrl"><div class="lab"><label for="rg-a">Projektionswinkel</label><output id="rg-a-o"></output></div><input id="rg-a" type="range" min="8" max="90" step="1" value="30" autocomplete="off"></div>
+  </div>
+  <div class="readout" id="rg-read"></div>
+  <figcaption><b>Abb. 4</b> Rekonstruktion aus verrauschten Daten mit wählbarer Winkelzahl, 150 Iterationen. Ohne Regularisierung bleiben Rauschen und bei wenigen Winkeln Streifen. Quadratische Regularisierung bestraft jede Differenz zwischen Nachbarn gleich stark, also auch echte Kanten: Das Bild wird glatt, aber unscharf. Huber und Total Variation bestrafen große Sprünge nur linear und lassen Kanten deshalb stehen, während sie flache Bereiche glätten. Zu großes β macht aus dem Bild eine Fläche mit wenigen Stufen. Das Profil (rechts) läuft entlang der gestrichelten Zeile.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ir.js"></script>
+<script>
+/* ---------- Regularisierung ---------- */
+(() => {
+  const c = $('#cv-rg'), it = $('#rg-t'), ib = $('#rg-b'), ia = $('#rg-a'), n = 64, row = 28; let As = {}, X = phantom(n), key = '', R = null, timer = null;
+  const compute = () => { const na = +ia.value; if (!As[na]) As[na] = buildA(n, na, 92); const A = As[na]; setSeed(5 + na); const M = measure(A, X, 1000, 3);
+    const t = it.value, beta = 10 ** +ib.value, x = solve(A, M.p, { iter: 150, pos: true, beta: t === 'none' ? 0 : beta, grad: t === 'none' ? null : regGrad(t, n) });
+    R = { x: Float32Array.from(x), e: rmse(x, X) }; };
+  const m = reg({ el: c, draw() {
+    const t = it.value, beta = 10 ** +ib.value; $('#rg-b-o').textContent = t === 'none' ? '–' : nf(beta, beta < 0.1 ? 3 : 2); $('#rg-a-o').textContent = ia.value; ib.disabled = t === 'none';
+    const k = [t, ib.value, ia.value].join('|'); if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 80 : 30); }
+    const { ctx, w, h } = fit(c), narrow = w < 560;
+    if (!R) { title(ctx, 'Rekonstruktion wird berechnet …', 0, 16); return; }
+    const s = narrow ? Math.min(w / 2 - 8, h * 0.45) : Math.min(h - 26, w * 0.3), top = 22;
+    drawImg(ctx, X, n, 0, top, s, { lo: 0, hi: 0.5, title: 'Phantom' });
+    drawImg(ctx, R.x, n, s + 14, top, s, { lo: 0, hi: 0.5, title: t === 'none' ? 'ohne Regularisierung' : { quad: 'quadratisch', huber: 'Huber', tv: 'Total Variation' }[t] });
+    [0, s + 14].forEach(x0 => { const y = top + (row + 0.5) * s / n; ctx.strokeStyle = tok('--bin2'); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + s, y); ctx.stroke(); ctx.setLineDash([]); });
+    const px = narrow ? 0 : 2 * s + 32, py = narrow ? top + s + 10 : 0, pw = narrow ? w : w - px, ph = narrow ? h - py : h;
+    const f = frame(ctx, px, py, pw, ph, { x0: 0, x1: n - 1, y0: -0.05, y1: 0.55, xt: [0, 32, 63], yt: [0, 0.2, 0.4], yf: v => nf(v, 1), xl: 'x (Pixel)', l: 34, t: 22 });
+    [[X, tok('--muted'), 1.6], [R.x, tok('--accent'), 2]].forEach(([I, col, lw]) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); for (let x = 0; x < n; x++) { const v = I[row * n + x]; x ? ctx.lineTo(f.X(x), f.Y(v)) : ctx.moveTo(f.X(x), f.Y(v)); } ctx.stroke(); });
+    title(ctx, 'Profil', px, py + 14); legend(ctx, px + pw, py + 14, [['Phantom', tok('--muted')], ['Rekonstruktion', tok('--accent')]], { right: true });
+    $('#rg-read').innerHTML = `<span class="k">Fehler zum Phantom:</span> <b>${nf(R.e, 4)}</b>  <span class="k">·</span>  ${ia.value} Winkel, 1000 Photonen pro Strahl`;
+  } });
+  [it, ib, ia].forEach(e => e.addEventListener('input', () => m.draw()));
+})();
+</script>
+</body>
+</html>

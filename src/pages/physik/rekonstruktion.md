@@ -291,7 +291,7 @@ In Worten: Projektion der aktuellen Schätzung berechnen, mit der Messung vergle
 
 ### Statistische und modellbasierte Verfahren
 
-Moderne Verfahren formulieren die Rekonstruktion als Optimierungsproblem. Ein typisches Ziel ist
+Moderne Verfahren formulieren die Rekonstruktion als Optimierungsproblem (ausführlich auf der Seite [Iterative Rekonstruktion](iterative-rekonstruktion.html)). Ein typisches Ziel ist
 
 $$
 \hat{\mathbf x} = \arg\min_{\mathbf x}\;\; \sum_i w_i\,\big(p_i - \mathbf a_i\cdot\mathbf x\big)^2 \;+\; \beta\,R(\mathbf x)

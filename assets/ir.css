@@ -1,0 +1,2 @@
+.c-ir { aspect-ratio: 2.6 / 1; } .c-ir-3 { aspect-ratio: 3 / 1.15; }
+@media (max-width: 560px) { .c-ir { aspect-ratio: 0.9 / 1; } .c-ir-3 { aspect-ratio: 0.95 / 1; } }

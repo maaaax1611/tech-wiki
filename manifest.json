@@ -8,7 +8,7 @@
   {
    "id": "physik",
    "title": "Physik",
-   "desc": "Röntgenphysik, Detektoren und CT-Rekonstruktion."
+   "desc": "Röntgenphysik, Detektoren, CT-Rekonstruktion und MRT."
   },
   {
    "id": "bildverarbeitung",
@@ -142,6 +142,19 @@
    ]
   },
   {
+   "id": "iterative-rekonstruktion",
+   "category": "physik",
+   "path": "physik/iterative-rekonstruktion.html",
+   "title": "Iterative Rekonstruktion",
+   "desc": "Inverses Problem und Singulärwerte, SIRT und Semikonvergenz, Gewichtung nach Photonenstatistik, Regularisierung und lernbasierte Verfahren.",
+   "tags": [
+    "CT",
+    "Rekonstruktion",
+    "Regularisierung",
+    "Statistik"
+   ]
+  },
+  {
    "id": "photon-counting",
    "category": "physik",
    "path": "physik/photon-counting.html",
@@ -155,6 +168,19 @@
     "Pile-up",
     "Spektral-CT"
    ]
+  },
+  {
+   "id": "mrt",
+   "category": "physik",
+   "path": "physik/mrt.html",
+   "title": "Magnetresonanz­tomographie",
+   "desc": "Kernspin und Präzession, Relaxation T1 und T2, Gradienten und k-Raum, Sequenzen und Rekonstruktion.",
+   "tags": [
+    "MRT",
+    "k-Raum",
+    "Relaxation"
+   ],
+   "status": "geplant"
   },
   {
    "id": "punktoperationen",
@@ -906,6 +932,34 @@
    "slug": "tr-14-lora-rang",
    "page": "transformer",
    "title": "LoRA: Anpassung mit niedrigem Rang",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-01-svd",
+   "page": "iterative-rekonstruktion",
+   "title": "Schlecht gestellt: Rekonstruktion über die Singulärwertzerlegung",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-02-semikonvergenz",
+   "page": "iterative-rekonstruktion",
+   "title": "SIRT und Semikonvergenz",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-03-gewichtung",
+   "page": "iterative-rekonstruktion",
+   "title": "Gewichtete kleinste Quadrate bei wenig Photonen",
+   "interactive": true,
+   "height": 640
+  },
+  {
+   "slug": "ir-04-regularisierung",
+   "page": "iterative-rekonstruktion",
+   "title": "Regularisierung und wenige Winkel",
    "interactive": true,
    "height": 640
   },

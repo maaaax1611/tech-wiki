@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gewichtete kleinste Quadrate bei wenig Photonen</title>
+<!-- Erzeugt von build.py aus src/figures/ir-03-gewichtung.html. Nicht von Hand bearbeiten. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'canvas', 'svg'] }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<link rel="stylesheet" href="../assets/page.css">
+<link rel="stylesheet" href="../assets/ir.css">
+<script>try{var p=new URLSearchParams(location.search),t=p.get("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);if(p.get("frame")==="0")document.documentElement.classList.add("noframe");}catch(e){}</script>
+</head>
+<body>
+<main class="widget">
+<figure class="fig">
+  <canvas id="cv-wl" class="c-ir-3" role="img" aria-label="Ein Phantom mit zwei dichten Einschlüssen und zwei Rekonstruktionen aus verrauschten Daten, ungewichtet mit Streifen und gewichtet mit weniger Streifen."></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><div class="lab"><label for="wl-d">Dosis (Photonen pro Strahl ohne Objekt)</label><output id="wl-d-o"></output></div><input id="wl-d" type="range" min="2.3" max="5" step="0.05" value="2.7" autocomplete="off"></div>
+    <button class="btn" type="button" id="wl-r">Neue Messung</button>
+  </div>
+  <div class="readout" id="wl-read"></div>
+  <figcaption><b>Abb. 3</b> Ein Phantom mit zwei dichten Einschlüssen, etwa Knochen oder Implantaten. Strahlen, die durch beide gehen, kommen mit nur wenigen Photonen an, und ihr Messwert \(-\ln(N/I_0)\) ist entsprechend unsicher. Ungewichtet (Mitte) zählen alle Strahlen gleich, ihre Fehler verteilen sich als dunkle und helle Streifen entlang der Verbindungslinie. Gewichtet mit der gemessenen Photonenzahl (rechts) tragen gerade diese Strahlen wenig bei, die Streifen werden deutlich schwächer. Beide Bilder nach 60 Iterationen, Fensterung auf das Weichgewebe.</figcaption>
+</figure>
+</main>
+<script src="../assets/ui.js"></script>
+<script src="../assets/ir.js"></script>
+<script>
+/* ---------- Gewichtung ---------- */
+(() => {
+  const c = $('#cv-wl'), id = $('#wl-d'), n = 64, S = 4; let A = null, X = null, soft = null, gen = 1, key = '', R = null, timer = null;
+  const EX = [[-0.33, -0.12, 0.11, 0.11, 0, 2.5], [0.33, -0.12, 0.11, 0.11, 0, 2.5]];
+  const compute = () => { if (!A) { A = buildA(n, 90, 92); X = phantom(n, EX); soft = []; for (let k = 0; k < n * n; k++) if (X[k] > 0.1 && X[k] < 0.5) soft.push(k); }
+    const I0 = Math.round(10 ** +id.value); setSeed(31 * gen + 7); const M = measure(A, X, I0, S);
+    let low = 0; for (const v of M.N) if (v < 10) low++;
+    const xu = solve(A, M.p, { iter: 60, pos: true }), xw = solve(A, M.p, { iter: 60, pos: true, w: M.N });
+    const r = a => Math.sqrt(soft.reduce((s, k) => s + (a[k] - X[k]) ** 2, 0) / soft.length);
+    R = { I0, xu: Float32Array.from(xu), xw: Float32Array.from(xw), ru: r(xu), rw: r(xw), low: low / A.m }; };
+  const m = reg({ el: c, draw() {
+    const I0 = Math.round(10 ** +id.value); $('#wl-d-o').textContent = I0.toLocaleString('de-DE');
+    const k = id.value + '|' + gen; if (key !== k) { key = k; clearTimeout(timer); timer = setTimeout(() => { compute(); m.draw(); }, R ? 60 : 30); }
+    const { ctx, w, h } = fit(c), L = imgLayout(w, h, 3);
+    if (!R) { title(ctx, 'Rekonstruktionen werden berechnet …', 0, 16); return; }
+    drawImg(ctx, X, n, L[0].x, L[0].y, L[0].size, { lo: 0, hi: 0.6, title: 'Phantom' });
+    drawImg(ctx, R.xu, n, L[1].x, L[1].y, L[1].size, { lo: 0, hi: 0.6, title: 'ungewichtet' });
+    drawImg(ctx, R.xw, n, L[2].x, L[2].y, L[2].size, { lo: 0, hi: 0.6, title: 'gewichtet mit Nᵢ' });
+    $('#wl-read').innerHTML = `<span class="k">Strahlen mit weniger als 10 Photonen:</span> ${nf(100 * R.low, 1)} %  <span class="k">·</span>  <span class="k">Fehler im Weichgewebe:</span> ungewichtet ${nf(R.ru, 3)}, gewichtet <b>${nf(R.rw, 3)}</b>`;
+  } });
+  id.addEventListener('input', () => m.draw());
+  $('#wl-r').addEventListener('click', () => { gen++; m.draw(); });
+})();
+</script>
+</body>
+</html>

@@ -447,7 +447,7 @@ p_i = \sum_j a_{ij}\,x_j \qquad\Longleftrightarrow\qquad \mathbf p = A\,\mathbf 
 <figcaption><b>Abb. 10</b> Dieselben Messdaten, zwei Verfahren. Links FBP, Mitte SART nach der angegebenen Zahl von Iterationen (eine Iteration = alle Winkel einmal durchlaufen, Relaxation λ = 0,5). Rechts der mittlere Fehler zum echten Phantom in HU (Wurzel aus dem mittleren quadratischen Fehler). Bei wenigen Winkeln ohne Rauschen wird SART klar besser als FBP. Mit Rauschen sinkt der Fehler erst und steigt dann wieder: Das Verfahren beginnt, das Rauschen nachzubilden. Deshalb bricht man früh ab oder regularisiert.</figcaption>
 </figure>
 <h3>Statistische und modellbasierte Verfahren</h3>
-<p>Moderne Verfahren formulieren die Rekonstruktion als Optimierungsproblem. Ein typisches Ziel ist</p>
+<p>Moderne Verfahren formulieren die Rekonstruktion als Optimierungsproblem (ausführlich auf der Seite <a href="iterative-rekonstruktion.html">Iterative Rekonstruktion</a>). Ein typisches Ziel ist</p>
 <div class="eq">\[
 \hat{\mathbf x} = \arg\min_{\mathbf x}\;\; \sum_i w_i\,\big(p_i - \mathbf a_i\cdot\mathbf x\big)^2 \;+\; \beta\,R(\mathbf x)
 \]</div>
