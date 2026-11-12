@@ -20,6 +20,35 @@ Jeder Koeffizient $c_k$ ist eine komplexe Zahl. Ihr Betrag sagt, wie stark die F
 
 Wie schnell die Koeffizienten abfallen, hängt an der Glattheit des Signals. Sprünge brauchen viele hohe Frequenzen. Bricht man die Summe ab, bleibt an jedem Sprung ein Überschwinger von etwa 9 % stehen, das **Gibbs-Phänomen**. Dasselbe erzeugt im Bild Ringe neben scharfen Kanten, wenn hohe Frequenzen fehlen.
 
+### Beispiel: Rechteckwelle
+
+Für reelle Signale ist die Form mit Sinus und Kosinus oft praktischer. Mit Periode $T = 1$:
+
+$$
+f(x) = \frac{a_0}{2} + \sum_{k\ge1}\big(a_k\cos(2\pi k x) + b_k\sin(2\pi k x)\big)
+$$
+
+$$
+a_k = 2\int_0^1 f(x)\cos(2\pi k x)\,\mathrm dx, \qquad b_k = 2\int_0^1 f(x)\sin(2\pi k x)\,\mathrm dx
+$$
+
+Die Rechteckwelle ist $f(x) = +1$ für $0 < x < \tfrac12$ und $-1$ für $\tfrac12 < x < 1$, periodisch fortgesetzt.
+
+1. $f$ ist ungerade, $f(-x) = -f(x)$. Alle Kosinusterme und der Mittelwert $a_0$ fallen weg, es bleiben nur Sinusterme.
+2. Auch $f(x)\sin(2\pi k x)$ ist dann gerade, beide Halbperioden liefern denselben Beitrag:
+$$
+b_k = 4\int_0^{1/2}\sin(2\pi k x)\,\mathrm dx = 4\left[-\frac{\cos(2\pi k x)}{2\pi k}\right]_0^{1/2} = \frac{2}{\pi k}\big(1 - \cos(\pi k)\big)
+$$
+3. $\cos(\pi k)$ ist $+1$ für gerades und $-1$ für ungerades $k$. Damit ist $b_k = 4/(\pi k)$ für ungerades $k$ und $0$ für gerades.
+
+Zusammen:
+
+$$
+f(x) = \frac{4}{\pi}\sum_{k = 1, 3, 5, \dots} \frac{\sin(2\pi k x)}{k} = \frac4\pi\left(\sin 2\pi x + \frac13\sin 6\pi x + \frac15\sin 10\pi x + \dots\right)
+$$
+
+Die Rechteckwelle besteht also nur aus ungeraden Vielfachen der Grundfrequenz, und ihre Amplituden fallen nur wie $1/k$. Für die steilen Kanten braucht man deshalb viele hohe Frequenzen mit noch merklichem Gewicht. Umgekehrt heißt das: Ein Filter, der hohe Frequenzen anhebt, macht Kanten schärfer, einer, der sie dämpft, macht sie weicher. Genau das tun Hoch- und Tiefpass, und der Rampenfilter der [gefilterten Rückprojektion](../physik/rekonstruktion.html#fbp) hebt hohe Frequenzen an, damit die Kanten im CT-Bild scharf werden. Die Abbildung baut die Rechteckwelle aus diesen Gliedern auf (dort mit Periode $2\pi$, also $\sin(kx)$ statt $\sin(2\pi k x)$).
+
 ::: widget fr-01-fourier-reihe
 
 ## Fourier-Transformation {#transformation}

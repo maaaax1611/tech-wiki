@@ -58,6 +58,28 @@ f(x) = \sum_{k=-\infty}^{\infty} c_k\,e^{2\pi i k x / T}, \qquad c_k = \frac1T\i
 \]</div>
 <p>Jeder Koeffizient <span class="arithmatex">\(c_k\)</span> ist eine komplexe Zahl. Ihr Betrag sagt, wie stark die Frequenz <span class="arithmatex">\(k/T\)</span> vertreten ist, ihre Phase, wie die Schwingung verschoben ist. Berechnet wird <span class="arithmatex">\(c_k\)</span> als Skalarprodukt von <span class="arithmatex">\(f\)</span> mit der jeweiligen Schwingung: Die Schwingungen bilden eine Orthogonalbasis, und die Fourier-Reihe ist die Darstellung von <span class="arithmatex">\(f\)</span> in dieser Basis (vgl. <a href="lineare-algebra.html#vektoren">lineare Algebra</a>).</p>
 <p>Wie schnell die Koeffizienten abfallen, hängt an der Glattheit des Signals. Sprünge brauchen viele hohe Frequenzen. Bricht man die Summe ab, bleibt an jedem Sprung ein Überschwinger von etwa 9 % stehen, das <strong>Gibbs-Phänomen</strong>. Dasselbe erzeugt im Bild Ringe neben scharfen Kanten, wenn hohe Frequenzen fehlen.</p>
+<h3>Beispiel: Rechteckwelle</h3>
+<p>Für reelle Signale ist die Form mit Sinus und Kosinus oft praktischer. Mit Periode <span class="arithmatex">\(T = 1\)</span>:</p>
+<div class="eq">\[
+f(x) = \frac{a_0}{2} + \sum_{k\ge1}\big(a_k\cos(2\pi k x) + b_k\sin(2\pi k x)\big)
+\]</div>
+<div class="eq">\[
+a_k = 2\int_0^1 f(x)\cos(2\pi k x)\,\mathrm dx, \qquad b_k = 2\int_0^1 f(x)\sin(2\pi k x)\,\mathrm dx
+\]</div>
+<p>Die Rechteckwelle ist <span class="arithmatex">\(f(x) = +1\)</span> für <span class="arithmatex">\(0 &lt; x &lt; \tfrac12\)</span> und <span class="arithmatex">\(-1\)</span> für <span class="arithmatex">\(\tfrac12 &lt; x &lt; 1\)</span>, periodisch fortgesetzt.</p>
+<ol class="steps">
+<li><span class="arithmatex">\(f\)</span> ist ungerade, <span class="arithmatex">\(f(-x) = -f(x)\)</span>. Alle Kosinusterme und der Mittelwert <span class="arithmatex">\(a_0\)</span> fallen weg, es bleiben nur Sinusterme.</li>
+<li>Auch <span class="arithmatex">\(f(x)\sin(2\pi k x)\)</span> ist dann gerade, beide Halbperioden liefern denselben Beitrag:
+$$
+b_k = 4\int_0^{1/2}\sin(2\pi k x)\,\mathrm dx = 4\left[-\frac{\cos(2\pi k x)}{2\pi k}\right]_0^{1/2} = \frac{2}{\pi k}\big(1 - \cos(\pi k)\big)
+$$</li>
+<li><span class="arithmatex">\(\cos(\pi k)\)</span> ist <span class="arithmatex">\(+1\)</span> für gerades und <span class="arithmatex">\(-1\)</span> für ungerades <span class="arithmatex">\(k\)</span>. Damit ist <span class="arithmatex">\(b_k = 4/(\pi k)\)</span> für ungerades <span class="arithmatex">\(k\)</span> und <span class="arithmatex">\(0\)</span> für gerades.</li>
+</ol>
+<p>Zusammen:</p>
+<div class="eq">\[
+f(x) = \frac{4}{\pi}\sum_{k = 1, 3, 5, \dots} \frac{\sin(2\pi k x)}{k} = \frac4\pi\left(\sin 2\pi x + \frac13\sin 6\pi x + \frac15\sin 10\pi x + \dots\right)
+\]</div>
+<p>Die Rechteckwelle besteht also nur aus ungeraden Vielfachen der Grundfrequenz, und ihre Amplituden fallen nur wie <span class="arithmatex">\(1/k\)</span>. Für die steilen Kanten braucht man deshalb viele hohe Frequenzen mit noch merklichem Gewicht. Umgekehrt heißt das: Ein Filter, der hohe Frequenzen anhebt, macht Kanten schärfer, einer, der sie dämpft, macht sie weicher. Genau das tun Hoch- und Tiefpass, und der Rampenfilter der <a href="../physik/rekonstruktion.html#fbp">gefilterten Rückprojektion</a> hebt hohe Frequenzen an, damit die Kanten im CT-Bild scharf werden. Die Abbildung baut die Rechteckwelle aus diesen Gliedern auf (dort mit Periode <span class="arithmatex">\(2\pi\)</span>, also <span class="arithmatex">\(\sin(kx)\)</span> statt <span class="arithmatex">\(\sin(2\pi k x)\)</span>).</p>
 <figure class="fig">
 <canvas aria-label="Ein periodisches Signal, angenähert durch eine Summe von Sinusschwingungen, daneben die Amplituden der Schwingungen." class="c-fr" id="cv-fs" role="img"></canvas>
 <div class="ctrls">
